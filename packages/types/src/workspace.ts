@@ -109,6 +109,14 @@ export interface IWorkspaceMemberMe {
   draft_issue_count: number;
 }
 
+export type TMemberAvailability = {
+  member_id: string;
+  display_name: string;
+  week_start: string;
+  available_hours: number;
+  note: string;
+};
+
 export interface ILastActiveWorkspaceDetails {
   workspace_details: IWorkspace;
   project_details?: TProjectMembership[];

@@ -11,6 +11,7 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { CustomSelect } from "@plane/ui";
 // components
 import { TimezoneSelect } from "@/components/global";
+import { AvailabilityPreference } from "@/components/profile/availability-preference";
 import { StartOfWeekPreference } from "@/components/profile/start-of-week-preference";
 import { SettingsControlItem } from "@/components/settings/control-item";
 // hooks
@@ -102,6 +103,7 @@ export const ProfileSettingsLanguageAndTimezonePreferencesList = observer(
             description: "This will change how all calendars in your app look.",
           }}
         />
+        <AvailabilityPreference />
       </div>
     );
   }
