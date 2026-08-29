@@ -5,7 +5,9 @@
  */
 
 import { observer } from "mobx-react";
+import { useParams } from "next/navigation";
 import { Tab } from "@headlessui/react";
+import useSWR from "swr";
 // plane imports
 import { useTranslation } from "@plane/i18n";
 import type { TWorkItemFilterCondition } from "@plane/shared-state";
@@ -23,6 +25,19 @@ import { StateGroupStatComponent } from "@/components/core/sidebar/progress-stat
 // helpers
 // hooks
 import useLocalStorage from "@/hooks/use-local-storage";
+// services
+import { WorkspaceService } from "@/services/workspace.service";
+
+const workspaceService = new WorkspaceService();
+
+// Anchor to the same client-derived Monday the Task 1.4 availability widget uses (local date
+// parts, never `toISOString()`), so the sidebar and the declare-hours control always agree on
+// what "this week" means regardless of the server's timezone.
+const currentMonday = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+};
 
 type TCycleProgressStats = {
   cycleId: string;
@@ -54,6 +69,8 @@ export const CycleProgressStats = observer(function CycleProgressStats(props: TC
   } = props;
   // plane imports
   const { t } = useTranslation();
+  // router
+  const { workspaceSlug } = useParams();
   // store imports
   const { storedValue: currentTab, setValue: setCycleTab } = useLocalStorage(
     `cycle-analytics-tab-${cycleId}`,
@@ -67,6 +84,26 @@ export const CycleProgressStats = observer(function CycleProgressStats(props: TC
   const selectedLabelIds = toFilterArray(selectedFilters?.labels?.value || []) as string[];
   const selectedStateGroups = toFilterArray(selectedFilters?.stateGroups?.value || []) as string[];
 
+  // This is supplementary information layered on top of the sidebar's own data — a failed or
+  // pending request must never block the sidebar, so the lookup simply stays empty (SWR keeps
+  // `data` as `undefined` on error instead of throwing into render) and every assignee row falls
+  // back to rendering with no availability text, same as before this feature existed.
+  const weekStart = currentMonday();
+  const { data: availabilityRows } = useSWR(
+    workspaceSlug ? `WORKSPACE_MEMBER_AVAILABILITY_${workspaceSlug}_${weekStart}` : null,
+    workspaceSlug ? () => workspaceService.fetchMemberAvailability(workspaceSlug.toString(), weekStart) : null,
+    {
+      revalidateIfStale: false,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+    }
+  );
+  const availableHoursByMemberId: Record<string, number> = {};
+  (availabilityRows || []).forEach((row) => {
+    availableHoursByMemberId[row.member_id] = row.available_hours;
+  });
+
   const distributionAssigneeData: TAssigneeData =
     plotType === "burndown"
       ? (currentDistribution?.assignees || []).map((assignee) => ({
@@ -75,6 +112,7 @@ export const CycleProgressStats = observer(function CycleProgressStats(props: TC
           avatar_url: assignee?.avatar_url || undefined,
           completed: assignee.completed_issues,
           total: assignee.total_issues,
+          availableHours: assignee?.assignee_id ? availableHoursByMemberId[assignee.assignee_id] : undefined,
         }))
       : (currentEstimateDistribution?.assignees || []).map((assignee) => ({
           id: assignee?.assignee_id || undefined,
@@ -82,6 +120,7 @@ export const CycleProgressStats = observer(function CycleProgressStats(props: TC
           avatar_url: assignee?.avatar_url || undefined,
           completed: assignee.completed_estimates,
           total: assignee.total_estimates,
+          availableHours: assignee?.assignee_id ? availableHoursByMemberId[assignee.assignee_id] : undefined,
         }));
 
   const distributionLabelData: TLabelData =
