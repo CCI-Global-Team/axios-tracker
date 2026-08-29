@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': 'Member Availabilities',
                 'db_table': 'member_availabilities',
                 'ordering': ('-week_start',),
-                'constraints': [models.UniqueConstraint(condition=models.Q(('deleted_at__isnull', True)), fields=('workspace', 'member', 'week_start'), name='member_availability_unique_workspace_member_week_when_deleted_at_null')],
+                'constraints': [models.UniqueConstraint(condition=models.Q(('deleted_at__isnull', True)), fields=('workspace', 'member', 'week_start'), name='member_availability_unique_workspace_member_week')],
                 'unique_together': {('workspace', 'member', 'week_start', 'deleted_at')},
             },
         ),

@@ -33,7 +33,7 @@ class MemberAvailability(BaseModel):
             models.UniqueConstraint(
                 fields=["workspace", "member", "week_start"],
                 condition=models.Q(deleted_at__isnull=True),
-                name="member_availability_unique_workspace_member_week_when_deleted_at_null",
+                name="member_availability_unique_workspace_member_week",
             )
         ]
         verbose_name = "Member Availability"

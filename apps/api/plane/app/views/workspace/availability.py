@@ -3,11 +3,14 @@
 # See the LICENSE file for details.
 
 # Python imports
-from datetime import date, timedelta
+from datetime import timedelta
 
 # Third party imports
 from rest_framework import status
 from rest_framework.response import Response
+
+# Django imports
+from django.utils import timezone
 
 # Module imports
 from ..base import BaseAPIView
@@ -17,7 +20,7 @@ from plane.db.models import MemberAvailability, Workspace
 
 
 def current_monday():
-    today = date.today()
+    today = timezone.localdate()
     return today - timedelta(days=today.weekday())
 
 
@@ -51,7 +54,7 @@ class MemberAvailabilityViewSet(BaseAPIView):
             member=request.user,
             week_start=serializer.validated_data["week_start"],
             defaults={
-                "available_hours": serializer.validated_data["available_hours"],
+                "available_hours": serializer.validated_data.get("available_hours", 0),
                 "note": serializer.validated_data.get("note", ""),
             },
         )
