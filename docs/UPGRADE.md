@@ -6,7 +6,7 @@
    to the new tail number; update its `dependencies` to the new head.
 4. Re-run `node scripts/cci-rename.mjs` (Sprints wording) — it is idempotent.
 5. `pnpm install && pnpm build`; rebuild and push images per axios-tracker-ops/deploy.
-6. Deploy per `axios-tracker-ops/deploy/RUNBOOK.md` §upgrade.
+6. Deploy per `axios-tracker-ops/deploy/RUNBOOK.md` §upgrade _(RUNBOOK.md lands with the production deploy task; until then, deploy by hand per `deploy/production.env.example`)_.
 
 ## Conflict-prone files
 All are append-style lists — resolve by keeping both sides:
