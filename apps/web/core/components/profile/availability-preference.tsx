@@ -65,6 +65,15 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
   const hoursTouchedRef = useRef(false);
   const noteTouchedRef = useRef(false);
 
+  // `handleSave` is a plain function recreated every render, and a queued re-invocation (fired
+  // from inside a PREVIOUS call's `finally`) runs whichever closure it was created in — not
+  // necessarily the latest one. Reading `hours`/`note` state directly there can replay stale
+  // values from the render the in-flight save started in. These refs are kept in lockstep with
+  // the input values on every keystroke so any invocation of `handleSave`, however old its
+  // closure, always reads the CURRENT value.
+  const hoursRef = useRef("");
+  const noteRef = useRef("");
+
   useEffect(() => {
     if (!workspaceSlug) return;
     let isMounted = true;
@@ -81,8 +90,14 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
         const nextNote = mine?.note ?? "";
         lastSavedRef.current = { hours: nextHours, note: nextNote };
         // Don't clobber a value the user already started typing before the prefill resolved.
-        if (!hoursTouchedRef.current) setHours(nextHours);
-        if (!noteTouchedRef.current) setNote(nextNote);
+        if (!hoursTouchedRef.current) {
+          hoursRef.current = nextHours;
+          setHours(nextHours);
+        }
+        if (!noteTouchedRef.current) {
+          noteRef.current = nextNote;
+          setNote(nextNote);
+        }
       } catch (_error) {
         // Fetch failed — leave the control empty rather than blocking the rest of the page.
       }
@@ -108,17 +123,23 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
 
     // An untouched, never-declared field is "" and must stay a no-op — it must NOT be treated as
     // an explicit declaration of 0 hours. Only an actual typed "0" (which is not empty) proceeds.
-    const hoursEmpty = hours.trim() === "";
+    // Read from the refs, not the `hours`/`note` state captured by this closure: a queued
+    // re-invocation (see the `finally` block below) reuses whichever closure was created when the
+    // FIRST save in a burst started, so the state variables it closed over can be stale by the
+    // time it actually runs. The refs are updated synchronously on every keystroke regardless of
+    // which render's closure is asking, so they're always current.
+    const hoursEmpty = hoursRef.current.trim() === "";
     const hadNoDeclarationYet = lastSavedRef.current.hours === "";
-    if (hoursEmpty && hadNoDeclarationYet && note === lastSavedRef.current.note) return;
+    if (hoursEmpty && hadNoDeclarationYet && noteRef.current === lastSavedRef.current.note) return;
 
-    const clampedHours = clampHours(hours);
+    const clampedHours = clampHours(hoursRef.current);
     const clampedHoursStr = String(clampedHours);
-    const noteToSave = note;
+    const noteToSave = noteRef.current;
 
     if (clampedHoursStr === lastSavedRef.current.hours && noteToSave === lastSavedRef.current.note) return;
 
     // Reflect the clamp in the field immediately so what's displayed matches what's sent.
+    hoursRef.current = clampedHoursStr;
     setHours(clampedHoursStr);
 
     isSavingRef.current = true;
@@ -135,10 +156,14 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
       // exactly what THIS request sent. Checking focus alone isn't enough: a field can be blurred
       // (no longer focused) with its new value queued for a follow-up save that hasn't gone out
       // yet — in that case this response is stale for that field and must not clobber it.
-      setHours((current) =>
-        focusedFieldRef.current !== "hours" && current === clampedHoursStr ? savedHours : current
-      );
-      setNote((current) => (focusedFieldRef.current !== "note" && current === noteToSave ? savedNote : current));
+      if (focusedFieldRef.current !== "hours" && hoursRef.current === clampedHoursStr) {
+        hoursRef.current = savedHours;
+        setHours(savedHours);
+      }
+      if (focusedFieldRef.current !== "note" && noteRef.current === noteToSave) {
+        noteRef.current = savedNote;
+        setNote(savedNote);
+      }
       setToast({
         type: TOAST_TYPE.SUCCESS,
         title: "Saved",
@@ -146,8 +171,14 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
       });
     } catch (_error) {
       const { hours: lastHours, note: lastNote } = lastSavedRef.current;
-      setHours((current) => (focusedFieldRef.current !== "hours" && current === clampedHoursStr ? lastHours : current));
-      setNote((current) => (focusedFieldRef.current !== "note" && current === noteToSave ? lastNote : current));
+      if (focusedFieldRef.current !== "hours" && hoursRef.current === clampedHoursStr) {
+        hoursRef.current = lastHours;
+        setHours(lastHours);
+      }
+      if (focusedFieldRef.current !== "note" && noteRef.current === noteToSave) {
+        noteRef.current = lastNote;
+        setNote(lastNote);
+      }
       setToast({
         type: TOAST_TYPE.ERROR,
         title: "Couldn't save",
@@ -190,6 +221,7 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
             aria-label="Hours available this week"
             onChange={(e) => {
               hoursTouchedRef.current = true;
+              hoursRef.current = e.target.value;
               setHours(e.target.value);
             }}
             onFocus={() => {
@@ -208,6 +240,7 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
             aria-label="Availability note"
             onChange={(e) => {
               noteTouchedRef.current = true;
+              noteRef.current = e.target.value;
               setNote(e.target.value);
             }}
             onFocus={() => {
