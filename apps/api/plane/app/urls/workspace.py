@@ -36,6 +36,7 @@ from plane.app.views import (
     WorkspaceHomePreferenceViewSet,
     WorkspaceStickyViewSet,
     WorkspaceUserPreferenceViewSet,
+    MemberAvailabilityViewSet,
 )
 
 
@@ -256,5 +257,11 @@ urlpatterns = [
         "workspaces/<str:slug>/sidebar-preferences/",
         WorkspaceUserPreferenceViewSet.as_view(),
         name="workspace-user-preference",
+    ),
+    # CCI: Member availability
+    path(
+        "workspaces/<str:slug>/availability/",
+        MemberAvailabilityViewSet.as_view(),
+        name="member-availability",
     ),
 ]
