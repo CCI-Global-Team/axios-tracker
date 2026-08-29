@@ -31,13 +31,15 @@ const currentMonday = () => {
 const clampHours = (raw: string): number => {
   const parsed = Number(raw);
   if (raw.trim() === "" || Number.isNaN(parsed)) return 0;
-  return Math.min(MAX_HOURS, Math.max(MIN_HOURS, parsed));
+  return Math.min(MAX_HOURS, Math.max(MIN_HOURS, Math.round(parsed)));
 };
 
 type TSavedAvailability = {
   hours: string;
   note: string;
 };
+
+type TFocusedField = "hours" | "note" | null;
 
 const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
   if (e.key === "Enter") e.currentTarget.blur();
@@ -53,7 +55,15 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
   // state
   const [hours, setHours] = useState("");
   const [note, setNote] = useState("");
+
+  // refs — last-known-good values, in-flight/queued save bookkeeping, and per-field interaction
+  // tracking, none of which should trigger re-renders on their own.
   const lastSavedRef = useRef<TSavedAvailability>({ hours: "", note: "" });
+  const isSavingRef = useRef(false);
+  const pendingSaveRef = useRef(false);
+  const focusedFieldRef = useRef<TFocusedField>(null);
+  const hoursTouchedRef = useRef(false);
+  const noteTouchedRef = useRef(false);
 
   useEffect(() => {
     if (!workspaceSlug) return;
@@ -61,14 +71,18 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
 
     const loadAvailability = async () => {
       try {
-        const rows = await workspaceService.fetchMemberAvailability(workspaceSlug);
+        // Anchor the prefill fetch to the same client-derived Monday the save uses, so the GET
+        // and the POST always agree on "this week" regardless of the server's own timezone.
+        const weekStart = currentMonday();
+        const rows = await workspaceService.fetchMemberAvailability(workspaceSlug, weekStart);
         if (!isMounted) return;
         const mine = rows.find((row) => row.member_id === currentUser?.id);
         const nextHours = mine ? String(mine.available_hours) : "";
         const nextNote = mine?.note ?? "";
-        setHours(nextHours);
-        setNote(nextNote);
         lastSavedRef.current = { hours: nextHours, note: nextNote };
+        // Don't clobber a value the user already started typing before the prefill resolved.
+        if (!hoursTouchedRef.current) setHours(nextHours);
+        if (!noteTouchedRef.current) setNote(nextNote);
       } catch (_error) {
         // Fetch failed — leave the control empty rather than blocking the rest of the page.
       }
@@ -84,39 +98,78 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
   const handleSave = async () => {
     if (!workspaceSlug) return;
 
+    // Serialize saves: if one is already in flight, ask it to re-check when it's done instead of
+    // firing a second overlapping request (which could land out of order and produce duplicate
+    // toasts, or overwrite a value the user is still editing).
+    if (isSavingRef.current) {
+      pendingSaveRef.current = true;
+      return;
+    }
+
+    // An untouched, never-declared field is "" and must stay a no-op — it must NOT be treated as
+    // an explicit declaration of 0 hours. Only an actual typed "0" (which is not empty) proceeds.
+    const hoursEmpty = hours.trim() === "";
+    const hadNoDeclarationYet = lastSavedRef.current.hours === "";
+    if (hoursEmpty && hadNoDeclarationYet && note === lastSavedRef.current.note) return;
+
     const clampedHours = clampHours(hours);
     const clampedHoursStr = String(clampedHours);
+    const noteToSave = note;
 
-    if (clampedHoursStr === lastSavedRef.current.hours && note === lastSavedRef.current.note) return;
+    if (clampedHoursStr === lastSavedRef.current.hours && noteToSave === lastSavedRef.current.note) return;
 
     // Reflect the clamp in the field immediately so what's displayed matches what's sent.
     setHours(clampedHoursStr);
 
+    isSavingRef.current = true;
     try {
       const response = await workspaceService.updateMyAvailability(workspaceSlug, {
         week_start: currentMonday(),
         available_hours: clampedHours,
-        note,
+        note: noteToSave,
       });
       const savedHours = String(response.available_hours);
       const savedNote = response.note ?? "";
-      setHours(savedHours);
-      setNote(savedNote);
       lastSavedRef.current = { hours: savedHours, note: savedNote };
+      // Only apply the echo to a field that (a) isn't currently focused and (b) still holds
+      // exactly what THIS request sent. Checking focus alone isn't enough: a field can be blurred
+      // (no longer focused) with its new value queued for a follow-up save that hasn't gone out
+      // yet — in that case this response is stale for that field and must not clobber it.
+      setHours((current) =>
+        focusedFieldRef.current !== "hours" && current === clampedHoursStr ? savedHours : current
+      );
+      setNote((current) => (focusedFieldRef.current !== "note" && current === noteToSave ? savedNote : current));
       setToast({
         type: TOAST_TYPE.SUCCESS,
         title: "Saved",
         message: "Your availability for this week has been updated.",
       });
     } catch (_error) {
-      setHours(lastSavedRef.current.hours);
-      setNote(lastSavedRef.current.note);
+      const { hours: lastHours, note: lastNote } = lastSavedRef.current;
+      setHours((current) => (focusedFieldRef.current !== "hours" && current === clampedHoursStr ? lastHours : current));
+      setNote((current) => (focusedFieldRef.current !== "note" && current === noteToSave ? lastNote : current));
       setToast({
         type: TOAST_TYPE.ERROR,
         title: "Couldn't save",
         message: "Please try again.",
       });
+    } finally {
+      isSavingRef.current = false;
+      if (pendingSaveRef.current) {
+        pendingSaveRef.current = false;
+        void handleSave();
+      }
     }
+  };
+
+  const handleHoursBlur = () => {
+    if (focusedFieldRef.current === "hours") focusedFieldRef.current = null;
+    void handleSave();
+  };
+
+  const handleNoteBlur = () => {
+    if (focusedFieldRef.current === "note") focusedFieldRef.current = null;
+    void handleSave();
   };
 
   if (!workspaceSlug) return null;
@@ -134,9 +187,17 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
             step={1}
             placeholder="0"
             value={hours}
-            onChange={(e) => setHours(e.target.value)}
-            onBlur={handleSave}
+            aria-label="Hours available this week"
+            onChange={(e) => {
+              hoursTouchedRef.current = true;
+              setHours(e.target.value);
+            }}
+            onFocus={() => {
+              focusedFieldRef.current = "hours";
+            }}
+            onBlur={handleHoursBlur}
             onKeyDown={handleKeyDown}
+            onWheel={(e) => e.currentTarget.blur()}
             className="w-20 rounded-md border border-subtle-1 bg-transparent px-2 py-1.5 text-body-sm-regular text-primary"
           />
           <input
@@ -144,8 +205,15 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
             maxLength={NOTE_MAX_LENGTH}
             placeholder="Optional — e.g. evenings only"
             value={note}
-            onChange={(e) => setNote(e.target.value)}
-            onBlur={handleSave}
+            aria-label="Availability note"
+            onChange={(e) => {
+              noteTouchedRef.current = true;
+              setNote(e.target.value);
+            }}
+            onFocus={() => {
+              focusedFieldRef.current = "note";
+            }}
+            onBlur={handleNoteBlur}
             onKeyDown={handleKeyDown}
             className="w-56 rounded-md border border-subtle-1 bg-transparent px-2 py-1.5 text-body-sm-regular text-primary"
           />
