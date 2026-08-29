@@ -74,6 +74,26 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
   const hoursRef = useRef("");
   const noteRef = useRef("");
 
+  // Tracks whether the component is still mounted. `handleSave` can be re-invoked asynchronously
+  // from its own `finally` block (the queued-save mechanism below) well after the event that
+  // originally triggered it — including after the user has navigated away from this settings page.
+  // Checked at the top of `handleSave` so neither a direct call nor a queued one fires a network
+  // request or a toast for a component that's no longer on screen.
+  //
+  // The flag is (re-)set to `true` from INSIDE the effect body, not just via `useRef(true)`'s
+  // initial value — React StrictMode (enabled for this app, see entry.client.tsx) double-invokes
+  // effects in development: mount → cleanup → mount. That simulated cleanup would otherwise leave
+  // this ref stuck at `false` forever after the very first real mount, since `useRef`'s initializer
+  // only applies once and is never re-read on the second mount.
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     if (!workspaceSlug) return;
     let isMounted = true;
@@ -111,7 +131,7 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
   }, [workspaceSlug, currentUser?.id]);
 
   const handleSave = async () => {
-    if (!workspaceSlug) return;
+    if (!isMountedRef.current || !workspaceSlug) return;
 
     // Serialize saves: if one is already in flight, ask it to re-check when it's done instead of
     // firing a second overlapping request (which could land out of order and produce duplicate
@@ -170,14 +190,25 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
         message: "Your availability for this week has been updated.",
       });
     } catch (_error) {
-      const { hours: lastHours, note: lastNote } = lastSavedRef.current;
-      if (focusedFieldRef.current !== "hours" && hoursRef.current === clampedHoursStr) {
-        hoursRef.current = lastHours;
-        setHours(lastHours);
-      }
-      if (focusedFieldRef.current !== "note" && noteRef.current === noteToSave) {
-        noteRef.current = lastNote;
-        setNote(lastNote);
+      // If another save is already queued to run immediately after this one, do NOT revert to
+      // the last-confirmed values now. Reverting here would force `hoursRef`/`noteRef` back to
+      // "" for anyone who has never successfully saved before, and the queued save's own guard
+      // would then read that "" as "field is empty" rather than "this attempt failed" — combined
+      // with a real edit to the OTHER field, that used to slip past the no-declaration guard and
+      // send `available_hours: 0`, an hours value the volunteer never typed. Leaving the refs (and
+      // the displayed values) exactly as the user left them lets the queued call re-derive its
+      // payload from what's actually on screen, so it retries with the real intended hours AND
+      // the new edit together, instead of a corrupted mix of a synthetic revert and a real edit.
+      if (!pendingSaveRef.current) {
+        const { hours: lastHours, note: lastNote } = lastSavedRef.current;
+        if (focusedFieldRef.current !== "hours" && hoursRef.current === clampedHoursStr) {
+          hoursRef.current = lastHours;
+          setHours(lastHours);
+        }
+        if (focusedFieldRef.current !== "note" && noteRef.current === noteToSave) {
+          noteRef.current = lastNote;
+          setNote(lastNote);
+        }
       }
       setToast({
         type: TOAST_TYPE.ERROR,
