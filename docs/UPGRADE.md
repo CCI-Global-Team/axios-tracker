@@ -4,9 +4,7 @@
 2. `git checkout cci/patches && git rebase <new-tag>`
 3. Renumber our migration: rename `apps/api/plane/db/migrations/XXXX_member_availability.py`
    to the new tail number; update its `dependencies` to the new head.
-4. Re-run `node scripts/cci-rename.mjs` (Sprints wording) — it is idempotent. It refuses to run
-   (non-zero exit) if the locale directory has gained subdirectories — that's expected behavior,
-   not a broken script; it means the script needs updating to handle the new layout.
+4. (No vocabulary pass — the Cycles→Sprints rename was dropped 2026-08-29; upstream wording is used as-is.)
 5. `pnpm install && pnpm build`; rebuild and push images per axios-tracker-ops/deploy.
 6. Deploy per `axios-tracker-ops/deploy/RUNBOOK.md` §upgrade.
 
