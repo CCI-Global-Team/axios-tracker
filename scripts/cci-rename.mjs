@@ -40,10 +40,29 @@ const rewriteValues = (node) => {
   return count;
 };
 
+const localeEntries = readdirSync(LOCALE_DIR, { withFileTypes: true });
+
+// This script does not recurse: it assumes the locale directory is flat. If upstream ever
+// nests locale files under a subdirectory, those files would be silently skipped and CCI's
+// "Sprint" wording would half-revert during a rebase with no error. Fail loudly instead.
+const subdirs = localeEntries.filter((entry) => entry.isDirectory()).map((entry) => entry.name);
+if (subdirs.length > 0) {
+  console.error(
+    `cci-rename: found subdirector${subdirs.length === 1 ? "y" : "ies"} inside ${LOCALE_DIR}: ${subdirs.join(", ")}\n` +
+      "This script only scans the top level of the locale directory and does not recurse. " +
+      "If upstream has restructured the locale files into subdirectories, files inside them would be " +
+      "silently skipped and CCI's Cycle->Sprint renaming would go stale. " +
+      "Update scripts/cci-rename.mjs to handle the new layout before re-running."
+  );
+  process.exit(1);
+}
+
 let filesChanged = 0;
 let stringsChanged = 0;
 
-for (const file of readdirSync(LOCALE_DIR).filter((f) => f.endsWith(".json"))) {
+for (const file of localeEntries
+  .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
+  .map((entry) => entry.name)) {
   const path = join(LOCALE_DIR, file);
   const before = readFileSync(path, "utf8");
   const parsed = JSON.parse(before);
