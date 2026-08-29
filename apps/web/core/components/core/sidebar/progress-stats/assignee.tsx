@@ -21,6 +21,7 @@ export type TAssigneeData = {
   avatar_url: string | undefined;
   completed: number;
   total: number;
+  availableHours?: number;
 }[];
 
 type TAssigneeStatComponent = {
@@ -36,7 +37,7 @@ export const AssigneeStatComponent = observer(function AssigneeStatComponent(pro
   return (
     <div>
       {distribution && distribution.length > 0 ? (
-        distribution.map((assignee, index) => {
+        distribution.map((assignee) => {
           if (assignee?.id)
             return (
               <SingleProgressStats
@@ -45,6 +46,9 @@ export const AssigneeStatComponent = observer(function AssigneeStatComponent(pro
                   <div className="flex items-center gap-2">
                     <Avatar name={assignee?.title ?? undefined} src={getFileURL(assignee?.avatar_url ?? "")} />
                     <span>{assignee?.title ?? ""}</span>
+                    {assignee.availableHours !== undefined && (
+                      <span className="whitespace-nowrap text-tertiary">{assignee.availableHours}h this week</span>
+                    )}
                   </div>
                 }
                 completed={assignee?.completed ?? 0}
@@ -58,7 +62,7 @@ export const AssigneeStatComponent = observer(function AssigneeStatComponent(pro
           else
             return (
               <SingleProgressStats
-                key={`unassigned-${index}`}
+                key="unassigned"
                 title={
                   <div className="flex items-center gap-2">
                     <div className="h-4 w-4 rounded-full border-2 border-subtle bg-layer-1">
