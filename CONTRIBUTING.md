@@ -133,7 +133,7 @@ context**, and getting this wrong fails the build immediately on the first `COPY
 All six commands, run from the fork's repo root, with the context called out per line:
 
 ```bash
-TAG=<new-tag>-cci<N>
+TAG=<upstream-version>-cci-<N>   # e.g. 1.4.2-cci-1 — no "v", unlike the upstream git tag (v1.4.2)
 REG=ghcr.io/cci-global-team
 
 docker build -f apps/web/Dockerfile.web     -t $REG/plane-frontend:$TAG .          # context: repo root
@@ -144,8 +144,9 @@ docker build -f apps/api/Dockerfile.api     -t $REG/plane-backend:$TAG  apps/api
 docker build -f apps/proxy/Dockerfile.ce    -t $REG/plane-proxy:$TAG    apps/proxy # context: apps/proxy
 ```
 
-For the tagging convention (`<upstream-tag>-cci<N>`, e.g. `v1.4.2-cci1`) and why it matters, plus pushing and deploying
-these images, see `axios-tracker-ops/deploy/RUNBOOK.md` §5 and its new tagging-convention note.
+For the tagging convention (`<upstream-version>-cci-<N>`, e.g. `1.4.2-cci-1` — note no `v`, unlike
+the upstream git tag `v1.4.2`) and why it matters, plus pushing and deploying these images, see
+`axios-tracker-ops/deploy/RUNBOOK.md` §5 and its tagging-convention note.
 
 ## Where CCI's own code lives
 
