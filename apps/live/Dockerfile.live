@@ -52,6 +52,9 @@ RUN pnpm turbo run build --filter=live
 # *****************************************************************************
 
 FROM base AS runner
+
+LABEL org.opencontainers.image.source="https://github.com/CCI-Global-Team/axios-tracker"
+
 WORKDIR /app
 
 # Remove go from Alpine APK database; not needed at runtime and carries stdlib CVEs

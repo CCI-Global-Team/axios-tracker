@@ -1,3 +1,21 @@
+## This is CCI's fork
+
+This is **CCI's fork of [Plane CE](https://github.com/makeplane/plane)**, serving
+[`axios.joincci.org`](https://axios.joincci.org). CCI's changes live on branch `cci/patches`,
+carried on top of unmodified upstream tag `v1.4.2`.
+
+- **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — dev setup and the Windows symlink trap
+- **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — what CCI added and why
+- **[`docs/UPGRADE.md`](docs/UPGRADE.md)** — rebasing `cci/patches` onto a new upstream release
+
+Operational/deployment docs (provisioning, backups, incident playbook) live in the private
+[`CCI-Global-Team/axios-tracker-ops`](https://github.com/CCI-Global-Team/axios-tracker-ops) repo,
+under `deploy/RUNBOOK.md`.
+
+Everything below this line is upstream Plane's own README, kept as-is.
+
+---
+
 <br /><br />
 
 <p align="center">
@@ -42,7 +60,7 @@ Getting started with Plane is simple. Choose the setup that works best for you:
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Docker               | [![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://developers.plane.so/self-hosting/methods/docker-compose)         |
 | Kubernetes           | [![Kubernetes](https://img.shields.io/badge/kubernetes-%23326ce5.svg?style=for-the-badge&logo=kubernetes&logoColor=white)](https://developers.plane.so/self-hosting/methods/kubernetes) |
-| Managed hosting      | [<img alt="Deploy with Zenith" src="https://cdn.zenith.hosting/buttons/deploy-with-zenith.svg" height="40">](https://zenith.hosting/host/plane) |
+| Managed hosting      | [<img alt="Deploy with Zenith" src="https://cdn.zenith.hosting/buttons/deploy-with-zenith.svg" height="40">](https://zenith.hosting/host/plane)                                         |
 
 `Instance admins` can configure instance settings with [God mode](https://developers.plane.so/self-hosting/govern/instance-admin).
 

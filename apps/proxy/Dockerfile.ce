@@ -12,6 +12,8 @@ RUN xcaddy build \
 
 FROM caddy:2.11.3-alpine
 
+LABEL org.opencontainers.image.source="https://github.com/CCI-Global-Team/axios-tracker"
+
 RUN apk update && apk upgrade --no-cache && apk add --no-cache nss-tools bash curl
 
 COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy

@@ -77,6 +77,8 @@ RUN pnpm turbo run build --filter=admin
 
 FROM nginx:1.31-alpine AS production
 
+LABEL org.opencontainers.image.source="https://github.com/CCI-Global-Team/axios-tracker"
+
 RUN apk update && apk upgrade --no-cache && rm -rf /var/cache/apk/*
 
 COPY apps/admin/nginx/nginx.conf /etc/nginx/nginx.conf

@@ -43,7 +43,8 @@ git checkout cci/patches
 pnpm install
 ```
 
-## Windows: read this before you assume the app is broken
+<details>
+<summary><b>Windows: fix the locale symlink before your first build</b> (every label shows as a raw i18n key, e.g. <code>auth.common.email.label</code> instead of "Email" — click to expand)</summary>
 
 **If every label in the UI renders as a raw key** — `auth.common.email.label` instead of "Email",
 `common.buttons.save` instead of "Save", across the whole app — **this is not a bug in your code and
@@ -84,7 +85,10 @@ This only needs doing once per clone. If you cloned before enabling `core.symlin
 re-checkout the file as shown above — toggling the config alone does not fix a file already checked
 out wrong.
 
-## Typechecking
+</details>
+
+<details>
+<summary><b>Typechecking: ignore false TS2307 "cannot find module" errors on a cold run</b> (click to expand)</summary>
 
 ```bash
 pnpm --filter web check:types
@@ -104,6 +108,8 @@ pnpm --filter web check:types
 (`web^...` means "everything `web` depends on," not `web` itself — this builds the packages, not the
 app, which is enough to satisfy the type checker.) If `TS2307` errors persist after that, they're
 real — go fix them.
+
+</details>
 
 ## Pre-commit hook — never bypass it
 

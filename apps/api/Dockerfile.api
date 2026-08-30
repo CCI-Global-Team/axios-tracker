@@ -1,5 +1,7 @@
 FROM python:3.12.10-alpine
 
+LABEL org.opencontainers.image.source="https://github.com/CCI-Global-Team/axios-tracker"
+
 # set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
