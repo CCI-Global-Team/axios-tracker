@@ -13,21 +13,14 @@ import maintenanceModeLightModeImage from "@/app/assets/instance/maintenance-mod
 // layouts
 import DefaultLayout from "@/layouts/default-layout";
 
+// CCI: upstream sent users to Plane's own support desk, status page and X account. On our instance a
+// volunteer hitting an error would have emailed Plane Software, Inc. about a CCI outage. Support is
+// CCI engineering; there is no public status page for this deployment, so nothing is linked in its place.
 const linkMap = [
   {
     key: "mail_to",
     label: "Contact Support",
-    value: "mailto:support@plane.so",
-  },
-  {
-    key: "status",
-    label: "Status Page",
-    value: "https://status.plane.so/",
-  },
-  {
-    key: "twitter_handle",
-    label: "@planepowers",
-    value: "https://x.com/planepowers",
+    value: "mailto:engineering@joincci.org",
   },
 ];
 
