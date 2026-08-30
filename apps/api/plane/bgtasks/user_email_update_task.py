@@ -9,6 +9,7 @@ import logging
 from celery import shared_task
 
 # Django imports
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 
@@ -33,7 +34,8 @@ def send_email_update_magic_code(email, token):
 
         # Send the mail
         subject = "Verify your new email address"
-        context = {"code": token, "email": email}
+        current_site = settings.APP_BASE_URL or settings.WEB_URL or ""
+        context = {"code": token, "email": email, "current_site": current_site}
 
         html_content = render_to_string("emails/auth/magic_signin.html", context)
         text_content = generate_plain_text_from_html(html_content)
@@ -83,8 +85,9 @@ def send_email_update_confirmation(email):
         ) = get_email_configuration()
 
         # Send the confirmation email
-        subject = "Plane email address successfully updated"
-        context = {"email": email}
+        subject = "Axios email address successfully updated"
+        current_site = settings.APP_BASE_URL or settings.WEB_URL or ""
+        context = {"email": email, "current_site": current_site}
 
         html_content = render_to_string("emails/user/email_updated.html", context)
         text_content = generate_plain_text_from_html(html_content)

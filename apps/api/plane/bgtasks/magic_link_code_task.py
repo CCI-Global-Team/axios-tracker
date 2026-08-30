@@ -10,6 +10,7 @@ from celery import shared_task
 
 # Django imports
 # Third party imports
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 
@@ -33,8 +34,9 @@ def magic_link(email, key, token):
         ) = get_email_configuration()
 
         # Send the mail
-        subject = f"Your unique Plane login code is {token}"
-        context = {"code": token, "email": email}
+        subject = f"Your unique Axios login code is {token}"
+        current_site = settings.APP_BASE_URL or settings.WEB_URL or ""
+        context = {"code": token, "email": email, "current_site": current_site}
 
         html_content = render_to_string("emails/auth/magic_signin.html", context)
         text_content = generate_plain_text_from_html(html_content)

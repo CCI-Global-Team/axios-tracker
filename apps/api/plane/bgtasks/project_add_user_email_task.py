@@ -41,6 +41,7 @@ def project_add_user_email(current_site, project_member_id, invitor_id):
             "email": member_email,
             "inviter_first_name": inviter_first_name,
             "project_url": project_url,
+            "current_site": current_site,
         }
 
         # Get the email configuration
@@ -55,7 +56,7 @@ def project_add_user_email(current_site, project_member_id, invitor_id):
         ) = get_email_configuration()
 
         # Set the subject
-        subject = "You have been invited to a Plane project"
+        subject = "You have been invited to an Axios project"
 
         # Render the email template
         html_content = render_to_string("emails/notifications/project_addition.html", context)

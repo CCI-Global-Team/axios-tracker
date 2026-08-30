@@ -35,12 +35,13 @@ def forgot_password(first_name, email, uidb64, token, current_site):
             EMAIL_FROM,
         ) = get_email_configuration()
 
-        subject = "A new password to your Plane account has been requested"
+        subject = "A new password to your Axios account has been requested"
 
         context = {
             "first_name": first_name,
             "forgot_password_url": abs_url,
             "email": email,
+            "current_site": current_site,
         }
 
         html_content = render_to_string("emails/auth/forgot_password.html", context)

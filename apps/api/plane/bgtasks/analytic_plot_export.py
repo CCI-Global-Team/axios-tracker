@@ -11,6 +11,7 @@ import logging
 from celery import shared_task
 
 # Django imports
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.template.loader import render_to_string
 from django.db.models import Q, Case, Value, When
@@ -52,7 +53,8 @@ MODULE_ID = "issue_module__module_id"
 def send_export_email(email, slug, csv_buffer, rows):
     """Helper function to send export email."""
     subject = "Your Export is ready"
-    html_content = render_to_string("emails/exports/analytics.html", {})
+    current_site = settings.APP_BASE_URL or settings.WEB_URL or ""
+    html_content = render_to_string("emails/exports/analytics.html", {"current_site": current_site})
     text_content = generate_plain_text_from_html(html_content)
 
     csv_buffer.seek(0)

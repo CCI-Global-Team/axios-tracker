@@ -24,9 +24,13 @@ def user_deactivation_email(current_site, user_id):
     try:
         # Send email to user when account is deactivated
         user = User.objects.get(id=user_id)
-        subject = f"{user.first_name or user.display_name or user.email} has been deactivated on Plane"
+        subject = f"{user.first_name or user.display_name or user.email} has been deactivated on Axios"
 
-        context = {"email": str(user.email), "login_url": current_site + "/login"}
+        context = {
+            "email": str(user.email),
+            "login_url": current_site + "/login",
+            "current_site": current_site,
+        }
 
         # Send email to user
         html_content = render_to_string("emails/user/user_deactivation.html", context)

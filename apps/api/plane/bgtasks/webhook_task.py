@@ -202,6 +202,7 @@ def send_webhook_deactivation_email(webhook_id: str, receiver_id: str, current_s
             "email": receiver.email,
             "message": message,
             "webhook_url": f"{current_site}/{str(webhook.workspace.slug)}/settings/webhooks/{str(webhook.id)}",
+            "current_site": current_site,
         }
         html_content = render_to_string("emails/notifications/webhook-deactivate.html", context)
         text_content = generate_plain_text_from_html(html_content)

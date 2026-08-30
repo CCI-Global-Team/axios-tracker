@@ -258,6 +258,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                 "user_preference": f"{base_api}/{str(issue.project.workspace.slug)}/settings/account/notifications/",
                 "comments": comments,
                 "entity_type": "issue",
+                "current_site": base_api,
             }
             html_content = render_to_string("emails/notifications/issue-updates.html", context)
             text_content = generate_plain_text_from_html(html_content)
