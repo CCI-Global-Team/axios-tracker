@@ -117,8 +117,7 @@ word — `support@plane.so`, `forum.plane.so`, `app.plane.so/upgrade`, `makeplan
 source greps have missed live ones that a bundle scan caught. The check that works:
 
 ```bash
-docker exec <web-container> sh -c 'for s in plane.so/legals support@plane.so   app.plane.so/upgrade forum.plane.so status.plane.so makeplane/plane/issues; do   printf "%-26s %s
-" "$s" "$(grep -rl "$s" /usr/share/nginx/html | wc -l)"; done'
+docker exec <web-container> sh -c 'for s in plane.so/legals support@plane.so app.plane.so/upgrade forum.plane.so status.plane.so makeplane/plane/issues; do echo "$s -> $(grep -rl "$s" /usr/share/nginx/html | wc -l)"; done'
 ```
 
 Every one of those should print `0`.
