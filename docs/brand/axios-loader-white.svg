@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Axios loader. Pure SMIL: renders animated inside an <img>, needs no player and no dependency.
+     The two ribbons draw and retract a half-cycle apart, so the crossing keeps forming and
+     releasing — the weave stated as motion rather than as a masked gap. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="12.5 16.5 75 67" width="75" height="67"
+     role="img" aria-label="Loading">
+  <path d="M20,24 C44,24 56,76 80,76" fill="none" stroke="#FFFFFF" stroke-width="15" stroke-linecap="round"
+        stroke-dasharray="82.41" stroke-dashoffset="82.41">
+    <animate attributeName="stroke-dashoffset"
+             values="82.41;0;0;-82.41" keyTimes="0;0.42;0.58;1"
+             dur="2.0s" begin="0s" repeatCount="indefinite"
+             calcMode="spline" keySplines=".45 .05 .35 1;0 0 1 1;.45 .05 .35 1"/>
+  </path>
+  <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke="#FFFFFF" stroke-width="15" stroke-linecap="round"
+        stroke-dasharray="82.41" stroke-dashoffset="82.41">
+    <animate attributeName="stroke-dashoffset"
+             values="82.41;0;0;-82.41" keyTimes="0;0.42;0.58;1"
+             dur="2.0s" begin="1.0s" repeatCount="indefinite"
+             calcMode="spline" keySplines=".45 .05 .35 1;0 0 1 1;.45 .05 .35 1"/>
+  </path>
+</svg>
