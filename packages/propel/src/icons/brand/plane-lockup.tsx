@@ -25,19 +25,19 @@ export function PlaneLockup({ width = "175", height = "53", className, color = "
       <defs>
         <mask id="axios-lockup-weave" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
           <rect width="100" height="100" fill="#fff" />
-          <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke="#000" strokeWidth="23" strokeLinecap="round" />
+          <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke="#000" strokeWidth="17" strokeLinecap="round" />
         </mask>
       </defs>
-      <svg x="0" y="0" width="59.3" height="53" viewBox="12.5 16.5 75 67" fill="none">
+      <svg x="0" y="0" width="59.7" height="53" viewBox="14.5 18.5 71 63" fill="none">
         <path
           d="M20,24 C44,24 56,76 80,76"
           fill="none"
           stroke={color}
-          strokeWidth="15"
+          strokeWidth="11"
           strokeLinecap="round"
           mask="url(#axios-lockup-weave)"
         />
-        <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke={color} strokeWidth="15" strokeLinecap="round" />
+        <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke={color} strokeWidth="11" strokeLinecap="round" />
       </svg>
       <text
         x="75"

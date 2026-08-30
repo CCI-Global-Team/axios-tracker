@@ -38,12 +38,25 @@ ascending   M20,24 C44,24 56,76 80,76
 descending  M20,76 C44,76 56,24 80,24
 ```
 
-both at `stroke-width: 15` on a `0 0 100 100` box, with round caps.
+both at `stroke-width: 11` on a `0 0 100 100` box, with round caps. The weave gap is
+`stroke x 1.53`, so it stays optically constant if the weight ever changes again.
 
 The gap that makes the weave legible is cut with an **SVG mask**, not by painting a
 background-coloured stroke over the join. That distinction matters: a painted gap only works on the
 one background it was painted for, and silently breaks the moment the mark is placed on red, on a
 photo, or on a dark theme. The mask works everywhere.
+
+## Regenerating
+
+Everything below is output. `tools/generate-brand-assets.py` produces the whole set from one
+definition; `STROKE` at the top of that file is the only place the weight is written down.
+
+```bash
+python tools/generate-brand-assets.py --install
+```
+
+It asserts the rasters came out RGBA with transparent corners before it finishes, because the
+failure mode there is silent and shipped once.
 
 ## Files
 
@@ -85,5 +98,5 @@ upstream for no user-visible gain. Only the artwork inside them is CCI's.
 - Do not recolour the mark to anything but CCI Red or white.
 - Do not add a stroke, shadow, or gradient beyond the two supplied gradient files.
 - Do not close the weave gap, or draw it by painting over the join with a background colour.
-- Do not stretch it — the aspect ratio is fixed at 75:67.
+- Do not stretch it — the aspect ratio is fixed at 71:63.
 - Do not place the red mark on a red ground, or the white mark on white.

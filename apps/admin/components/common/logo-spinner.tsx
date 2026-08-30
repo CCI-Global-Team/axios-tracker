@@ -40,7 +40,7 @@ export function LogoSpinner() {
         }
       `}</style>
       <svg
-        viewBox="12.5 16.5 75 67"
+        viewBox="14.5 18.5 71 63"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="h-6 w-auto text-accent-primary sm:h-11"
@@ -51,14 +51,14 @@ export function LogoSpinner() {
           className="axios-loader__ribbon"
           d="M20,24 C44,24 56,76 80,76"
           stroke="currentColor"
-          strokeWidth="15"
+          strokeWidth="11"
           strokeLinecap="round"
         />
         <path
           className="axios-loader__ribbon axios-loader__ribbon--second"
           d="M20,76 C44,76 56,24 80,24"
           stroke="currentColor"
-          strokeWidth="15"
+          strokeWidth="11"
           strokeLinecap="round"
         />
       </svg>
