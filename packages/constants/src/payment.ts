@@ -120,7 +120,12 @@ export const PLANE_COMMUNITY_PRODUCTS: Record<string, IPaymentProduct> = {
 /**
  * URL for the "Talk to Sales" page where users can contact sales team
  */
-export const TALK_TO_SALES_URL = "https://plane.so/talk-to-sales";
+// CCI: every commercial destination below is repointed at our own instance root.
+// This deployment is self-hosted Plane CE and has no paid tier to buy. Left as shipped, the
+// "Upgrade" buttons sent volunteers to app.plane.so's real checkout — i.e. to pay Plane
+// Software, Inc. for a licence on a server CCI already owns. The upgrade surface should be
+// removed outright, but that is a product change; this makes the links inert in the meantime.
+export const TALK_TO_SALES_URL = "/";
 
 /**
  * Mapping of subscription types to their respective upgrade/redirection URLs based on billing frequency
@@ -136,12 +141,12 @@ export const SUBSCRIPTION_REDIRECTION_URLS: Record<EProductSubscriptionEnum, Rec
     year: TALK_TO_SALES_URL,
   },
   [EProductSubscriptionEnum.PRO]: {
-    month: "https://app.plane.so/upgrade/pro/self-hosted?plan=month",
-    year: "https://app.plane.so/upgrade/pro/self-hosted?plan=year",
+    month: TALK_TO_SALES_URL,
+    year: TALK_TO_SALES_URL,
   },
   [EProductSubscriptionEnum.BUSINESS]: {
-    month: "https://app.plane.so/upgrade/business/self-hosted?plan=month",
-    year: "https://app.plane.so/upgrade/business/self-hosted?plan=year",
+    month: TALK_TO_SALES_URL,
+    year: TALK_TO_SALES_URL,
   },
   [EProductSubscriptionEnum.ENTERPRISE]: {
     month: TALK_TO_SALES_URL,
@@ -156,7 +161,7 @@ export const SUBSCRIPTION_REDIRECTION_URLS: Record<EProductSubscriptionEnum, Rec
 export const SUBSCRIPTION_WEBPAGE_URLS: Record<EProductSubscriptionEnum, string> = {
   [EProductSubscriptionEnum.FREE]: TALK_TO_SALES_URL,
   [EProductSubscriptionEnum.ONE]: TALK_TO_SALES_URL,
-  [EProductSubscriptionEnum.PRO]: "https://plane.so/pro",
-  [EProductSubscriptionEnum.BUSINESS]: "https://plane.so/business",
-  [EProductSubscriptionEnum.ENTERPRISE]: "https://plane.so/business",
+  [EProductSubscriptionEnum.PRO]: TALK_TO_SALES_URL,
+  [EProductSubscriptionEnum.BUSINESS]: TALK_TO_SALES_URL,
+  [EProductSubscriptionEnum.ENTERPRISE]: TALK_TO_SALES_URL,
 };
