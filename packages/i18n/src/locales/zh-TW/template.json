@@ -162,7 +162,7 @@
           },
           "website": {
             "label": "網站 URL",
-            "placeholder": "https://plane.so",
+            "placeholder": "https://joincci.org",
             "validation": {
               "invalid": "無效的 URL",
               "maxLength": "URL 應少於 800 個字元"

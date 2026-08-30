@@ -162,7 +162,7 @@
           },
           "website": {
             "label": "URL веб-сайта",
-            "placeholder": "https://plane.so",
+            "placeholder": "https://joincci.org",
             "validation": {
               "invalid": "Некорректный URL",
               "maxLength": "URL должен быть менее 800 символов"

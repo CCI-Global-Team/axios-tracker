@@ -162,7 +162,7 @@
           },
           "website": {
             "label": "URL do site",
-            "placeholder": "https://plane.so",
+            "placeholder": "https://joincci.org",
             "validation": {
               "invalid": "URL inválida",
               "maxLength": "A URL deve ter menos de 800 caracteres"

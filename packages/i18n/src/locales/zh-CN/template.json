@@ -162,7 +162,7 @@
           },
           "website": {
             "label": "网站 URL",
-            "placeholder": "https://plane.so",
+            "placeholder": "https://joincci.org",
             "validation": {
               "invalid": "无效的 URL",
               "maxLength": "URL 应少于800个字符"

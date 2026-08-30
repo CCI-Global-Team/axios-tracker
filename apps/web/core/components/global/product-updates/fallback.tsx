@@ -16,8 +16,8 @@ export function ProductUpdatesFallback(props: TProductUpdatesFallbackProps) {
   // derived values
   const changelogUrl =
     variant === "cloud"
-      ? "https://plane.so/changelog?category=cloud"
-      : "https://plane.so/changelog?category=self-hosted";
+      ? "https://github.com/CCI-Global-Team/axios-tracker/releases"
+      : "https://github.com/CCI-Global-Team/axios-tracker/releases";
 
   return (
     <div className="py-8">

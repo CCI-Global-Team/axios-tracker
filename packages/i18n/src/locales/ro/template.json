@@ -162,7 +162,7 @@
           },
           "website": {
             "label": "URL site web",
-            "placeholder": "https://plane.so",
+            "placeholder": "https://joincci.org",
             "validation": {
               "invalid": "URL invalid",
               "maxLength": "URL-ul trebuie să fie mai mic de 800 de caractere"

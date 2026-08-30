@@ -162,7 +162,7 @@
           },
           "website": {
             "label": "Web sitesi URL'si",
-            "placeholder": "https://plane.so",
+            "placeholder": "https://joincci.org",
             "validation": {
               "invalid": "Geçersiz URL",
               "maxLength": "URL 800 karakterden az olmalıdır"

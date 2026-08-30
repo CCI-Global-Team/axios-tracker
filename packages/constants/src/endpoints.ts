@@ -28,6 +28,8 @@ export const WEBSITE_URL = process.env.VITE_WEBSITE_URL || "https://axios.joincc
 // support email
 export const SUPPORT_EMAIL = process.env.VITE_SUPPORT_EMAIL || "engineering@joincci.org";
 // marketing links
-export const MARKETING_PRICING_PAGE_LINK = "https://plane.so/pricing";
-export const MARKETING_CONTACT_US_PAGE_LINK = "https://plane.so/contact";
-export const MARKETING_PLANE_ONE_PAGE_LINK = "https://plane.so/one";
+// CCI: upstream marketing destinations. This instance has nothing to sell, and the
+// surfaces that used these are inert (see packages/constants/src/payment.ts).
+export const MARKETING_PRICING_PAGE_LINK = "/";
+export const MARKETING_CONTACT_US_PAGE_LINK = "mailto:engineering@joincci.org";
+export const MARKETING_PLANE_ONE_PAGE_LINK = "/";
