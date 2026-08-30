@@ -109,13 +109,13 @@ export const meta: Route.MetaFunction = () => [
   },
   { property: "og:url", content: "https://axios.joincci.org/" },
   { property: "og:image", content: ogImage },
-  { property: "og:image:width", content: "512" },
-  { property: "og:image:height", content: "512" },
+  { property: "og:image:width", content: "1200" },
+  { property: "og:image:height", content: "630" },
   { property: "og:image:alt", content: "Axios - CCI's engineering tracker" },
   {
     name: "keywords",
     content:
-      "software development, plan, ship, software, accelerate, code management, release management, project management, work item tracking, agile, scrum, kanban, collaboration",
+      "CCI, Axios, work item tracking, sprints, project management, volunteer availability, engineering",
   },
   { name: "twitter:card", content: "summary_large_image" },
   { name: "twitter:image", content: ogImage },

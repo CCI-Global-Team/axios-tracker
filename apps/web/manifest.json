@@ -1,12 +1,12 @@
 {
-  "theme_color": "#3579f6",
+  "theme_color": "#DF4E4E",
   "background_color": "#ffffff",
   "display": "standalone",
   "scope": "/",
   "start_url": "/",
-  "name": "Plane | Accelerate software development with peace.",
-  "short_name": "Plane",
-  "description": "Plane accelerated the software development by order of magnitude for agencies and product companies.",
+  "name": "Axios",
+  "short_name": "Axios",
+  "description": "CCI's engineering tracker.",
   "icons": [
     {
       "src": "/icon-192x192.png",

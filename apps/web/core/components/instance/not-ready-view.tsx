@@ -7,8 +7,10 @@
 import Link from "next/link";
 import { GOD_MODE_URL } from "@plane/constants";
 // assets
-import GradientLogo from "@/app/assets/auth/gradient-logo.webp?url";
-import GradientBgLogo from "@/app/assets/auth/gradient-bg-logo.webp?url";
+// CCI: these are the Axios mark, replacing upstream's Plane artwork. They are PNG rather than
+// upstream's WebP purely because the asset pipeline used to author them cannot emit WebP.
+import GradientLogo from "@/app/assets/auth/gradient-logo.png?url";
+import GradientBgLogo from "@/app/assets/auth/gradient-bg-logo.png?url";
 import DefaultLayout from "@/layouts/default-layout";
 import { PlaneLockup } from "@plane/propel/icons";
 import { Button } from "@plane/propel/button";
