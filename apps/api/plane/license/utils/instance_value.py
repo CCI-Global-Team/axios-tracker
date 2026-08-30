@@ -53,7 +53,11 @@ def get_email_configuration():
             {"key": "EMAIL_USE_SSL", "default": os.environ.get("EMAIL_USE_SSL", "0")},
             {
                 "key": "EMAIL_FROM",
-                "default": os.environ.get("EMAIL_FROM", "Team Plane <team@mailer.plane.so>"),
+                # CCI: upstream's fallback was "Team Plane <team@mailer.plane.so>" --
+                # Plane's own mail sending domain. This default is only used if
+                # EMAIL_FROM is unset; production should set it explicitly via the
+                # real SMTP configuration.
+                "default": os.environ.get("EMAIL_FROM", "Team Axios <team@axios.joincci.org>"),
             },
         ]
     )

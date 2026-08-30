@@ -12,18 +12,18 @@ SPECTACULAR_SETTINGS = {
     # ========================================================================
     # Basic API Information
     # ========================================================================
-    "TITLE": "The Plane REST API",
-    "DESCRIPTION": (
-        "The Plane REST API\n\n"
-        "Visit our quick start guide and full API documentation at "
-        "[developers.plane.so](https://developers.plane.so/api-reference/introduction)."
-    ),
-    "CONTACT": {
-        "name": "Plane",
-        "url": "https://plane.so",
-        "email": "support@plane.so",
-    },
+    "TITLE": "The Axios REST API",
+    # CCI: upstream's description linked out to developers.plane.so, Plane's own
+    # hosted API docs. Axios has no equivalent public docs site to point to, so
+    # the link is dropped rather than left pointing at the wrong product's docs.
+    "DESCRIPTION": "The Axios REST API.",
+    # CCI: upstream's CONTACT pointed at plane.so / support@plane.so. Axios has no
+    # public-facing support URL or email of its own, so those fields are left out
+    # rather than guessed.
+    "CONTACT": {"name": "Axios"},
     "VERSION": "0.0.1",
+    # Left pointing at the real upstream LICENSE text: this fork inherits the same
+    # AGPL-3.0 license, so the reference remains accurate. See brand-inventory §5.
     "LICENSE": {
         "name": "GNU AGPLv3",
         "url": "https://github.com/makeplane/plane/blob/preview/LICENSE.txt",
@@ -43,9 +43,11 @@ SPECTACULAR_SETTINGS = {
     # ========================================================================
     # Server Configuration
     # ========================================================================
+    # CCI: upstream's "Production" entry pointed at api.plane.so. The actual
+    # production URL for this fork's API was not established during this patch
+    # (see brand-inventory report), so it is left out rather than guessed.
     "SERVERS": [
         {"url": "http://localhost:8000", "description": "Local"},
-        {"url": "https://api.plane.so", "description": "Production"},
     ],
     # ========================================================================
     # API Tag Definitions
