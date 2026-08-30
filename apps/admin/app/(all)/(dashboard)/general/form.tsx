@@ -107,9 +107,9 @@ export const GeneralConfigurationForm = observer(function GeneralConfigurationFo
               </div>
             </div>
             <div className="grow">
-              <div className="text-13 leading-5 font-medium text-primary">Let Plane collect anonymous usage data</div>
+              <div className="text-13 leading-5 font-medium text-primary">Send anonymous usage data to Plane Software</div>
               <div className="text-11 leading-5 font-regular text-tertiary">
-                No PII is collected.This anonymized data is used to understand how you use Plane and build new features
+                No PII is collected. This is sent to Plane Software, Inc. — the upstream project — not to CCI, and it is off on this instance.
                 in line with{" "}
                 <a
                   href="https://developers.plane.so/self-hosting/telemetry"
