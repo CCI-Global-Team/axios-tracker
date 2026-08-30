@@ -67,7 +67,10 @@ export const BasePaidPlanCard = observer(function BasePaidPlanCard(props: TBaseP
           {prices.map((price: TSubscriptionPrice) => (
             <Tab.Panel key={price.key}>
               <div className="pt-6 text-center">
-                <div className="text-h4-medium">Plane {planeName}</div>
+                {/* CCI: upstream showed "Plane {tier}" here, naming Plane Cloud's own
+                    paid subscription tier. Axios does not sell these tiers, so the
+                    brand prefix is dropped rather than rewritten as "Axios {tier}". */}
+                <div className="text-h4-medium">{planeName}</div>
                 {renderActionButton(price)}
               </div>
               <div className="px-2 pt-6 pb-2">
