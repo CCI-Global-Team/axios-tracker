@@ -144,7 +144,7 @@ docker build -f apps/api/Dockerfile.api     -t $REG/plane-backend:$TAG  apps/api
 docker build -f apps/proxy/Dockerfile.ce    -t $REG/plane-proxy:$TAG    apps/proxy # context: apps/proxy
 ```
 
-For the tagging convention (`<upstream-tag>-cci-<n>`) and why it matters, plus pushing and deploying
+For the tagging convention (`<upstream-tag>-cci<N>`, e.g. `v1.4.2-cci1`) and why it matters, plus pushing and deploying
 these images, see `axios-tracker-ops/deploy/RUNBOOK.md` §5 and its new tagging-convention note.
 
 ## Where CCI's own code lives
