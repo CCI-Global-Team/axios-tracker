@@ -9,22 +9,33 @@ import * as React from "react";
 import type { ISvgIcons } from "../type";
 
 // Component name is upstream Plane's; the artwork drawn here is CCI's Axios mark (see docs/brand/axios-mark.svg).
-export function PlaneLogo({ width = "85", height = "52", className, color = "currentColor" }: ISvgIcons) {
+// The mark is two ribbons interlacing. The mask cuts the gap where the descending stroke passes under the
+// ascending one, so the over/under weave holds on any background rather than being painted with a ground colour.
+export function PlaneLogo({ width = "58", height = "52", className, color = "currentColor" }: ISvgIcons) {
   return (
     <svg
       width={width}
       height={height}
-      viewBox="0 0 100 60"
-      fill={color}
+      viewBox="12.5 16.5 75 67"
+      fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
     >
-      <g transform="translate(-176.9202,-73.5662) scale(3.540372)">
-        <path
-          d="M62.495,29.317C66.457,24.122 69.906,19.948 76.018,25.885C76.576,26.428 76.932,26.924 77.201,27.253C77.201,27.253 75.574,29.248 75.574,29.248C73.583,26.551 70.606,23.641 67.532,26.927C64.789,29.51 62.618,33.775 58.947,35.139C57.015,35.857 54.45,35.678 52.811,33.973C47.779,28.38 53.96,18.577 61.73,25.158C62.365,25.698 62.864,26.198 63.516,26.966C63.516,26.966 61.906,28.961 61.906,28.961C54.268,19.96 50.24,32.373 56.673,33.086C58.32,33.366 60.771,31.58 62.495,29.317Z"
-          fill={color}
-        />
-      </g>
+      <defs>
+        <mask id="axios-logo-weave" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
+          <rect width="100" height="100" fill="#fff" />
+          <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke="#000" strokeWidth="23" strokeLinecap="round" />
+        </mask>
+      </defs>
+      <path
+        d="M20,24 C44,24 56,76 80,76"
+        fill="none"
+        stroke={color}
+        strokeWidth="15"
+        strokeLinecap="round"
+        mask="url(#axios-logo-weave)"
+      />
+      <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke={color} strokeWidth="15" strokeLinecap="round" />
     </svg>
   );
 }
