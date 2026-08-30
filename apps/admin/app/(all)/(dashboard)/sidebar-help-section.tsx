@@ -7,7 +7,7 @@
 import { useState, useRef } from "react";
 import { observer } from "mobx-react";
 import Link from "next/link";
-import { HelpCircle, MessageSquare, MoveLeft } from "lucide-react";
+import { HelpCircle, MoveLeft } from "lucide-react";
 import { Transition } from "@headlessui/react";
 import { WEB_BASE_URL } from "@plane/constants";
 // plane internal packages
@@ -25,13 +25,8 @@ const helpOptions = [
     Icon: PageIcon,
   },
   {
-    name: "Join our Forum",
-    href: "https://forum.plane.so",
-    Icon: MessageSquare,
-  },
-  {
     name: "Report a bug",
-    href: "https://github.com/makeplane/plane/issues/new/choose",
+    href: "mailto:engineering@joincci.org",
     Icon: GithubIcon,
   },
 ];
