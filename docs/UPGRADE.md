@@ -78,6 +78,55 @@ chroma instead. Measured in OKLab, primary vs destructive is dE 0.161 in light a
 substituting literal `#DF4E4E` collapses that to **dE 0.071**, close enough to the delete button to
 be a hazard. The script guards against `--red-*` being caught by the rotation and fails loudly.
 
+## Things that make the next rebase easier
+
+Each of these exists because a past rebase-or-regenerate step went wrong once. They are cheap to
+keep and expensive to rediscover.
+
+**Regenerate rasters, never hand-edit them.** Every icon comes from `tools/` + `docs/brand/*.svg`.
+The SVGs are the source; the PNGs and the `.ico` are output. If a raster looks wrong, fix the SVG
+and regenerate — do not touch a PNG.
+
+**Rasterising with headless Chrome needs `--default-background-color=00000000`.** Without it Chrome
+composites onto opaque white, and the output has no alpha channel at all: every rounded corner comes
+out solid white. It is invisible against a white page and obvious everywhere else, and it shipped
+once. After regenerating, assert on pixels rather than eyeballing:
+
+```python
+from PIL import Image
+im = Image.open("axios-icon-512x512.png")
+assert im.mode == "RGBA", im.mode
+assert im.convert("RGBA").load()[0, 0][3] == 0, "corner is not transparent"
+```
+
+**Prefer `currentColor` over per-theme assets.** The loader was two GIFs, one per theme. As an
+inline SVG inheriting `currentColor` it is one component and zero assets, and a theme change cannot
+desynchronise it. The same reasoning retired the dark/light spinner pair. Any new brand asset that
+would need a light and a dark variant is probably better inline.
+
+**SMIL does not animate inside `<img>`.** Measured: ~150 changed pixels across a cycle in an
+`<img>`, against ~10,000 inlined in the DOM. If an animated mark is needed, inline it and drive it
+with CSS. Do not ship an animated SVG as an `<img src>` and assume it moves.
+
+**Keep component names, change only their contents.** `PlaneLockup`, `PlaneLogo`, `PlaneWordmark`
+and `PlaneNewIcon` keep upstream's names across 19 call sites. Every rename is a conflict at every
+call site on every future rebase, for nothing a user can see.
+
+**Grep the built bundle, not the source.** Upstream's third-party links contain no searchable brand
+word — `support@plane.so`, `forum.plane.so`, `app.plane.so/upgrade`, `makeplane/plane/issues` — and
+source greps have missed live ones that a bundle scan caught. The check that works:
+
+```bash
+docker exec <web-container> sh -c 'for s in plane.so/legals support@plane.so   app.plane.so/upgrade forum.plane.so status.plane.so makeplane/plane/issues; do   printf "%-26s %s
+" "$s" "$(grep -rl "$s" /usr/share/nginx/html | wc -l)"; done'
+```
+
+Every one of those should print `0`.
+
+**A clean typecheck proves almost nothing here.** This tree has twice built green and rendered
+broken — once with every string as a raw i18n key, once with white-cornered icons. Load the app and
+look at it before believing a build.
+
 ## What must never be done
 
 - Do not copy code from `makeplane/plane-ee` (private, proprietary).
