@@ -63,32 +63,8 @@ curl -s -o /dev/null -w '%{http_code}\n' \
 - **200** — working.
 - **403 with `{"detail":"Given API token is not valid"}`** — the token is wrong, revoked, or has a
   stray space. Note this is a 403, not the 401 you might expect.
-- **403 with a `Cf-Mitigated: challenge` response header** — you are being stopped at the CDN, not by
-  Axios. See below.
-
-## Why a WAF exception exists, and what it means for you
-
-Cloudflare's Super Bot Fight Mode challenges requests from non-browser clients. Before this was
-addressed, every ordinary API client was rejected at the edge:
-
-| Client User-Agent | Result |
-|---|---|
-| `node` | 403 `Cf-Mitigated: challenge` |
-| `axios/1.7.2` | 403 `Cf-Mitigated: challenge` |
-| `python-requests/2.31` | 403 `Cf-Mitigated: challenge` |
-| *(none)* | 403 |
-
-The failure is confusing because it looks like an authentication problem — the status code is the
-same one Axios returns for a bad token. **The `Cf-Mitigated` response header is what tells the two
-apart.**
-
-A custom WAF rule on the `joincci.org` zone now skips Super Bot Fight Mode for requests that both
-target `/api/v1/` and carry a non-empty `X-Api-Key` header. Managed rules (OWASP, SQLi, XSS) remain
-**on** — they were verified not to interfere with normal API traffic.
-
-The rule cannot validate your token; Cloudflare has no way to. It only checks the header is present.
-Real authentication happens in Axios, against the `APIToken` table. So the WAF exception is not a
-security boundary — it is only there to stop the CDN pre-empting one.
+- **403 with a `Cf-Mitigated: challenge` response header** — you are being stopped before reaching
+  Axios, so the token is not the problem. Flag it in the team Discord.
 
 ## Scope and limits
 

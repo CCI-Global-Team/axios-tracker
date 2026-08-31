@@ -7,7 +7,7 @@ carried on top of unmodified upstream tag `v1.4.2`.
 - **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — dev setup and the Windows symlink trap
 - **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — what CCI added and why
 - **[`docs/UPGRADE.md`](docs/UPGRADE.md)** — rebasing `cci/patches` onto a new upstream release
-- **[`docs/MCP.md`](docs/MCP.md)** — connecting an MCP client, and the Cloudflare WAF exception it needs
+- **[`docs/MCP.md`](docs/MCP.md)** — connecting an MCP client to Axios
 
 Operational/deployment docs (provisioning, backups, incident playbook) live in the private
 [`CCI-Global-Team/axios-tracker-ops`](https://github.com/CCI-Global-Team/axios-tracker-ops) repo,
