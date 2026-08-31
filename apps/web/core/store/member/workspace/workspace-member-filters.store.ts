@@ -24,6 +24,7 @@ interface IWorkspaceMembership {
 export interface IWorkspaceMemberFiltersStore {
   // observables
   filters: IMemberFilters;
+  availableHoursByMemberId: Record<string, number>;
   // computed actions
   getFilteredMemberIds: (
     members: IWorkspaceMembership[],
@@ -32,18 +33,25 @@ export interface IWorkspaceMemberFiltersStore {
   ) => string[];
   // actions
   updateFilters: (filters: Partial<IMemberFilters>) => void;
+  setAvailableHours: (hoursByMemberId: Record<string, number>) => void;
 }
 
 export class WorkspaceMemberFiltersStore implements IWorkspaceMemberFiltersStore {
   // observables
   filters: IMemberFilters = {};
+  // CCI: declared hours for the current week, keyed by member id. Lives here rather than in the
+  // column component because sorting happens in this store — a value the sort cannot see is a
+  // column that renders but cannot be ordered by.
+  availableHoursByMemberId: Record<string, number> = {};
 
   constructor() {
     makeObservable(this, {
       // observables
       filters: observable,
+      availableHoursByMemberId: observable,
       // actions
       updateFilters: action,
+      setAvailableHours: action,
     });
   }
 
@@ -62,7 +70,13 @@ export class WorkspaceMemberFiltersStore implements IWorkspaceMemberFiltersStore
       if (!members || members.length === 0) return [];
 
       // Apply filters and sorting
-      const sortedMembers = sortWorkspaceMembers(members, memberDetailsMap, getMemberKey, this.filters);
+      const sortedMembers = sortWorkspaceMembers(
+        members,
+        memberDetailsMap,
+        getMemberKey,
+        this.filters,
+        this.availableHoursByMemberId
+      );
 
       return sortedMembers.map(getMemberKey);
     }
@@ -74,5 +88,12 @@ export class WorkspaceMemberFiltersStore implements IWorkspaceMemberFiltersStore
    */
   updateFilters = (filters: Partial<IMemberFilters>) => {
     this.filters = { ...this.filters, ...filters };
+  };
+
+  /**
+   * @description record declared hours so the members table can sort by them
+   */
+  setAvailableHours = (hoursByMemberId: Record<string, number>) => {
+    this.availableHoursByMemberId = hoursByMemberId;
   };
 }

@@ -364,7 +364,8 @@
     "display_name": "Nome visualizzato",
     "email": "Email",
     "joining_date": "Data di adesione",
-    "role": "Ruolo"
+    "role": "Ruolo",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

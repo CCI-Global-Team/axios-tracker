@@ -32,8 +32,17 @@ export const parseOrderKey = (orderKey?: TMemberOrderByOptions): { field: string
 };
 
 // Unified function to get sort key for any member type
-export const getMemberSortKey = (memberDetails: IUserLite, field: string, memberRole?: string): string | Date => {
+export const getMemberSortKey = (
+  memberDetails: IUserLite,
+  field: string,
+  memberRole?: string,
+  availableHours?: number
+): string | Date | number => {
   switch (field) {
+    // CCI: an undeclared member sorts as -1, below a declared 0. "No answer yet" and "no time
+    // this week" are different facts and must not collapse into the same position.
+    case "available_hours":
+      return availableHours ?? -1;
     case "display_name":
       return memberDetails.display_name?.toLowerCase() || "";
     case "full_name": {
@@ -103,13 +112,14 @@ export const sortMembers = <T>(
   memberDetailsMap: Record<string, IUserLite>,
   getMemberKey: (member: T) => string,
   getMemberRole: (member: T) => string,
-  orderBy?: TMemberOrderByOptions
+  orderBy?: TMemberOrderByOptions,
+  availableHoursByMemberId?: Record<string, number>
 ): T[] => {
   if (!orderBy) return members;
 
   const { field, direction } = parseOrderKey(orderBy);
 
-  return [...members].sort((a, b) => {
+  return members.toSorted((a, b) => {
     const aKey = getMemberKey(a);
     const bKey = getMemberKey(b);
     const aMemberDetails = memberDetailsMap[aKey];
@@ -120,12 +130,14 @@ export const sortMembers = <T>(
     const aRole = getMemberRole(a);
     const bRole = getMemberRole(b);
 
-    const aValue = getMemberSortKey(aMemberDetails, field, aRole);
-    const bValue = getMemberSortKey(bMemberDetails, field, bRole);
+    const aValue = getMemberSortKey(aMemberDetails, field, aRole, availableHoursByMemberId?.[aKey]);
+    const bValue = getMemberSortKey(bMemberDetails, field, bRole, availableHoursByMemberId?.[bKey]);
 
     let comparison = 0;
 
-    if (field === "joining_date") {
+    if (field === "available_hours") {
+      comparison = Number(aValue) - Number(bValue);
+    } else if (field === "joining_date") {
       // For dates, we need to handle Date objects and ensure they're valid
       const aDate = aValue instanceof Date ? aValue : new Date(aValue);
       const bDate = bValue instanceof Date ? bValue : new Date(bValue);
@@ -174,7 +186,8 @@ export const sortWorkspaceMembers = <T extends { role: string | EUserPermissions
   members: T[],
   memberDetailsMap: Record<string, IUserLite>,
   getMemberKey: (member: T) => string,
-  filters?: IMemberFilters
+  filters?: IMemberFilters,
+  availableHoursByMemberId?: Record<string, number>
 ): T[] => {
   const filteredMembers =
     filters?.roles && filters.roles.length > 0 ? filterWorkspaceMembersByRole(members, filters.roles) : members;
@@ -188,6 +201,7 @@ export const sortWorkspaceMembers = <T extends { role: string | EUserPermissions
     memberDetailsMap,
     getMemberKey,
     (member) => String(member.role ?? ""),
-    filters.order_by
+    filters.order_by,
+    availableHoursByMemberId
   );
 };

@@ -364,7 +364,8 @@
     "display_name": "Görünen ad",
     "email": "E-posta",
     "joining_date": "Katılma tarihi",
-    "role": "Rol"
+    "role": "Rol",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

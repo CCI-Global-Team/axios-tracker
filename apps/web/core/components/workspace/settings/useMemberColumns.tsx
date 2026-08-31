@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 import { useParams } from "next/navigation";
 import { EUserPermissions, EUserPermissionsLevel, LOGIN_MEDIUM_LABELS } from "@plane/constants";
@@ -33,7 +33,7 @@ export const useMemberColumns = () => {
   const { allowPermissions } = useUserPermissions();
   const {
     workspace: {
-      filtersStore: { filters, updateFilters },
+      filtersStore: { filters, updateFilters, setAvailableHours },
     },
   } = useMember();
   const { t } = useTranslation();
@@ -49,6 +49,13 @@ export const useMemberColumns = () => {
   );
   const hoursByMemberId = new Map<string, number>();
   (availabilityRows || []).forEach((row) => hoursByMemberId.set(row.member_id, row.available_hours));
+
+  // Hand the same numbers to the store so the column is sortable. Without this the column
+  // renders correctly and its sort silently does nothing, which is worse than no sort at all.
+  useEffect(() => {
+    setAvailableHours(Object.fromEntries(hoursByMemberId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availabilityRows]);
 
   // derived values
   const isAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
@@ -166,7 +173,13 @@ export const useMemberColumns = () => {
           <div className="font-medium tabular-nums">{hours}h</div>
         );
       },
-      thRender: () => <div className="whitespace-nowrap">Available this week</div>,
+      thRender: () => (
+        <MemberHeaderColumn
+          property="available_hours"
+          displayFilters={filters}
+          handleDisplayFilterUpdate={handleDisplayFilterUpdate}
+        />
+      ),
     },
   ];
   return { columns, workspaceSlug, removeMemberModal, setRemoveMemberModal };

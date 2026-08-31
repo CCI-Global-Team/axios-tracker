@@ -26,6 +26,8 @@ type TRow = {
   avatarUrl: string;
   hours: number | null;
   note: string;
+  /** true when this value was carried from an earlier week rather than declared for this one */
+  isCarried: boolean;
 };
 
 type TProps = { workspaceSlug: string };
@@ -61,6 +63,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
           avatarUrl: details?.member?.avatar_url ?? "",
           hours: row ? row.available_hours : null,
           note: row?.note ?? "",
+          isCarried: row?.is_carried ?? false,
         };
       })
       .toSorted((a, b) => {
@@ -74,8 +77,13 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
       });
   }, [data, workspaceMemberIds, getWorkspaceMemberDetails]);
 
-  const declared = rows.filter((r) => r.hours !== null);
-  const totalHours = declared.reduce((sum, r) => sum + (r.hours ?? 0), 0);
+  // Three states, not two. "Told us this week", "standing commitment carried forward" and
+  // "never said" are different facts, and a lead chasing people needs the third separated from
+  // the other two.
+  const withHours = rows.filter((r) => r.hours !== null);
+  const declaredThisWeek = withHours.filter((r) => !r.isCarried);
+  const carried = withHours.filter((r) => r.isCarried);
+  const totalHours = withHours.reduce((sum, r) => sum + (r.hours ?? 0), 0);
 
   return (
     <div className="h-full w-full overflow-y-auto px-6 py-6 md:px-9">
@@ -120,9 +128,10 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
         </div>
 
         <div className="mb-5 flex flex-wrap gap-3">
-          <Summary label="Declared" value={`${declared.length} of ${rows.length}`} />
+          <Summary label="Declared this week" value={`${declaredThisWeek.length} of ${rows.length}`} />
+          <Summary label="Standing" value={`${carried.length}`} />
           <Summary label="Total hours" value={`${totalHours}h`} />
-          <Summary label="Not yet declared" value={`${rows.length - declared.length}`} muted />
+          <Summary label="No answer" value={`${rows.length - withHours.length}`} muted />
         </div>
 
         {isLoading && !data ? (
@@ -157,7 +166,14 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
                         `${row.hours}h`
                       )}
                     </td>
-                    <td className="px-4 py-2.5 text-secondary">{row.note}</td>
+                    <td className="px-4 py-2.5 text-secondary">
+                      {row.isCarried && (
+                        <span className="text-xs mr-2 rounded-sm bg-surface-2 px-1.5 py-0.5 text-tertiary">
+                          standing
+                        </span>
+                      )}
+                      {row.note}
+                    </td>
                   </tr>
                 ))}
                 {rows.length === 0 && (

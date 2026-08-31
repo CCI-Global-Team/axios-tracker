@@ -26,6 +26,11 @@ class MemberAvailability(BaseModel):
     week_start = models.DateField(help_text="Sunday that opens the week this declaration covers")
     available_hours = models.PositiveSmallIntegerField(default=0)
     note = models.CharField(max_length=255, blank=True)
+    # When set, this declaration carries into later weeks that have no row of their own. Without
+    # it the whole table empties every Sunday and someone with a steady commitment has to retype
+    # it 52 times a year. Deliberately opt-in: a carried value is a standing commitment the
+    # member chose, which is a different fact from silence, and a lead reads that difference.
+    is_persistent = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ["workspace", "member", "week_start", "deleted_at"]

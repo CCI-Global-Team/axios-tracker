@@ -115,6 +115,10 @@ export type TMemberAvailability = {
   week_start: string;
   available_hours: number;
   note: string;
+  /** the member asked for this to carry into later weeks until they change it */
+  is_persistent: boolean;
+  /** this row was written for an EARLIER week and carried forward into the one requested */
+  is_carried: boolean;
 };
 
 export interface ILastActiveWorkspaceDetails {

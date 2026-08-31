@@ -33,6 +33,7 @@ const clampHours = (raw: string): number => {
 type TSavedAvailability = {
   hours: string;
   note: string;
+  persist: boolean;
 };
 
 type TFocusedField = "hours" | "note" | null;
@@ -51,10 +52,11 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
   // state
   const [hours, setHours] = useState("");
   const [note, setNote] = useState("");
+  const [isPersistent, setIsPersistent] = useState(false);
 
   // refs — last-known-good values, in-flight/queued save bookkeeping, and per-field interaction
   // tracking, none of which should trigger re-renders on their own.
-  const lastSavedRef = useRef<TSavedAvailability>({ hours: "", note: "" });
+  const lastSavedRef = useRef<TSavedAvailability>({ hours: "", note: "", persist: false });
   const isSavingRef = useRef(false);
   const pendingSaveRef = useRef(false);
   const focusedFieldRef = useRef<TFocusedField>(null);
@@ -69,6 +71,7 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
   // closure, always reads the CURRENT value.
   const hoursRef = useRef("");
   const noteRef = useRef("");
+  const persistRef = useRef(false);
 
   // Tracks whether the component is still mounted. `handleSave` can be re-invoked asynchronously
   // from its own `finally` block (the queued-save mechanism below) well after the event that
@@ -104,7 +107,9 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
         const mine = rows.find((row) => row.member_id === currentUser?.id);
         const nextHours = mine ? String(mine.available_hours) : "";
         const nextNote = mine?.note ?? "";
-        lastSavedRef.current = { hours: nextHours, note: nextNote };
+        persistRef.current = mine?.is_persistent ?? false;
+        setIsPersistent(persistRef.current);
+        lastSavedRef.current = { hours: nextHours, note: nextNote, persist: persistRef.current };
         // Don't clobber a value the user already started typing before the prefill resolved.
         if (!hoursTouchedRef.current) {
           hoursRef.current = nextHours;
@@ -146,13 +151,15 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
     // which render's closure is asking, so they're always current.
     const hoursEmpty = hoursRef.current.trim() === "";
     const hadNoDeclarationYet = lastSavedRef.current.hours === "";
-    if (hoursEmpty && hadNoDeclarationYet && noteRef.current === lastSavedRef.current.note) return;
+    const persistUnchanged = persistRef.current === lastSavedRef.current.persist;
+    if (hoursEmpty && hadNoDeclarationYet && noteRef.current === lastSavedRef.current.note && persistUnchanged) return;
 
     const clampedHours = clampHours(hoursRef.current);
     const clampedHoursStr = String(clampedHours);
     const noteToSave = noteRef.current;
 
-    if (clampedHoursStr === lastSavedRef.current.hours && noteToSave === lastSavedRef.current.note) return;
+    if (clampedHoursStr === lastSavedRef.current.hours && noteToSave === lastSavedRef.current.note && persistUnchanged)
+      return;
 
     // Reflect the clamp in the field immediately so what's displayed matches what's sent.
     hoursRef.current = clampedHoursStr;
@@ -164,10 +171,11 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
         week_start: weekStartFor(),
         available_hours: clampedHours,
         note: noteToSave,
+        is_persistent: persistRef.current,
       });
       const savedHours = String(response.available_hours);
       const savedNote = response.note ?? "";
-      lastSavedRef.current = { hours: savedHours, note: savedNote };
+      lastSavedRef.current = { hours: savedHours, note: savedNote, persist: response.is_persistent ?? false };
       // Only apply the echo to a field that (a) isn't currently focused and (b) still holds
       // exactly what THIS request sent. Checking focus alone isn't enough: a field can be blurred
       // (no longer focused) with its new value queued for a follow-up save that hasn't gone out
@@ -282,6 +290,23 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
             onKeyDown={handleKeyDown}
             className="w-56 rounded-md border border-subtle-1 bg-transparent px-2 py-1.5 text-body-sm-regular text-primary"
           />
+          {/* Opt-in, and phrased as a commitment rather than a setting: a carried value should
+              mean "I said so", which is what makes it worth showing a lead differently from
+              silence. */}
+          <label className="flex cursor-pointer items-center gap-1.5 text-body-sm-regular whitespace-nowrap text-secondary">
+            <input
+              type="checkbox"
+              checked={isPersistent}
+              aria-label="Keep these hours for following weeks"
+              onChange={(e) => {
+                persistRef.current = e.target.checked;
+                setIsPersistent(e.target.checked);
+                void handleSave();
+              }}
+              className="size-3.5 cursor-pointer"
+            />
+            Keep for following weeks
+          </label>
         </div>
       }
     />

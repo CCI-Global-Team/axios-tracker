@@ -364,7 +364,8 @@
     "display_name": "表示名",
     "email": "メールアドレス",
     "joining_date": "参加日",
-    "role": "役割"
+    "role": "役割",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

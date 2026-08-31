@@ -154,7 +154,7 @@ export class WorkspaceService extends APIService {
 
   async updateMyAvailability(
     workspaceSlug: string,
-    data: { week_start: string; available_hours: number; note?: string }
+    data: { week_start?: string; available_hours: number; note?: string; is_persistent?: boolean }
   ): Promise<TMemberAvailability> {
     return this.post(`/api/workspaces/${workspaceSlug}/availability/`, data)
       .then((response) => response?.data)

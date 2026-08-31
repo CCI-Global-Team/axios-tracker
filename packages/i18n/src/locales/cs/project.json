@@ -364,7 +364,8 @@
     "display_name": "Zobrazované jméno",
     "email": "E-mail",
     "joining_date": "Datum připojení",
-    "role": "Role"
+    "role": "Role",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

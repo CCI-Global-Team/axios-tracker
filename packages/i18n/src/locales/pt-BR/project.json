@@ -364,7 +364,8 @@
     "display_name": "Nome de exibição",
     "email": "E-mail",
     "joining_date": "Data de entrada",
-    "role": "Cargo"
+    "role": "Cargo",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

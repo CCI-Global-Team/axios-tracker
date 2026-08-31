@@ -16,7 +16,10 @@ export type TMemberOrderByOptions =
   | "joining_date"
   | "-joining_date"
   | "role"
-  | "-role";
+  | "-role"
+  // CCI: declared hours for the current week
+  | "available_hours"
+  | "-available_hours";
 
 export interface IProjectMemberDisplayProperties {
   full_name: boolean;
@@ -24,6 +27,7 @@ export interface IProjectMemberDisplayProperties {
   email: boolean;
   joining_date: boolean;
   role: boolean;
+  available_hours: boolean;
 }
 
 export const MEMBER_PROPERTY_DETAILS: {
@@ -71,6 +75,17 @@ export const MEMBER_PROPERTY_DETAILS: {
     descendingOrderKey: "-joining_date",
     descendingOrderTitle: "New",
     iconName: "Calendar",
+    isSortingAllowed: true,
+  },
+  // CCI: hours declared for the current week. "Most" first is the useful default — the point of
+  // sorting by this column is to find who has capacity.
+  available_hours: {
+    i18n_title: "project_members.available_hours",
+    ascendingOrderKey: "available_hours",
+    ascendingOrderTitle: "Least",
+    descendingOrderKey: "-available_hours",
+    descendingOrderTitle: "Most",
+    iconName: "Clock",
     isSortingAllowed: true,
   },
   role: {

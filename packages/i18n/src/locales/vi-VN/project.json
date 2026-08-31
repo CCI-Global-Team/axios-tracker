@@ -364,7 +364,8 @@
     "display_name": "Tên hiển thị",
     "email": "Email",
     "joining_date": "Ngày tham gia",
-    "role": "Vai trò"
+    "role": "Vai trò",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

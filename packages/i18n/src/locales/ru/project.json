@@ -364,7 +364,8 @@
     "display_name": "Отображаемое имя",
     "email": "Email",
     "joining_date": "Дата присоединения",
-    "role": "Роль"
+    "role": "Роль",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

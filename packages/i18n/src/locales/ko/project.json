@@ -364,7 +364,8 @@
     "display_name": "표시 이름",
     "email": "이메일",
     "joining_date": "가입일",
-    "role": "역할"
+    "role": "역할",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

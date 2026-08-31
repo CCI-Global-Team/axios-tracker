@@ -364,7 +364,8 @@
     "display_name": "Nume afișat",
     "email": "Email",
     "joining_date": "Data înscrierii",
-    "role": "Rol"
+    "role": "Rol",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {

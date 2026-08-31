@@ -364,7 +364,8 @@
     "display_name": "Nama tampilan",
     "email": "Email",
     "joining_date": "Tanggal bergabung",
-    "role": "Peran"
+    "role": "Peran",
+    "available_hours": "Available this week"
   },
   "project": {
     "members_import": {
