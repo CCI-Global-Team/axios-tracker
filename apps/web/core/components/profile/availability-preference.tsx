@@ -250,50 +250,56 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
       title="Availability this week"
       description={weekDescription}
       control={
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min={MIN_HOURS}
-            max={MAX_HOURS}
-            step={1}
-            placeholder="0"
-            value={hours}
-            aria-label="Hours available this week"
-            onChange={(e) => {
-              hoursTouchedRef.current = true;
-              hoursRef.current = e.target.value;
-              setHours(e.target.value);
-            }}
-            onFocus={() => {
-              focusedFieldRef.current = "hours";
-            }}
-            onBlur={handleHoursBlur}
-            onKeyDown={handleKeyDown}
-            onWheel={(e) => e.currentTarget.blur()}
-            className="w-20 rounded-md border border-subtle-1 bg-transparent px-2 py-1.5 text-body-sm-regular text-primary"
-          />
-          <input
-            type="text"
-            maxLength={NOTE_MAX_LENGTH}
-            placeholder="Optional — e.g. evenings only"
-            value={note}
-            aria-label="Availability note"
-            onChange={(e) => {
-              noteTouchedRef.current = true;
-              noteRef.current = e.target.value;
-              setNote(e.target.value);
-            }}
-            onFocus={() => {
-              focusedFieldRef.current = "note";
-            }}
-            onBlur={handleNoteBlur}
-            onKeyDown={handleKeyDown}
-            className="w-56 rounded-md border border-subtle-1 bg-transparent px-2 py-1.5 text-body-sm-regular text-primary"
-          />
+        <div className="flex items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <span className="text-caption-sm-medium text-tertiary">Hours</span>
+            <input
+              type="number"
+              min={MIN_HOURS}
+              max={MAX_HOURS}
+              step={1}
+              placeholder="0"
+              value={hours}
+              aria-label="Hours available this week"
+              onChange={(e) => {
+                hoursTouchedRef.current = true;
+                hoursRef.current = e.target.value;
+                setHours(e.target.value);
+              }}
+              onFocus={() => {
+                focusedFieldRef.current = "hours";
+              }}
+              onBlur={handleHoursBlur}
+              onKeyDown={handleKeyDown}
+              onWheel={(e) => e.currentTarget.blur()}
+              className="w-20 rounded-md border border-subtle-1 bg-transparent px-2 py-1.5 text-body-sm-regular text-primary"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-caption-sm-medium text-tertiary">When you&apos;re free (optional)</span>
+            <input
+              type="text"
+              maxLength={NOTE_MAX_LENGTH}
+              placeholder="e.g. evenings after 7"
+              value={note}
+              aria-label="Availability note"
+              onChange={(e) => {
+                noteTouchedRef.current = true;
+                noteRef.current = e.target.value;
+                setNote(e.target.value);
+              }}
+              onFocus={() => {
+                focusedFieldRef.current = "note";
+              }}
+              onBlur={handleNoteBlur}
+              onKeyDown={handleKeyDown}
+              className="w-56 rounded-md border border-subtle-1 bg-transparent px-2 py-1.5 text-body-sm-regular text-primary"
+            />
+          </div>
           {/* Opt-in, and phrased as a commitment rather than a setting: a carried value should
               mean "I said so", which is what makes it worth showing a lead differently from
               silence. */}
-          <label className="flex cursor-pointer items-center gap-1.5 text-body-sm-regular whitespace-nowrap text-secondary">
+          <label className="flex h-[34px] cursor-pointer items-center gap-1.5 text-body-sm-regular whitespace-nowrap text-secondary">
             <input
               type="checkbox"
               checked={isPersistent}

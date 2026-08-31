@@ -28,6 +28,8 @@ type TRow = {
   note: string;
   /** true when this value was carried from an earlier week rather than declared for this one */
   isCarried: boolean;
+  /** when carried, the week it was actually declared in */
+  carriedFrom: string;
 };
 
 type TProps = { workspaceSlug: string };
@@ -64,6 +66,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
           hours: row ? row.available_hours : null,
           note: row?.note ?? "",
           isCarried: row?.is_carried ?? false,
+          carriedFrom: row?.source_week_start ?? "",
         };
       })
       .toSorted((a, b) => {
@@ -77,7 +80,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
       });
   }, [data, workspaceMemberIds, getWorkspaceMemberDetails]);
 
-  // Three states, not two. "Told us this week", "standing commitment carried forward" and
+  // Three states, not two. "Told us this week", "repeating until changed" and
   // "never said" are different facts, and a lead chasing people needs the third separated from
   // the other two.
   const withHours = rows.filter((r) => r.hours !== null);
@@ -129,7 +132,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
 
         <div className="mb-5 flex flex-wrap gap-3">
           <Summary label="Declared this week" value={`${declaredThisWeek.length} of ${rows.length}`} />
-          <Summary label="Standing" value={`${carried.length}`} />
+          <Summary label="Repeating" value={`${carried.length}`} />
           <Summary label="Total hours" value={`${totalHours}h`} />
           <Summary label="No answer" value={`${rows.length - withHours.length}`} muted />
         </div>
@@ -168,8 +171,19 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
                     </td>
                     <td className="px-4 py-2.5 text-secondary">
                       {row.isCarried && (
-                        <span className="text-xs mr-2 rounded-sm bg-surface-2 px-1.5 py-0.5 text-tertiary">
-                          standing
+                        // Bordered and tinted so it reads as an object rather than more note text
+                        // — the previous flat chip disappeared into whatever sat beside it. The
+                        // title carries the origin week: "repeats" says the number is not fresh,
+                        // the date says how stale, and staleness is what gets acted on.
+                        <span
+                          title={
+                            row.carriedFrom
+                              ? `Set in the week of ${formatWeekRange(row.carriedFrom)}, repeating until changed`
+                              : "Repeating until changed"
+                          }
+                          className="text-xs mr-2 inline-flex items-center rounded-full border border-subtle bg-surface-2 px-2 py-0.5 font-medium tracking-wide text-tertiary uppercase"
+                        >
+                          repeats
                         </span>
                       )}
                       {row.note}

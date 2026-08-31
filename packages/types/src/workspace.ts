@@ -119,6 +119,8 @@ export type TMemberAvailability = {
   is_persistent: boolean;
   /** this row was written for an EARLIER week and carried forward into the one requested */
   is_carried: boolean;
+  /** when carried, the week the declaration was actually made in */
+  source_week_start?: string;
 };
 
 export interface ILastActiveWorkspaceDetails {

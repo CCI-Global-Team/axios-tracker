@@ -89,10 +89,19 @@ class MemberAvailabilityViewSet(BaseAPIView):
         )
 
         payload = MemberAvailabilitySerializer(declared, many=True).data
-        for row in MemberAvailabilitySerializer(carried, many=True).data:
+        for source, row in zip(carried, MemberAvailabilitySerializer(carried, many=True).data):
             # Report the carried value against the week that was ASKED for, not the week it was
-            # written in — it is this week's effective number — but say that it was carried.
-            payload.append({**row, "week_start": week_start, "is_carried": True})
+            # written in — it is this week's effective number — but say that it was carried, and
+            # keep the week it actually came from. "Repeats" alone tells a lead the number is not
+            # fresh; the origin date tells them how stale, which is the part they act on.
+            payload.append(
+                {
+                    **row,
+                    "week_start": week_start,
+                    "is_carried": True,
+                    "source_week_start": source.week_start.isoformat(),
+                }
+            )
 
         return Response(payload, status=status.HTTP_200_OK)
 
