@@ -99,6 +99,14 @@ export function Layout({ children }: { children: ReactNode }) {
   );
 }
 
+const SITE_URL = "https://axios.joincci.org";
+
+// Open Graph requires og:image to be an ABSOLUTE url. Vite emits a fingerprinted
+// root-relative path ("/assets/og-image-<hash>.png"); Discord happens to resolve that
+// against og:url, but the spec does not permit it and other scrapers drop the image
+// outright. Prefix the canonical origin.
+const absoluteOgImage = `${SITE_URL}${ogImage}`;
+
 export const meta: Route.MetaFunction = () => [
   { title: APP_TITLE },
   { name: "description", content: SITE_DESCRIPTION },
@@ -107,20 +115,23 @@ export const meta: Route.MetaFunction = () => [
     property: "og:description",
     content: "CCI's internal tool for tracking work items, cycles, and product roadmaps.",
   },
-  { property: "og:url", content: "https://axios.joincci.org/" },
-  { property: "og:image", content: ogImage },
+  { property: "og:url", content: `${SITE_URL}/` },
+  { property: "og:image", content: absoluteOgImage },
   { property: "og:image:width", content: "1200" },
   { property: "og:image:height", content: "630" },
   { property: "og:image:alt", content: "Axios - CCI's engineering tracker" },
   {
     name: "keywords",
-    content:
-      "CCI, Axios, work item tracking, sprints, project management, volunteer availability, engineering",
+    content: "CCI, Axios, work item tracking, sprints, project management, volunteer availability, engineering",
   },
   { name: "twitter:card", content: "summary_large_image" },
-  { name: "twitter:image", content: ogImage },
-  { name: "twitter:image:width", content: "512" },
-  { name: "twitter:image:height", content: "512" },
+  { name: "twitter:image", content: absoluteOgImage },
+  // These MUST match the actual og-image.png (1200x630). They previously said
+  // 512x512 — carried over from icon512 when the image was swapped to the OG card —
+  // and Discord believes the declared dimensions over the file: it reserved a square
+  // frame and letterboxed the wide card into it, which is the "squished preview".
+  { name: "twitter:image:width", content: "1200" },
+  { name: "twitter:image:height", content: "630" },
   { name: "twitter:image:alt", content: "Axios - CCI's engineering tracker" },
 ];
 
