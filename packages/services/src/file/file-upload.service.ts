@@ -27,8 +27,30 @@ export class FileUploadService extends APIService {
    * @returns {Promise<void>} Promise resolving to void
    * @throws {Error} If the request fails
    */
-  async uploadFile(url: string, data: FormData): Promise<void> {
+  async uploadFile(url: string, data: FormData | File): Promise<void> {
     this.cancelSource = axios.CancelToken.source();
+
+    // A raw File means the backend signed a PUT (see generateFileUploadPayload). The request must
+    // be a PUT with the file as the body and a Content-Type matching what was signed — anything
+    // else fails the signature check rather than erroring in an obvious way.
+    if (data instanceof File) {
+      return this.put(url, data, {
+        headers: {
+          "Content-Type": data.type || "application/octet-stream",
+        },
+        cancelToken: this.cancelSource.token,
+        withCredentials: false,
+      })
+        .then((response) => response?.data)
+        .catch((error) => {
+          if (axios.isCancel(error)) {
+            console.log(error.message);
+          } else {
+            throw error?.response?.data;
+          }
+        });
+    }
+
     return this.post(url, data, {
       headers: {
         "Content-Type": "multipart/form-data",

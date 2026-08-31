@@ -55,7 +55,16 @@ const validateFilename = (filename: string): string | null => {
  * @param {File} file
  * @returns {FormData} file upload request payload
  */
-export const generateFileUploadPayload = (signedURLResponse: TFileSignedURLResponse, file: File): FormData => {
+export const generateFileUploadPayload = (
+  signedURLResponse: TFileSignedURLResponse,
+  file: File
+): FormData | File => {
+  // Cloudflare R2 does not implement the S3 POST Object API and answers 501 to the multipart form
+  // upload upstream builds here, which breaks every attachment, avatar and cover image. The backend
+  // signs a PUT for R2 and tells us so via upload_data.method; a PUT sends the file as the raw body,
+  // with no form fields at all. MinIO and S3 keep the POST path.
+  if (signedURLResponse.upload_data.method === "PUT") return file;
+
   const formData = new FormData();
   Object.entries(signedURLResponse.upload_data.fields).forEach(([key, value]) => formData.append(key, value));
   formData.append("file", file);

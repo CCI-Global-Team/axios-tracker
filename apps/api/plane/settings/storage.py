@@ -93,10 +93,50 @@ class S3Storage(S3Boto3Storage):
             )
         # Handle errors
         except ClientError as e:
-            print(f"Error generating presigned POST URL: {e}")
+            log_exception(e)
             return None
 
         return response
+
+    def generate_presigned_upload(self, object_name, file_type, file_size, expiration=None):
+        """Return an upload target the browser can actually use, for this storage backend.
+
+        Cloudflare R2 does not implement the S3 POST Object API (browser form uploads) — it answers
+        `501 Not Implemented` — so the presigned POST that upstream generates fails against R2 for
+        every attachment, avatar and cover image. R2 does support PUT, so on R2 we hand back a
+        presigned PUT URL instead.
+
+        The returned shape stays compatible with upstream's `upload_data`:
+          {"url": ..., "fields": {...}, "method": "POST"|"PUT"}
+        `method` is the discriminator the frontend switches on. MinIO and real S3 keep the POST
+        path, so nothing changes for them.
+        """
+        if os.environ.get("USE_MINIO") == "1":
+            post = self.generate_presigned_post(object_name, file_type, file_size, expiration)
+            if post is None:
+                return None
+            return {**post, "method": "POST"}
+
+        if expiration is None:
+            expiration = self.signed_url_expiration
+        try:
+            url = self.s3_client.generate_presigned_url(
+                ClientMethod="put_object",
+                Params={
+                    "Bucket": self.aws_storage_bucket_name,
+                    "Key": object_name,
+                    "ContentType": file_type,
+                },
+                ExpiresIn=expiration,
+                HttpMethod="PUT",
+            )
+        except ClientError as e:
+            log_exception(e)
+            return None
+
+        # `fields` stays present and empty so existing consumers that iterate it do not break.
+        # The browser must send Content-Type matching what was signed, or the signature fails.
+        return {"url": url, "fields": {}, "method": "PUT", "content_type": file_type}
 
     def _get_content_disposition(self, disposition, filename=None):
         """Helper method to generate Content-Disposition header value"""
