@@ -73,7 +73,8 @@
     "work": "Pekerjaan",
     "details": {
       "joined_on": "Bergabung pada",
-      "time_zone": "Zona waktu"
+      "time_zone": "Zona waktu",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Beban kerja",

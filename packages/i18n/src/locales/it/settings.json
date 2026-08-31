@@ -73,7 +73,8 @@
     "work": "Lavoro",
     "details": {
       "joined_on": "Iscritto il",
-      "time_zone": "Fuso orario"
+      "time_zone": "Fuso orario",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Carico di lavoro",

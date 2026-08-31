@@ -73,7 +73,8 @@
     "work": "İş",
     "details": {
       "joined_on": "Katılma tarihi",
-      "time_zone": "Saat Dilimi"
+      "time_zone": "Saat Dilimi",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "İş Yükü",

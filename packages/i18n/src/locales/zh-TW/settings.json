@@ -73,7 +73,8 @@
     "work": "工作",
     "details": {
       "joined_on": "加入於",
-      "time_zone": "時區"
+      "time_zone": "時區",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "工作量",

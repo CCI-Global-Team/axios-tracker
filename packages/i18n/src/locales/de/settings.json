@@ -73,7 +73,8 @@
     "work": "Arbeit",
     "details": {
       "joined_on": "Beigetreten am",
-      "time_zone": "Zeitzone"
+      "time_zone": "Zeitzone",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Auslastung",

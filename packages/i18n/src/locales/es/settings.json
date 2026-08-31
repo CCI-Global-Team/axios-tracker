@@ -73,7 +73,8 @@
     "work": "Trabajo",
     "details": {
       "joined_on": "Se unió el",
-      "time_zone": "Zona horaria"
+      "time_zone": "Zona horaria",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Carga de trabajo",

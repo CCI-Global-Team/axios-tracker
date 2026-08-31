@@ -73,7 +73,8 @@
     "work": "Работа",
     "details": {
       "joined_on": "Присоединился",
-      "time_zone": "Часовой пояс"
+      "time_zone": "Часовой пояс",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Нагрузка",

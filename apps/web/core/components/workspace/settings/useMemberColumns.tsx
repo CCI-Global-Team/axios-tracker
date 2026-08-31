@@ -5,6 +5,7 @@
  */
 
 import { useState } from "react";
+import useSWR from "swr";
 import { useParams } from "next/navigation";
 import { EUserPermissions, EUserPermissionsLevel, LOGIN_MEDIUM_LABELS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
@@ -15,6 +16,12 @@ import { AccountTypeColumn, NameColumn } from "@/components/workspace/settings/m
 import { useMember } from "@/hooks/store/use-member";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
 import type { IMemberFilters } from "@/store/member/utils";
+// lib
+import { weekStartFor } from "@/lib/availability-week";
+// services
+import { WorkspaceService } from "@/services/workspace.service";
+
+const workspaceService = new WorkspaceService();
 
 export const useMemberColumns = () => {
   // states
@@ -30,6 +37,18 @@ export const useMemberColumns = () => {
     },
   } = useMember();
   const { t } = useTranslation();
+
+  // CCI: declared hours for the current week, keyed by member id. Supplementary information —
+  // a failed request leaves the column showing a dash rather than blocking the members table,
+  // which is why this never throws into render.
+  const weekStart = weekStartFor();
+  const { data: availabilityRows } = useSWR(
+    workspaceSlug ? `WORKSPACE_MEMBER_AVAILABILITY_${workspaceSlug}_${weekStart}` : null,
+    workspaceSlug ? () => workspaceService.fetchMemberAvailability(workspaceSlug.toString(), weekStart) : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+  const hoursByMemberId = new Map<string, number>();
+  (availabilityRows || []).forEach((row) => hoursByMemberId.set(row.member_id, row.available_hours));
 
   // derived values
   const isAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
@@ -131,6 +150,23 @@ export const useMemberColumns = () => {
           handleDisplayFilterUpdate={handleDisplayFilterUpdate}
         />
       ),
+    },
+    {
+      // CCI: hours this member has declared for the current week. A dash means they have not
+      // declared — deliberately distinct from a declared 0.
+      key: "Available hours",
+      content: "Available this week",
+      thClassName: "text-left",
+      tdRender: (rowData: RowData) => {
+        if (isSuspended(rowData)) return null;
+        const hours = hoursByMemberId.get(rowData?.member?.id ?? "");
+        return hours === undefined ? (
+          <div className="text-tertiary">&mdash;</div>
+        ) : (
+          <div className="font-medium tabular-nums">{hours}h</div>
+        );
+      },
+      thRender: () => <div className="whitespace-nowrap">Available this week</div>,
     },
   ];
   return { columns, workspaceSlug, removeMemberModal, setRemoveMemberModal };

@@ -19,9 +19,16 @@ from plane.app.serializers.availability import MemberAvailabilitySerializer
 from plane.db.models import MemberAvailability, Workspace
 
 
-def current_monday():
+# CCI's week starts on SUNDAY — services are Sunday, so the ministry week begins there, and a
+# Monday anchor would split a weekend across two declarations. This is also what every user's
+# own `Profile.start_of_the_week` says (it defaults to Sunday), so the availability week and the
+# calendars elsewhere in the product now agree.
+#
+# Python's weekday() is Monday=0 … Sunday=6, so the offset back to the most recent Sunday is
+# (weekday + 1) % 7: Sunday itself → 0, Monday → 1, Saturday → 6.
+def current_week_start():
     today = timezone.localdate()
-    return today - timedelta(days=today.weekday())
+    return today - timedelta(days=(today.weekday() + 1) % 7)
 
 
 class MemberAvailabilityViewSet(BaseAPIView):
@@ -30,10 +37,12 @@ class MemberAvailabilityViewSet(BaseAPIView):
     def get_serializer_class(self):
         return MemberAvailabilitySerializer
 
-    @allow_permission([ROLE.ADMIN, ROLE.MEMBER, ROLE.GUEST], level="WORKSPACE")
+    # Guests are deliberately excluded: capacity is planning information for the people doing and
+    # allocating the work. Matches Analytics, the nearest comparable workspace-level view.
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
     def get(self, request, slug):
         """Declared availability for every member for one week (defaults to this week)."""
-        week_start = request.GET.get("week_start", current_monday().isoformat())
+        week_start = request.GET.get("week_start", current_week_start().isoformat())
         availabilities = MemberAvailability.objects.filter(
             workspace__slug=slug, week_start=week_start
         ).select_related("member")

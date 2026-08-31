@@ -73,7 +73,8 @@
     "work": "Work",
     "details": {
       "joined_on": "Joined on",
-      "time_zone": "Timezone"
+      "time_zone": "Timezone",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Workload",

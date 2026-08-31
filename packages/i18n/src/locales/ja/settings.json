@@ -73,7 +73,8 @@
     "work": "作業",
     "details": {
       "joined_on": "参加日",
-      "time_zone": "タイムゾーン"
+      "time_zone": "タイムゾーン",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "作業負荷",

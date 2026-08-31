@@ -7,6 +7,7 @@
 import { useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
+import useSWR from "swr";
 import { Disclosure, Transition } from "@headlessui/react";
 // plane imports
 import { useOutsideClickDetector } from "@plane/hooks";
@@ -28,6 +29,12 @@ import { useUser } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // components
 import { ProfileSidebarTime } from "./time";
+// lib
+import { weekStartFor } from "@/lib/availability-week";
+// services
+import { WorkspaceService } from "@/services/workspace.service";
+
+const profileWorkspaceService = new WorkspaceService();
 
 type TProfileSidebar = {
   userProjectsData: IUserProfileProjectSegregation | undefined;
@@ -39,7 +46,7 @@ export const ProfileSidebar = observer(function ProfileSidebar(props: TProfileSi
   // refs
   const ref = useRef<HTMLDivElement>(null);
   // router
-  const { userId } = useParams();
+  const { workspaceSlug, userId } = useParams();
   // store hooks
   const { data: currentUser } = useUser();
   const { profileSidebarCollapsed, toggleProfileSidebar } = useAppTheme();
@@ -58,6 +65,21 @@ export const ProfileSidebar = observer(function ProfileSidebar(props: TProfileSi
     }
   });
 
+  // CCI: this member's declared hours for the current week. Supplementary — if the request
+  // fails the row simply reads "Not declared", the same as if they had never declared.
+  const availabilityWeek = weekStartFor();
+  const { data: availabilityRows } = useSWR(
+    workspaceSlug ? `PROFILE_AVAILABILITY_${workspaceSlug}_${availabilityWeek}` : null,
+    workspaceSlug
+      ? () => profileWorkspaceService.fetchMemberAvailability(workspaceSlug.toString(), availabilityWeek)
+      : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+  // Match on the userId from the route, NOT userData.id — the user-profile endpoint's
+  // `user_data` has no id field at all (email, names, avatar, date_joined, timezone only), so
+  // comparing against it silently matched nothing and every profile read "Not declared".
+  const myAvailability = (availabilityRows || []).find((row) => row.member_id === userId?.toString());
+
   const userDetails = [
     {
       i18n_label: "profile.details.joined_on",
@@ -66,6 +88,17 @@ export const ProfileSidebar = observer(function ProfileSidebar(props: TProfileSi
     {
       i18n_label: "profile.details.time_zone",
       value: <ProfileSidebarTime timeZone={userData?.user_timezone} />,
+    },
+    {
+      i18n_label: "profile.details.available_this_week",
+      value: myAvailability ? (
+        <span>
+          {myAvailability.available_hours}h
+          {myAvailability.note ? <span className="text-secondary"> · {myAvailability.note}</span> : null}
+        </span>
+      ) : (
+        <span className="text-tertiary">Not declared</span>
+      ),
     },
   ];
 
@@ -82,6 +115,9 @@ export const ProfileSidebar = observer(function ProfileSidebar(props: TProfileSi
     window.addEventListener("resize", handleToggleProfileSidebar);
     handleToggleProfileSidebar();
     return () => window.removeEventListener("resize", handleToggleProfileSidebar);
+    // Pre-existing upstream effect. Adding the missing deps would change how often it re-runs,
+    // which is a behaviour change unrelated to this feature.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

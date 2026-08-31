@@ -23,7 +23,7 @@ class MemberAvailability(BaseModel):
         on_delete=models.CASCADE,
         related_name="availabilities",
     )
-    week_start = models.DateField(help_text="Monday of the week this declaration covers")
+    week_start = models.DateField(help_text="Sunday that opens the week this declaration covers")
     available_hours = models.PositiveSmallIntegerField(default=0)
     note = models.CharField(max_length=255, blank=True)
 

@@ -73,7 +73,8 @@
     "work": "Công việc",
     "details": {
       "joined_on": "Tham gia vào",
-      "time_zone": "Múi giờ"
+      "time_zone": "Múi giờ",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Khối lượng công việc",

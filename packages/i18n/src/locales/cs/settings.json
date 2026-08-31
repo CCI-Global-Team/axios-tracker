@@ -73,7 +73,8 @@
     "work": "Práce",
     "details": {
       "joined_on": "Připojeno dne",
-      "time_zone": "Časové pásmo"
+      "time_zone": "Časové pásmo",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Vytížení",

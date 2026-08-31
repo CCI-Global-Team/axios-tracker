@@ -72,6 +72,9 @@ export const coreRoutes: RouteConfigEntry[] = [
           route(":workspaceSlug/analytics/:tabId", "./(all)/[workspaceSlug]/(projects)/analytics/[tabId]/page.tsx"),
         ]),
 
+        // CCI: weekly volunteer availability
+        route(":workspaceSlug/availability", "./(all)/[workspaceSlug]/(projects)/availability/page.tsx"),
+
         // Browse
         layout("./(all)/[workspaceSlug]/(projects)/browse/[workItem]/layout.tsx", [
           route(":workspaceSlug/browse/:workItem", "./(all)/[workspaceSlug]/(projects)/browse/[workItem]/page.tsx"),

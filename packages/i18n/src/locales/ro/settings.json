@@ -73,7 +73,8 @@
     "work": "Muncă",
     "details": {
       "joined_on": "S-a înscris la",
-      "time_zone": "Fus orar"
+      "time_zone": "Fus orar",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Volum de muncă",

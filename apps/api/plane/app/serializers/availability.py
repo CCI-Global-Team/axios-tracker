@@ -20,9 +20,11 @@ class MemberAvailabilitySerializer(BaseSerializer):
         model = MemberAvailability
         fields = ["member_id", "display_name", "week_start", "available_hours", "note"]
 
+    # Sunday, per the CCI week — see current_week_start() in the view for why.
+    # Python's weekday(): Monday=0 … Sunday=6.
     def validate_week_start(self, value):
-        if value.weekday() != 0:
-            raise serializers.ValidationError("week_start must be a Monday")
+        if value.weekday() != 6:
+            raise serializers.ValidationError("week_start must be a Sunday")
         return value
 
     def validate_available_hours(self, value):

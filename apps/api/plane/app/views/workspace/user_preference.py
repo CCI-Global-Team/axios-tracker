@@ -50,6 +50,11 @@ class WorkspaceUserPreferenceViewSet(BaseAPIView):
                                     WorkspaceUserPreference.UserPreferenceKeys.DRAFTS,
                                     WorkspaceUserPreference.UserPreferenceKeys.YOUR_WORK,
                                     WorkspaceUserPreference.UserPreferenceKeys.STICKIES,
+                                    # CCI: pinned by default. An unpinned dynamic nav item does
+                                    # not render in the sidebar at all — it only appears in the
+                                    # customise-navigation dialog — so a new item nobody knows to
+                                    # look for would be invisible to every existing user.
+                                    WorkspaceUserPreference.UserPreferenceKeys.AVAILABILITY,
                                 ]
                                 else False
                             ),

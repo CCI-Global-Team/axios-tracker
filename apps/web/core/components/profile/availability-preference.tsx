@@ -15,18 +15,14 @@ import { SettingsControlItem } from "@/components/settings/control-item";
 import { useUser, useUserSettings } from "@/hooks/store/user";
 // services
 import { WorkspaceService } from "@/services/workspace.service";
+// lib
+import { formatWeekRange, weekStartFor } from "@/lib/availability-week";
 
 const workspaceService = new WorkspaceService();
 
 const MIN_HOURS = 0;
 const MAX_HOURS = 80;
 const NOTE_MAX_LENGTH = 255;
-
-const currentMonday = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-};
 
 const clampHours = (raw: string): number => {
   const parsed = Number(raw);
@@ -102,7 +98,7 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
       try {
         // Anchor the prefill fetch to the same client-derived Monday the save uses, so the GET
         // and the POST always agree on "this week" regardless of the server's own timezone.
-        const weekStart = currentMonday();
+        const weekStart = weekStartFor();
         const rows = await workspaceService.fetchMemberAvailability(workspaceSlug, weekStart);
         if (!isMounted) return;
         const mine = rows.find((row) => row.member_id === currentUser?.id);
@@ -165,7 +161,7 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
     isSavingRef.current = true;
     try {
       const response = await workspaceService.updateMyAvailability(workspaceSlug, {
-        week_start: currentMonday(),
+        week_start: weekStartFor(),
         available_hours: clampedHours,
         note: noteToSave,
       });
@@ -236,10 +232,15 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
 
   if (!workspaceSlug) return null;
 
+  // Name the actual span rather than leaving "this week" to be inferred. The week is anchored on
+  // Sunday and derived from the viewer's own clock, so an unlabelled "this week" is a claim the
+  // reader has no way to check — and the reader is who notices when it is wrong.
+  const weekDescription = `Week of ${formatWeekRange(weekStartFor())}. Tell your leads how many hours you can give. Update it whenever your week changes.`;
+
   return (
     <SettingsControlItem
       title="Availability this week"
-      description="Tell your leads how many hours you can give this week. Update it whenever your week changes."
+      description={weekDescription}
       control={
         <div className="flex items-center gap-2">
           <input

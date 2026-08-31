@@ -73,7 +73,8 @@
     "work": "Trabalho",
     "details": {
       "joined_on": "Entrou em",
-      "time_zone": "Fuso horário"
+      "time_zone": "Fuso horário",
+      "available_this_week": "Available this week"
     },
     "stats": {
       "workload": "Carga de trabalho",
