@@ -32,7 +32,10 @@ class Instance(BaseModel):
     last_checked_at = models.DateTimeField()
     namespace = models.CharField(max_length=255, blank=True, null=True)
     # telemetry and support
-    is_telemetry_enabled = models.BooleanField(default=True)
+    # CCI: opt-in, not opt-out. This ships usage data to Plane Software, Inc. at
+    # https://telemetry.plane.so (see plane/utils/otlp_endpoints.py) — a third party, not CCI.
+    # Upstream defaults it on, so a fresh instance would start sending without anyone choosing to.
+    is_telemetry_enabled = models.BooleanField(default=False)
     is_support_required = models.BooleanField(default=True)
     # is setup done
     is_setup_done = models.BooleanField(default=False)
