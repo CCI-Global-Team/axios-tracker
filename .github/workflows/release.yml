@@ -4,16 +4,18 @@
 # already published to GHCR; type a version to override.
 #
 # HOW THIS REACHES THE BOX
-# The Lightsail instance has no public CI ingress by design, and GitHub-hosted runners have
-# dynamic IPs, so there is no IP range to allow. The runner joins the tailnet as an ephemeral
-# node and connects over that. This is deliberately NOT "open SSH to the internet and store a
-# key": it means port 22 can be closed to the world entirely, so wiring up deployment leaves
-# the box less reachable than it is today, not more.
+# Straight SSH. Port 22 on the Lightsail instance is already reachable from the internet —
+# verified from a hosted runner before writing this — so CI deploying over it adds no exposure
+# that does not already exist. What protects it is key-only auth: sshd has
+# PasswordAuthentication no, PermitEmptyPasswords no, KbdInteractiveAuthentication no.
+#
+# That also means the deploy key in AXIOS_SSH_KEY is a real credential for the production
+# database host. Give it its own keypair rather than reusing a personal one, so it can be
+# revoked from authorized_keys without locking anybody out.
 #
 # Required repository secrets:
-#   TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET  Tailscale OAuth client, scope auth_keys, tag:ci
-#   AXIOS_SSH_KEY                         private half of the ubuntu@ deploy key
-#   AXIOS_HOST                            the box's tailnet address (e.g. 100.x.y.z)
+#   AXIOS_SSH_KEY   private half of a deploy keypair authorised for ubuntu@ on the box
+#   AXIOS_HOST      the box's address (13.49.176.148)
 name: Release
 
 on:
@@ -103,18 +105,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Join the tailnet
-        uses: tailscale/github-action@v3
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-          version: latest
-
       - name: Write the deploy key
         env:
           SSH_KEY: ${{ secrets.AXIOS_SSH_KEY }}
         run: |
+          # Fail here with a clear message rather than letting ssh fail later with
+          # "Permission denied (publickey)", which reads like the key is wrong rather
+          # than absent.
+          if [ -z "${SSH_KEY:-}" ]; then
+            echo "::error::AXIOS_SSH_KEY is not set - add it under Settings > Secrets"
+            exit 1
+          fi
           install -m 600 /dev/null "$RUNNER_TEMP/key"
           printf '%s\n' "$SSH_KEY" > "$RUNNER_TEMP/key"
 
