@@ -1,0 +1,52 @@
+# Reusable: move an Axios work item when a branch or pull request says so.
+#
+# Called by each product repo with a ten-line caller, so the logic lives in ONE place. Six copies
+# would drift, and the copy that drifts is the one nobody notices has stopped working.
+#
+# In the calling repo, .github/workflows/axios.yml:
+#
+#   name: Axios
+#   on:
+#     push:
+#     pull_request:
+#       types: [opened, reopened, closed]
+#   jobs:
+#     transition:
+#       uses: CCI-Global-Team/axios-tracker/.github/workflows/axios-transition.yml@cci/patches
+#       secrets:
+#         axios_bot_token: ${{ secrets.AXIOS_BOT_TOKEN }}
+#
+# The caller needs one secret: AXIOS_BOT_TOKEN, the Axios Bot's API token. Org-level secrets are
+# not available for private repos on a Free plan, so each repo carries its own copy.
+name: Axios work item transition
+
+on:
+  workflow_call:
+    secrets:
+      axios_bot_token:
+        required: true
+
+jobs:
+  transition:
+    runs-on: ubuntu-latest
+    # Never block a merge or a push. A PR with no ticket key is normal, and a red X on those
+    # would teach people to ignore this check entirely.
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: read   # to find sibling PRs before advancing to Ready for Test
+    steps:
+      - name: Fetch the transition script
+        # Checked out from THIS repo, not the caller's, so product repos carry no Axios logic.
+        uses: actions/checkout@v4
+        with:
+          repository: CCI-Global-Team/axios-tracker
+          ref: cci/patches
+          sparse-checkout: .github/scripts
+          sparse-checkout-cone-mode: false
+
+      - name: Transition
+        env:
+          AXIOS_BOT_TOKEN: ${{ secrets.axios_bot_token }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node .github/scripts/axios-transition.mjs

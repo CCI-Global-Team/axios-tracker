@@ -1,0 +1,19 @@
+# Moves the Axios work item named in a branch or PR.
+#
+#   branch created with a key in its name, or PR opened  ->  In Progress
+#   PR merged into the default branch                    ->  Ready for Test
+#
+# All the logic lives in the reusable workflow so the six repos share one implementation.
+# Requires one repository secret: AXIOS_BOT_TOKEN.
+name: Axios
+
+on:
+  push:
+  pull_request:
+    types: [opened, reopened, closed]
+
+jobs:
+  transition:
+    uses: ./.github/workflows/axios-transition.yml
+    secrets:
+      axios_bot_token: ${{ secrets.AXIOS_BOT_TOKEN }}
