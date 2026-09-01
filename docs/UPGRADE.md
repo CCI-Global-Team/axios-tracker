@@ -22,14 +22,14 @@ Then verify, in this order, because each catches a failure the previous one cann
 The patchset is 532 files against upstream, but that number badly overstates the work. What matters
 is which files conflict, and how hard each is to resolve.
 
-| Group | Files | On conflict |
-|---|---|---|
-| Locale JSON values | ~321 | **Take upstream**, then run `tools/reapply-cci-brand.py` |
-| Binary assets (icons, spinners, OG) | ~33 | **Take ours** — `git checkout --ours`. Binaries never merge. |
-| Theme ramp (`variables.css`) | 1 | **Take upstream**, then the script re-applies the hue rotation |
-| TS/JS code | ~76 | Resolve by hand. 34 of these are ≤4 lines. |
-| Python + email templates | ~44 | Resolve by hand |
-| Files we created outright | 37 | Cannot conflict |
+| Group                               | Files | On conflict                                                    |
+| ----------------------------------- | ----- | -------------------------------------------------------------- |
+| Locale JSON values                  | ~321  | **Take upstream**, then run `tools/reapply-cci-brand.py`       |
+| Binary assets (icons, spinners, OG) | ~33   | **Take ours** — `git checkout --ours`. Binaries never merge.   |
+| Theme ramp (`variables.css`)        | 1     | **Take upstream**, then the script re-applies the hue rotation |
+| TS/JS code                          | ~76   | Resolve by hand. 34 of these are ≤4 lines.                     |
+| Python + email templates            | ~44   | Resolve by hand                                                |
+| Files we created outright           | 37    | Cannot conflict                                                |
 
 Never hand-resolve the first three groups. They are wide, shallow and mechanical, and hand-resolving
 hundreds of hunks is how a subtle mistake gets in.
@@ -52,6 +52,15 @@ Measured over upstream's last 300 commits before v1.4.2:
   redraws their logo, take ours outright.
 
 ## Things that will silently regress if you are not looking for them
+
+**The instance error page's illustration.** `apps/web/app/assets/instance/maintenance-mode-{dark,light}.svg`
+are upstream artwork carrying Plane's mark in their blue `#2892CC`. Ours substitutes the Axios
+crossing (a `<g>` with `aria-label="Axios"`, mask id `axios-weave-{dark,light}`) into the glyph's
+box and recolours the card outline to `#DF4E4E`. Take ours on conflict.
+
+Easy to miss, because the page only appears when something is already wrong — and it appears on
+_every_ deploy, since a fresh image 502s for minutes while collectstatic runs. Check it by loading
+the site during that window, and check the BUILT image, not the source.
 
 **Credentials in the compose file.** Upstream's `docker-compose.yml` ships `DATABASE_URL` and
 `AMQP_URL` defaults that hardcode `plane:plane`, silently overriding generated secrets. We fixed
