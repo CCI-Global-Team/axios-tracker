@@ -23,6 +23,14 @@ on:
         description: "Release tag, e.g. 1.4.2-cci-9 (no leading v)"
         required: true
         type: string
+  # Callable so release.yml can build and then deploy without a second copy of the six
+  # build definitions — two copies would drift, and the one that drifts is the one that
+  # silently publishes a stale image.
+  workflow_call:
+    inputs:
+      release:
+        required: true
+        type: string
 
 permissions:
   contents: read

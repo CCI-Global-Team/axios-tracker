@@ -1,0 +1,191 @@
+# Cut a release: pick the version, build the six images, deploy them, tag the commit.
+#
+# Manually triggered. Leave `release` blank and it bumps the -cci-N suffix past the highest
+# already published to GHCR; type a version to override.
+#
+# HOW THIS REACHES THE BOX
+# The Lightsail instance has no public CI ingress by design, and GitHub-hosted runners have
+# dynamic IPs, so there is no IP range to allow. The runner joins the tailnet as an ephemeral
+# node and connects over that. This is deliberately NOT "open SSH to the internet and store a
+# key": it means port 22 can be closed to the world entirely, so wiring up deployment leaves
+# the box less reachable than it is today, not more.
+#
+# Required repository secrets:
+#   TS_OAUTH_CLIENT_ID / TS_OAUTH_SECRET  Tailscale OAuth client, scope auth_keys, tag:ci
+#   AXIOS_SSH_KEY                         private half of the ubuntu@ deploy key
+#   AXIOS_HOST                            the box's tailnet address (e.g. 100.x.y.z)
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Version to cut, e.g. 1.4.2-cci-10. Leave blank to bump the last one."
+        required: false
+        type: string
+      deploy:
+        description: "Deploy after building"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  version:
+    name: Pick version
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.pick.outputs.release }}
+    steps:
+      - id: pick
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REQUESTED: ${{ inputs.release }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+          published() {
+            gh api "orgs/${OWNER}/packages/container/plane-backend/versions" --paginate \
+              -q '.[].metadata.container.tags[]' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+-cci-[0-9]+$' || true
+          }
+
+          if [ -n "$REQUESTED" ]; then
+            RELEASE="$REQUESTED"
+          else
+            # GHCR is the source of truth for what exists, not git tags: the first nine
+            # releases were published before any tagging convention existed, so tags would
+            # under-count and hand back a version that is already taken.
+            LATEST=$(published | sort -t- -k3 -n | tail -1)
+            if [ -z "$LATEST" ]; then
+              echo "::error::no published 1.2.3-cci-N tags to bump from; pass a version explicitly"
+              exit 1
+            fi
+            BASE="${LATEST%-cci-*}"
+            N="${LATEST##*-cci-}"
+            RELEASE="${BASE}-cci-$((N + 1))"
+            echo "Latest published is $LATEST; cutting $RELEASE"
+          fi
+
+          if ! printf '%s' "$RELEASE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+-cci-[0-9]+$'; then
+            echo "::error::release '$RELEASE' must look like 1.4.2-cci-10 (no leading v)"
+            exit 1
+          fi
+
+          # Refuse to overwrite a published tag. Re-publishing a version already running in
+          # production changes what that name means, and the box keeps serving the old image
+          # until something forces a pull - the two then disagree silently.
+          if published | grep -qx "$RELEASE"; then
+            echo "::error::$RELEASE is already published - pick another"
+            exit 1
+          fi
+          echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: version
+    uses: ./.github/workflows/cci-images.yml
+    with:
+      release: ${{ needs.version.outputs.release }}
+    permissions:
+      contents: read
+      packages: write
+
+  deploy:
+    name: Deploy
+    needs: [version, build]
+    if: inputs.deploy
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Join the tailnet
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+          version: latest
+
+      - name: Write the deploy key
+        env:
+          SSH_KEY: ${{ secrets.AXIOS_SSH_KEY }}
+        run: |
+          install -m 600 /dev/null "$RUNNER_TEMP/key"
+          printf '%s\n' "$SSH_KEY" > "$RUNNER_TEMP/key"
+
+      - name: Deploy
+        env:
+          RELEASE: ${{ needs.version.outputs.release }}
+          HOST: ${{ secrets.AXIOS_HOST }}
+        run: |
+          set -euo pipefail
+          ssh -i "$RUNNER_TEMP/key" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+            "ubuntu@${HOST}" "RELEASE='${RELEASE}' bash -euo pipefail -s" < .github/deploy-remote.sh
+
+      - name: Wait for the API
+        env:
+          HOST: ${{ secrets.AXIOS_HOST }}
+        run: |
+          set -euo pipefail
+          # collectstatic runs on a fresh image and the API 502s for minutes while it does.
+          # That is expected, and it is why this polls instead of checking once.
+          for i in $(seq 1 60); do
+            CODE=$(ssh -i "$RUNNER_TEMP/key" -o StrictHostKeyChecking=accept-new "ubuntu@${HOST}" \
+              "curl -s -o /dev/null -w '%{http_code}' -H 'Host: axios.joincci.org' http://localhost/api/instances/" \
+              || echo 000)
+            if [ "$CODE" = "200" ]; then
+              echo "API healthy after $((i * 10))s"
+              exit 0
+            fi
+            echo "  api=$CODE, waiting..."
+            sleep 10
+          done
+          echo "::error::API did not return 200 within 10 minutes"
+          exit 1
+
+      - name: Report what is running
+        env:
+          HOST: ${{ secrets.AXIOS_HOST }}
+          RELEASE: ${{ needs.version.outputs.release }}
+        run: |
+          set -euo pipefail
+          ssh -i "$RUNNER_TEMP/key" -o StrictHostKeyChecking=accept-new "ubuntu@${HOST}" \
+            "cd ~/axios && docker compose -f deploy/docker-compose.yml --env-file deploy/.env ps --format '{{.Service}} {{.Image}}'" \
+            > running.txt
+          {
+            echo "## Deployed $RELEASE"
+            echo ""
+            sed 's/^/    /' running.txt
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Every CCI service must actually be on the new tag. `up -d` leaves a container
+          # alone when its config is unchanged, so a stale one here means the release only
+          # half-landed. Third-party images (postgres, valkey, caddy) are pinned separately
+          # and are not expected to match.
+          if grep "cci-global-team" running.txt | grep -qv ":${RELEASE}$"; then
+            echo "::error::some services are not on ${RELEASE}"
+            grep "cci-global-team" running.txt | grep -v ":${RELEASE}$" >&2
+            exit 1
+          fi
+
+  tag:
+    name: Tag the commit
+    needs: [version, build, deploy]
+    # Tag only what actually reached production, so release/<v> always means "this shipped".
+    if: always() && needs.build.result == 'success' && (needs.deploy.result == 'success' || needs.deploy.result == 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create the tag
+        env:
+          RELEASE: ${{ needs.version.outputs.release }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "release/${RELEASE}" -m "Axios ${RELEASE}"
+          git push origin "release/${RELEASE}"
