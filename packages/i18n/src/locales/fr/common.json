@@ -106,6 +106,8 @@
   "email_notification_setting_updated_successfully": "Paramètre de notification par e-mail mis à jour avec succès",
   "failed_to_update_email_notification_setting": "Échec de la mise à jour du paramètre de notification par e-mail",
   "notify_me_when": "Me notifier quand",
+  "assignment": "Assigned to me",
+  "assignment_description": "Email me when someone assigns a work item to me. Sent on its own, not batched with other updates.",
   "property_changes": "Modifications des propriétés",
   "property_changes_description": "Me notifier lorsque les propriétés des éléments de travail comme les acteurs, la priorité, les estimations ou autre changent.",
   "state_change": "Changement d’état",

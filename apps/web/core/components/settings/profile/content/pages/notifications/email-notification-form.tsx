@@ -61,6 +61,26 @@ export const NotificationsProfileSettingsForm = observer(function NotificationsP
   return (
     <div className="flex flex-col gap-y-1">
       <SettingsControlItem
+        title={t("assignment")}
+        description={t("assignment_description")}
+        control={
+          <Controller
+            control={control}
+            name="assignment"
+            render={({ field: { value, onChange } }) => (
+              <ToggleSwitch
+                value={value}
+                onChange={(newValue) => {
+                  onChange(newValue);
+                  handleSettingChange("assignment", newValue);
+                }}
+                size="sm"
+              />
+            )}
+          />
+        }
+      />
+      <SettingsControlItem
         title={t("property_changes")}
         description={t("property_changes_description")}
         control={

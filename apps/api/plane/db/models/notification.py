@@ -101,6 +101,10 @@ class UserNotificationPreference(BaseModel):
     )
 
     # preference fields
+    # CCI: assignment is its own preference rather than part of property_change. Being given a
+    # work item is a request aimed at one person; the rest are updates about one they already
+    # follow, and someone who mutes the latter usually still wants the former.
+    assignment = models.BooleanField(default=True)
     property_change = models.BooleanField(default=True)
     state_change = models.BooleanField(default=True)
     comment = models.BooleanField(default=True)

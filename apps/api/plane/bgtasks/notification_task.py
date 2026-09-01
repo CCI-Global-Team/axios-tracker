@@ -316,7 +316,15 @@ def notifications(
                 else:
                     sender = "in_app:issue_activities:subscribed"
 
-                preference = UserNotificationPreference.objects.get(user_id=subscriber)
+                # A subscriber with no preference row used to raise here. The raise was caught
+                # by the outer handler, which meant the loop stopped and the bulk_create at the
+                # end never ran - so EVERY recipient on this work item silently lost both their
+                # email and their in-app notification, with nothing surfaced. Rows are missing
+                # for any account created outside the normal signup path. Fall back to the
+                # model's own defaults instead.
+                preference = UserNotificationPreference.objects.filter(user_id=subscriber).first()
+                if preference is None:
+                    preference = UserNotificationPreference(user_id=subscriber)
 
                 for issue_activity in issue_activities_created:
                     # If activity done in blocking then blocked by email should not go
@@ -346,6 +354,15 @@ def notifications(
                     elif preference.property_change:
                         send_email = True
                     else:
+                        send_email = False
+
+                    # CCI: this subscriber's own assignment already went out as its own email
+                    # from track_assignees, so drop the digest copy - the same fact should not
+                    # arrive twice, once named and once as an anonymous line in a batch. Only
+                    # the email is suppressed; the in-app notification below still fires.
+                    if issue_activity.get("field") == "assignees" and str(
+                        issue_activity.get("new_identifier")
+                    ) == str(subscriber):
                         send_email = False
 
                     # If activity is of issue comment fetch the comment
