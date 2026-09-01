@@ -34,3 +34,15 @@ Prereq (once): `./setup.sh` — generates `apps/api/.env` from `.env.example`.
 - Teardown: `docker compose -f docker-compose-test.yml down -v`
 
 See `apps/api/tests/RUNNING_TESTS.md` for the full walkthrough and troubleshooting; see `apps/api/tests/TESTING_GUIDE.md` for test conventions and fixtures.
+
+## Gotchas
+
+**`.gitignore` swallows anything under a `scripts/` directory.** The ignore list carries a bare
+`scripts/`, which matches a directory of that name _at any depth_ — `.github/scripts` included.
+`git add` then skips those files silently, and the absence only surfaces wherever something tries
+to read them. Upstream hit this once already and handled it with `!packages/i18n/scripts/`; add
+the matching negation for any new such directory, and check with:
+
+```bash
+git check-ignore -v <path>   # exit 1 means tracked
+```
