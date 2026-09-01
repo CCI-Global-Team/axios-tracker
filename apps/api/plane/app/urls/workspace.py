@@ -37,6 +37,7 @@ from plane.app.views import (
     WorkspaceStickyViewSet,
     WorkspaceUserPreferenceViewSet,
     MemberAvailabilityViewSet,
+    MemberWorkloadEndpoint,
 )
 
 
@@ -263,5 +264,11 @@ urlpatterns = [
         "workspaces/<str:slug>/availability/",
         MemberAvailabilityViewSet.as_view(),
         name="member-availability",
+    ),
+    # CCI: open work items per member, shown beside declared hours when assigning
+    path(
+        "workspaces/<str:slug>/member-workload/",
+        MemberWorkloadEndpoint.as_view(),
+        name="member-workload",
     ),
 ]

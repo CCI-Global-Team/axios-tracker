@@ -78,6 +78,17 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
   );
   const hoursByMemberId = new Map<string, number>();
   (availabilityRows || []).forEach((row) => hoursByMemberId.set(row.member_id, row.available_hours));
+
+  // Open work items each member already holds, workspace-wide. Hours alone answer "who is free";
+  // hours beside load answer "who should take this". Same open-only gate as the availability
+  // fetch above.
+  const { data: workloadRows } = useSWR(
+    isOpen && workspaceSlug ? `WORKSPACE_MEMBER_WORKLOAD_${workspaceSlug}` : null,
+    isOpen && workspaceSlug ? () => memberOptionsWorkspaceService.fetchMemberWorkload(workspaceSlug.toString()) : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+  const openIssuesByMemberId = new Map<string, number>();
+  (workloadRows || []).forEach((row) => openIssuesByMemberId.set(row.member_id, row.open_issues));
   // plane hooks
   const { t } = useTranslation();
   // store hooks
@@ -146,9 +157,15 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
             {/* Silence is left blank rather than dashed: this is a picking surface, and a column
                 of dashes would add noise to every row without helping anyone choose. The roster
                 is where "who hasn't told us" gets answered. */}
-            {hoursByMemberId.has(userId) && (
+            {/* "15h · 4 open" — a declared figure beside a counted one. Separated rather than
+                subtracted because they are different KINDS of number: one is what the person
+                said, the other is what is true. Nothing in this edition denominates load in
+                hours, so an "hours left" would be invented arithmetic. */}
+            {(hoursByMemberId.has(userId) || openIssuesByMemberId.has(userId)) && (
               <span className="text-xs flex-shrink-0 whitespace-nowrap text-tertiary tabular-nums">
-                {hoursByMemberId.get(userId)}h
+                {hoursByMemberId.has(userId) && `${hoursByMemberId.get(userId)}h`}
+                {hoursByMemberId.has(userId) && openIssuesByMemberId.has(userId) && " · "}
+                {openIssuesByMemberId.has(userId) && `${openIssuesByMemberId.get(userId)} open`}
               </span>
             )}
           </div>

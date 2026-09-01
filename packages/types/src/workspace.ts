@@ -109,6 +109,12 @@ export interface IWorkspaceMemberMe {
   draft_issue_count: number;
 }
 
+export type TMemberWorkload = {
+  member_id: string;
+  /** work items assigned to them across the workspace that are neither done nor cancelled */
+  open_issues: number;
+};
+
 export type TMemberAvailability = {
   member_id: string;
   display_name: string;

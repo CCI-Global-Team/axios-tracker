@@ -27,6 +27,7 @@ import type {
   IWorkspaceSidebarNavigation,
   IWorkspaceUserPropertiesResponse,
   TMemberAvailability,
+  TMemberWorkload,
 } from "@plane/types";
 // services
 import { APIService } from "@/services/api.service";
@@ -146,6 +147,14 @@ export class WorkspaceService extends APIService {
     return this.get(`/api/workspaces/${workspaceSlug}/availability/`, {
       params: weekStart ? { week_start: weekStart } : undefined,
     })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async fetchMemberWorkload(workspaceSlug: string): Promise<TMemberWorkload[]> {
+    return this.get(`/api/workspaces/${workspaceSlug}/member-workload/`)
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;
