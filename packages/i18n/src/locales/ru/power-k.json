@@ -136,7 +136,8 @@
           "success": "Настройки успешно обновлены.",
           "error": "Не удалось обновить настройки. Пожалуйста, попробуйте снова."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Открыть горячие клавиши",

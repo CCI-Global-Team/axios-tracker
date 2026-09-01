@@ -136,7 +136,8 @@
           "success": "Preferencje zaktualizowano pomyślnie.",
           "error": "Nie udało się zaktualizować preferencji. Spróbuj ponownie."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Otwórz skróty klawiszowe",

@@ -136,7 +136,8 @@
           "success": "Preferencias actualizadas correctamente.",
           "error": "Error al actualizar las preferencias. Por favor, inténtalo de nuevo."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Abrir atajos de teclado",

@@ -136,7 +136,8 @@
           "success": "偏好設定更新成功。",
           "error": "偏好設定更新失敗，請再試一次。"
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "開啟鍵盤快速鍵",

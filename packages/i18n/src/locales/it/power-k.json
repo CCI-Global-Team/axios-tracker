@@ -136,7 +136,8 @@
           "success": "Preferenze aggiornate con successo.",
           "error": "Impossibile aggiornare le preferenze. Riprova."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Apri scorciatoie da tastiera",

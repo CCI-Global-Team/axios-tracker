@@ -136,7 +136,8 @@
           "success": "Налаштування успішно оновлено.",
           "error": "Не вдалося оновити налаштування. Спробуйте ще раз."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Відкрити гарячі клавіші",

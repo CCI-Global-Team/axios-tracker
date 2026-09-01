@@ -136,7 +136,8 @@
           "success": "Preferințele au fost actualizate cu succes.",
           "error": "Actualizarea preferințelor a eșuat. Te rugăm să încerci din nou."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Deschide scurtăturile de tastatură",

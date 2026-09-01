@@ -136,7 +136,8 @@
           "success": "Einstellungen erfolgreich aktualisiert.",
           "error": "Einstellungen konnten nicht aktualisiert werden. Bitte versuchen Sie es erneut."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Tastenkombinationen öffnen",

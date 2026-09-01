@@ -136,7 +136,8 @@
           "success": "Předvolby úspěšně aktualizovány.",
           "error": "Aktualizace předvoleb se nezdařila. Zkuste to prosím znovu."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Otevřít klávesové zkratky",

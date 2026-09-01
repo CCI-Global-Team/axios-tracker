@@ -136,7 +136,8 @@
           "success": "Predvoľby boli úspešne aktualizované.",
           "error": "Aktualizácia predvolieb zlyhala. Skúste to prosím znova."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Otvoriť klávesové skratky",

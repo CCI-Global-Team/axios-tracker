@@ -30,6 +30,8 @@ type TRow = {
   isCarried: boolean;
   /** when carried, the week it was actually declared in */
   carriedFrom: string;
+  /** the member marked this as repeating until they change it */
+  isRepeating: boolean;
 };
 
 type TProps = { workspaceSlug: string };
@@ -67,6 +69,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
           note: row?.note ?? "",
           isCarried: row?.is_carried ?? false,
           carriedFrom: row?.source_week_start ?? "",
+          isRepeating: row?.is_persistent ?? false,
         };
       })
       .toSorted((a, b) => {
@@ -84,8 +87,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
   // "never said" are different facts, and a lead chasing people needs the third separated from
   // the other two.
   const withHours = rows.filter((r) => r.hours !== null);
-  const declaredThisWeek = withHours.filter((r) => !r.isCarried);
-  const carried = withHours.filter((r) => r.isCarried);
+  const repeating = withHours.filter((r) => r.isRepeating);
   const totalHours = withHours.reduce((sum, r) => sum + (r.hours ?? 0), 0);
 
   return (
@@ -131,8 +133,8 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
         </div>
 
         <div className="mb-5 flex flex-wrap gap-3">
-          <Summary label="Declared this week" value={`${declaredThisWeek.length} of ${rows.length}`} />
-          <Summary label="Repeating" value={`${carried.length}`} />
+          <Summary label="Have hours" value={`${withHours.length} of ${rows.length}`} />
+          <Summary label="Repeating" value={`${repeating.length}`} />
           <Summary label="Total hours" value={`${totalHours}h`} />
           <Summary label="No answer" value={`${rows.length - withHours.length}`} muted />
         </div>
@@ -170,7 +172,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
                       )}
                     </td>
                     <td className="px-4 py-2.5 text-secondary">
-                      {row.isCarried && (
+                      {row.isRepeating && (
                         // Bordered and tinted so it reads as an object rather than more note text
                         // — the previous flat chip disappeared into whatever sat beside it. The
                         // title carries the origin week: "repeats" says the number is not fresh,
@@ -178,8 +180,8 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
                         <span
                           title={
                             row.carriedFrom
-                              ? `Set in the week of ${formatWeekRange(row.carriedFrom)}, repeating until changed`
-                              : "Repeating until changed"
+                              ? `Repeating — last set in the week of ${formatWeekRange(row.carriedFrom)}, carried forward`
+                              : "Repeating — set this week, and will carry into later weeks until changed"
                           }
                           className="text-xs mr-2 inline-flex items-center rounded-full border border-subtle bg-surface-2 px-2 py-0.5 font-medium tracking-wide text-tertiary uppercase"
                         >

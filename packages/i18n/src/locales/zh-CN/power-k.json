@@ -136,7 +136,8 @@
           "success": "偏好设置更新成功。",
           "error": "偏好设置更新失败。请重试。"
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "打开键盘快捷键",

@@ -136,7 +136,8 @@
           "success": "Preferences updated successfully.",
           "error": "Failed to update preferences. Please try again."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Open keyboard shortcuts",

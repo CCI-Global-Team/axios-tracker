@@ -136,7 +136,8 @@
           "success": "Preferensi berhasil diperbarui.",
           "error": "Gagal memperbarui preferensi. Silakan coba lagi."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Buka pintasan keyboard",

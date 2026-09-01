@@ -136,7 +136,8 @@
           "success": "Đã cập nhật tùy chọn thành công.",
           "error": "Không thể cập nhật tùy chọn. Vui lòng thử lại."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Mở phím tắt",

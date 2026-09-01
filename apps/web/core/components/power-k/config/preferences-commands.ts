@@ -5,8 +5,9 @@
  */
 
 import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { Calendar, Earth, Languages, Palette } from "lucide-react";
+import { Calendar, CalendarClock, Earth, Languages, Palette } from "lucide-react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
 import { setToast, TOAST_TYPE } from "@plane/propel/toast";
@@ -20,6 +21,7 @@ import { useUser, useUserProfile } from "@/hooks/store/user";
  * Preferences commands - Preferences related commands
  */
 export const usePowerKPreferencesCommands = (): TPowerKCommandConfig[] => {
+  const router = useRouter();
   // store hooks
   const { setTheme } = useTheme();
   const { updateCurrentUser } = useUser();
@@ -144,6 +146,17 @@ export const usePowerKPreferencesCommands = (): TPowerKCommandConfig[] => {
         const startOfWeek = data as EStartOfTheWeek;
         handleUpdateUserProfile({ start_of_the_week: startOfWeek });
       },
+      isEnabled: () => true,
+      isVisible: () => true,
+      closeOnSelect: true,
+    },
+    {
+      id: "update_availability",
+      type: "action",
+      group: "preferences",
+      i18n_title: "power_k.preferences_actions.update_availability",
+      icon: CalendarClock,
+      action: () => router.push("/settings/profile/preferences"),
       isEnabled: () => true,
       isVisible: () => true,
       closeOnSelect: true,

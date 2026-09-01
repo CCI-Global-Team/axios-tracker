@@ -136,7 +136,8 @@
           "success": "Tercihler başarıyla güncellendi.",
           "error": "Tercihler güncellenemedi. Lütfen tekrar deneyin."
         }
-      }
+      },
+      "update_availability": "Set your availability"
     },
     "help_actions": {
       "open_keyboard_shortcuts": "Klavye kısayollarını aç",
