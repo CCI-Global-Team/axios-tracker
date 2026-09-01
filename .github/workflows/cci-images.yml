@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       release: ${{ steps.pick.outputs.release }}
+      owner: ${{ steps.pick.outputs.owner }}
     steps:
       - id: pick
         run: |
@@ -49,7 +50,13 @@ jobs:
             exit 1
           fi
           echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
-          echo "Building release $RELEASE"
+
+          # Docker repository names must be lowercase, and the org is "CCI-Global-Team".
+          # Lowercased here rather than hardcoded so an org rename cannot silently publish to
+          # the wrong namespace.
+          OWNER=$(printf '%s' "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          echo "owner=$OWNER" >> "$GITHUB_OUTPUT"
+          echo "Building release $RELEASE for ghcr.io/$OWNER"
 
   build:
     name: ${{ matrix.image }}
@@ -104,7 +111,7 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ needs.release-name.outputs.release }}
+          tags: ghcr.io/${{ needs.release-name.outputs.owner }}/${{ matrix.image }}:${{ needs.release-name.outputs.release }}
           # image.source is what lets GitHub link the package to this repository. It does NOT
           # link automatically on first publish — that still needs one click per package in the
           # UI — but without the label the connection cannot be made at all.
