@@ -9,7 +9,7 @@ import { Tooltip } from "@plane/propel/tooltip";
 // helpers
 import { cn } from "../utils";
 import type { TAvatarSize } from "./helper";
-import { getBorderRadius, getSizeInfo, isAValidNumber } from "./helper";
+import { getAvatarFallbackColor, getBorderRadius, getSizeInfo, isAValidNumber } from "./helper";
 
 type Props = {
   /**
@@ -53,6 +53,11 @@ type Props = {
    * The custom CSS class name to apply to the component
    */
   className?: string;
+  /**
+   * Stable key used to pick the fallback colour, so a person keeps the same one when their
+   * display name changes. Falls back to `name`.
+   */
+  fallbackSeed?: string;
 };
 
 export function Avatar(props: Props) {
@@ -66,6 +71,7 @@ export function Avatar(props: Props) {
     shape = "circle",
     src,
     className = "",
+    fallbackSeed,
   } = props;
 
   // get size details based on the size prop
@@ -98,7 +104,7 @@ export function Avatar(props: Props) {
               className
             )}
             style={{
-              backgroundColor: fallbackBackgroundColor ?? "#028375",
+              backgroundColor: fallbackBackgroundColor ?? getAvatarFallbackColor(fallbackSeed ?? name ?? fallbackText),
               color: fallbackTextColor ?? "#ffffff",
             }}
           >

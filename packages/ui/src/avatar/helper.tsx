@@ -68,3 +68,37 @@ export const getBorderRadius = (shape: "circle" | "square") => {
  * @returns Whether the value is a valid number or not
  */
 export const isAValidNumber = (value: unknown) => typeof value === "number" && !isNaN(value);
+
+// CCI: a deterministic colour per person for the initial-letter fallback.
+//
+// Every fallback avatar used to be the same teal, so a list of people without profile pictures
+// read as one repeated blob and the initial was the only thing telling them apart. Colour does
+// most of that work before you read anything.
+//
+// Every entry clears 4.5:1 against the white initial (WCAG AA), so the letter stays legible on
+// all of them, and the hues are spread far enough apart to be told apart at 20px. The original
+// teal is kept first so existing avatars mostly do not change.
+export const AVATAR_FALLBACK_COLORS = [
+  "#028375", // teal
+  "#0B6FA4", // blue
+  "#4A5C9E", // indigo
+  "#6B4E9E", // purple
+  "#8C3F6B", // magenta
+  "#A03E5C", // rose
+  "#B04A2F", // burnt orange
+  "#A3612A", // amber
+  "#7A4E2D", // brown
+  "#3D6B35", // green
+  "#2E7D8F", // cyan
+  "#57606A", // slate
+];
+
+/** Stable colour for `seed`. The same person gets the same colour on every device and every
+ *  reload, which is the whole point - a colour that shuffles is worse than no colour. */
+export const getAvatarFallbackColor = (seed?: string) => {
+  if (!seed) return AVATAR_FALLBACK_COLORS[0];
+  // djb2. Not for security - just needs to be stable and to spread short strings well.
+  let hash = 5381;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 33) ^ seed.charCodeAt(i);
+  return AVATAR_FALLBACK_COLORS[Math.abs(hash) % AVATAR_FALLBACK_COLORS.length];
+};

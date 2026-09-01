@@ -60,6 +60,10 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
   // states
   const [query, setQuery] = useState("");
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+  // CCI: narrowing the list of candidates, not the search text. Kept as state rather than folded
+  // into `query` so a filter survives typing a name and clearing it again.
+  const [disciplineFilter, setDisciplineFilter] = useState<string | null>(null);
+  const [availableOnly, setAvailableOnly] = useState(false);
 
   // CCI: declared hours for the current week, shown beside each name so the person allocating
   // work can see capacity at the moment they choose — rather than having to leave, read the
@@ -89,6 +93,27 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
   );
   const openIssuesByMemberId = new Map<string, number>();
   (workloadRows || []).forEach((row) => openIssuesByMemberId.set(row.member_id, row.open_issues));
+
+  // What each candidate works on, so "who should take this" can be narrowed to the people who
+  // could actually do it. Same open-only gate as the two fetches above.
+  const { data: disciplineData } = useSWR(
+    isOpen && workspaceSlug ? `WORKSPACE_MEMBER_DISCIPLINES_${workspaceSlug}` : null,
+    isOpen && workspaceSlug
+      ? () => memberOptionsWorkspaceService.fetchMemberDisciplines(workspaceSlug.toString())
+      : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+  const disciplinesByMemberId = new Map<string, string[]>();
+  (disciplineData?.members || []).forEach((row) => disciplinesByMemberId.set(row.member_id, row.disciplines));
+  const disciplineLabel = new Map((disciplineData?.choices || []).map((c) => [c.value, c.label]));
+
+  // Offer only the disciplines somebody in THIS list actually has. Eleven chips in a 192px
+  // dropdown, nine of which match nobody, is a worse list than no chips.
+  const availableDisciplines = (disciplineData?.choices || []).filter((c) =>
+    (memberIds || []).some((id) => disciplinesByMemberId.get(id)?.includes(c.value))
+  );
+
+  const hasHours = (userId: string) => (hoursByMemberId.get(userId) ?? 0) > 0;
   // plane hooks
   const { t } = useTranslation();
   // store hooks
@@ -131,19 +156,35 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     }
   };
 
-  const options = memberIds
+  const visibleMemberIds = memberIds?.filter((userId) => {
+    if (availableOnly && !hasHours(userId)) return false;
+    if (disciplineFilter && !disciplinesByMemberId.get(userId)?.includes(disciplineFilter)) return false;
+    return true;
+  });
+
+  const options = visibleMemberIds
     ?.map((userId) => {
       const userDetails = getUserDetails(userId);
       return {
         value: userId,
-        query: `${userDetails?.display_name} ${userDetails?.first_name} ${userDetails?.last_name}`,
+        // Discipline labels join the search text, so typing "front" narrows to Frontend people
+        // without touching the chips - the two ways of narrowing compose rather than compete.
+        query: `${userDetails?.display_name} ${userDetails?.first_name} ${userDetails?.last_name} ${(
+          disciplinesByMemberId.get(userId) || []
+        )
+          .map((d) => disciplineLabel.get(d) ?? d)
+          .join(" ")}`,
         content: (
           <div className="flex items-center gap-2">
             <div className="w-4">
               {isUserSuspended(userId, workspaceSlug?.toString()) ? (
                 <SuspendedUserIcon className="h-3.5 w-3.5 text-placeholder" />
               ) : (
-                <Avatar name={userDetails?.display_name} src={getFileURL(userDetails?.avatar_url ?? "")} />
+                <Avatar
+                  name={userDetails?.display_name}
+                  src={getFileURL(userDetails?.avatar_url ?? "")}
+                  fallbackSeed={userId}
+                />
               )}
             </div>
             <span
@@ -206,6 +247,43 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
             onKeyDown={searchInputKeyDown}
           />
         </div>
+        {/* CCI: narrow the candidates before reading them. Only rendered once there is something
+            to narrow by, so the dropdown is unchanged for anyone whose workspace has no
+            disciplines recorded. Scrolls sideways rather than wrapping - a filter row that grows
+            to three lines pushes the people themselves out of view, which defeats it. */}
+        {(availableDisciplines.length > 0 || hoursByMemberId.size > 0) && (
+          <div className="mt-1.5 flex gap-1 overflow-x-auto pb-0.5 whitespace-nowrap">
+            {hoursByMemberId.size > 0 && (
+              <button
+                type="button"
+                onClick={() => setAvailableOnly((v) => !v)}
+                className={cn(
+                  "flex-shrink-0 rounded-sm border px-1.5 py-0.5 text-11",
+                  availableOnly
+                    ? "border-accent-strong bg-accent-primary text-on-color"
+                    : "border-subtle text-tertiary hover:text-secondary"
+                )}
+              >
+                Has hours
+              </button>
+            )}
+            {availableDisciplines.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setDisciplineFilter((v) => (v === c.value ? null : c.value))}
+                className={cn(
+                  "flex-shrink-0 rounded-sm border px-1.5 py-0.5 text-11",
+                  disciplineFilter === c.value
+                    ? "border-accent-strong bg-accent-primary text-on-color"
+                    : "border-subtle text-tertiary hover:text-secondary"
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="mt-2 max-h-48 space-y-1 overflow-y-scroll">
           {filteredOptions ? (
             filteredOptions.length > 0 ? (
@@ -242,7 +320,9 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
                   )
               )
             ) : (
-              <p className="px-1.5 py-1 text-placeholder italic">{t("no_matching_results")}</p>
+              <p className="px-1.5 py-1 text-placeholder italic">
+                {disciplineFilter || availableOnly ? "No one matches those filters" : t("no_matching_results")}
+              </p>
             )
           ) : (
             <p className="px-1.5 py-1 text-placeholder italic">{t("loading")}</p>
