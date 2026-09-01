@@ -38,11 +38,6 @@ jobs:
     steps:
       - name: Fetch the transition script
         # From THIS repo, not the caller's, so product repos carry no Axios logic.
-        #
-        # A shallow full checkout rather than sparse: sparse-checkout silently produced a tree
-        # WITHOUT the script, and the failure surfaced a step later as "Cannot find module" —
-        # a checkout that succeeds while omitting the thing it was for is not worth the seconds
-        # it saves.
         uses: actions/checkout@v4
         with:
           repository: CCI-Global-Team/axios-tracker
@@ -50,7 +45,11 @@ jobs:
           fetch-depth: 1
 
       - name: Verify the script is present
-        # Fail here, naming the cause, rather than letting node report a missing module.
+        # A checkout can succeed while omitting the one file it exists to fetch — Plane's
+        # .gitignore has a bare `scripts/` that matches .github/scripts at any depth, so the
+        # script was untracked and every checkout came back without it. Two rounds went into
+        # blaming the checkout because node reported it a step later as "Cannot find module".
+        # Fail here instead, naming the cause.
         run: test -f .github/scripts/axios-transition.mjs || {
           echo "::error::transition script missing from the checkout"; exit 1; }
 
