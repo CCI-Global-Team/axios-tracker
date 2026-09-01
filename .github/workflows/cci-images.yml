@@ -1,0 +1,145 @@
+# Build and publish the six CCI images to GHCR.
+#
+# Until now these were built on one laptop and pushed by hand. That worked, but it meant only
+# that machine could cut a release — and a restart mid-build lost the whole thing.
+#
+# Two ways to run:
+#   - push a tag named  release/1.4.2-cci-9   (leaves an audit trail on the repo)
+#   - Actions -> this workflow -> Run workflow, and type the release
+#
+# Both derive ONE release string, which becomes the image tag and goes straight into
+# APP_RELEASE in deploy/.env on the box. See axios-tracker-ops/deploy/RUNBOOK.md.
+#
+# Actions minutes are free and unmetered on public repositories, so the org's billing state
+# does not gate this. That is why the fork being public matters beyond the AGPL obligation.
+name: CCI images
+
+on:
+  push:
+    tags: ["release/*"]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: "Release tag, e.g. 1.4.2-cci-9 (no leading v)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release-name:
+    name: Resolve release
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.pick.outputs.release }}
+    steps:
+      - id: pick
+        run: |
+          if [ -n "${{ inputs.release }}" ]; then
+            RELEASE="${{ inputs.release }}"
+          else
+            # refs/tags/release/1.4.2-cci-9 -> 1.4.2-cci-9
+            RELEASE="${GITHUB_REF#refs/tags/release/}"
+          fi
+          # A malformed tag would publish six images nobody can find, so fail loudly instead.
+          if ! printf '%s' "$RELEASE" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+-cci-[0-9]+$'; then
+            echo "::error::release '$RELEASE' must look like 1.4.2-cci-9 (no leading v)"
+            exit 1
+          fi
+          echo "release=$RELEASE" >> "$GITHUB_OUTPUT"
+          echo "Building release $RELEASE"
+
+  build:
+    name: ${{ matrix.image }}
+    needs: release-name
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false   # one image failing should not hide whether the others build
+      matrix:
+        include:
+          # Contexts differ per image and are NOT all the repo root — api and proxy build from
+          # their own directories. Taken from upstream's own build-branch.yml.
+          - image: plane-backend
+            context: ./apps/api
+            dockerfile: ./apps/api/Dockerfile.api
+          - image: plane-frontend
+            context: .
+            dockerfile: ./apps/web/Dockerfile.web
+          - image: plane-admin
+            context: .
+            dockerfile: ./apps/admin/Dockerfile.admin
+          - image: plane-space
+            context: .
+            dockerfile: ./apps/space/Dockerfile.space
+          - image: plane-live
+            context: .
+            dockerfile: ./apps/live/Dockerfile.live
+          - image: plane-proxy
+            context: ./apps/proxy
+            dockerfile: ./apps/proxy/Dockerfile.ce
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The web build reads locale chunks through a git symlink at packages/i18n/locales.
+          # Without symlink support that lands as an 11-byte text file, no locales are emitted,
+          # every string renders as a raw i18n key — and the build still exits 0.
+          submodules: false
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/${{ matrix.image }}:${{ needs.release-name.outputs.release }}
+          # image.source is what lets GitHub link the package to this repository. It does NOT
+          # link automatically on first publish — that still needs one click per package in the
+          # UI — but without the label the connection cannot be made at all.
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=${{ needs.release-name.outputs.release }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  summary:
+    name: Release summary
+    needs: [release-name, build]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          R="${{ needs.release-name.outputs.release }}"
+          {
+            echo "## CCI images \`$R\`"
+            echo
+            if [ "${{ needs.build.result }}" = "success" ]; then
+              echo "All six images published. To deploy, on the Lightsail box:"
+              echo
+              echo '```bash'
+              echo "cd ~/axios && sed -i \"s/^APP_RELEASE=.*/APP_RELEASE=$R/\" deploy/.env"
+              echo "docker compose -f deploy/docker-compose.yml --env-file deploy/.env pull"
+              echo "docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d"
+              echo '```'
+              echo
+              echo "The API 502s for a few minutes afterwards while collectstatic runs. That is"
+              echo "not a failure — wait for it before concluding anything."
+            else
+              echo "Build did not fully succeed — do NOT bump APP_RELEASE."
+              echo "A partial release leaves some images at this tag and others missing, and"
+              echo "compose will fail to pull rather than silently run a mixed set."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
