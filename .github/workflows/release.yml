@@ -125,8 +125,14 @@ jobs:
           HOST: ${{ secrets.AXIOS_HOST }}
         run: |
           set -euo pipefail
-          ssh -i "$RUNNER_TEMP/key" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
-            "ubuntu@${HOST}" "RELEASE='${RELEASE}' bash -euo pipefail -s" < .github/deploy-remote.sh
+          SSHOPTS=(-i "$RUNNER_TEMP/key" -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20)
+          # Copy the script and run it as a FILE. Piping it to `bash -s` looks equivalent and
+          # is not: backup.sh runs `docker compose exec -T`, which inherits stdin and
+          # cheerfully swallowed the rest of this script. The deploy then "succeeded" having
+          # done nothing past the backup, and exited 0.
+          scp "${SSHOPTS[@]}" .github/deploy-remote.sh "ubuntu@${HOST}:/tmp/axios-deploy.sh"
+          ssh "${SSHOPTS[@]}" "ubuntu@${HOST}" \
+            "RELEASE='${RELEASE}' bash -euo pipefail /tmp/axios-deploy.sh"
 
       - name: Wait for the API
         env:
