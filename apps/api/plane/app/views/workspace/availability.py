@@ -30,13 +30,9 @@ from plane.db.models import MemberAvailability, Workspace
 def week_start_for(user=None):
     """The Sunday opening the current week, in the MEMBER's timezone.
 
-    The week has to be derived somewhere, and doing it on the client meant the writer and the
-    reader could disagree: the browser computed a local Sunday while the server computed a UTC
-    one. Across the Saturday-Sunday boundary those differ, so a volunteer in Lagos declaring late
-    Saturday wrote next week's row and one in Dallas wrote last week's — and both then reported
-    that they had set their availability and it wasn't showing.
-
-    Deriving it here, from the member's own timezone, gives one answer that both sides share.
+    Derived here rather than on the client so writer and reader cannot disagree: a browser-local
+    Sunday and a UTC one differ across the Saturday-Sunday boundary, which put declarations in
+    the wrong week for anyone far enough east or west.
     """
     tz = None
     user_timezone = getattr(user, "user_timezone", None)

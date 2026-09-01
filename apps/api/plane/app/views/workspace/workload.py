@@ -16,19 +16,13 @@ from plane.db.models import Issue
 
 
 class MemberWorkloadEndpoint(BaseAPIView):
-    """CCI: how many open work items each member currently holds, workspace-wide.
+    """CCI: how many open work items each member holds, workspace-wide.
 
-    Pairs with the availability endpoint. Declared hours alone answer "who is free"; hours beside
-    current load answer "who should take this", which is the question actually being asked at the
-    moment of assignment.
+    A count, not hours: nothing in this edition denominates load in hours (time estimates are
+    Enterprise-only, worklogs do not exist), so an "hours remaining" would be invented.
 
-    Deliberately a COUNT, not an hours figure. Community Edition has no hours-denominated load
-    anywhere — the `time` estimate system is Enterprise-only and worklogs do not exist — so any
-    "hours remaining" would be invented. A count is a real number that means what it says.
-
-    Workspace-wide rather than per-project on purpose: someone assigning in one project still
-    needs to know what the person is carrying everywhere else, or the number understates and the
-    view does harm rather than nothing.
+    Workspace-wide rather than per-project, because a number that understates load is worse than
+    no number — it gets trusted.
     """
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
