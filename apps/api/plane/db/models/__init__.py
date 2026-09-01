@@ -92,3 +92,4 @@ from .sticky import Sticky
 from .description import Description, DescriptionVersion
 
 from .availability import MemberAvailability
+from .discipline import DISCIPLINE_CHOICES, DISCIPLINE_VALUES, MemberDiscipline

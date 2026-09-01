@@ -18,6 +18,7 @@ import { useUser, useUserPermissions } from "@/hooks/store/user";
 import type { IMemberFilters } from "@/store/member/utils";
 // lib
 import { weekStartFor } from "@/lib/availability-week";
+import { DisciplineCell } from "@/components/discipline/discipline-cell";
 // services
 import { WorkspaceService } from "@/services/workspace.service";
 
@@ -57,8 +58,31 @@ export const useMemberColumns = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availabilityRows]);
 
+  // CCI: what each member works on. Same supplementary treatment as the hours above - a failed
+  // request leaves the column empty rather than taking the members table down with it.
+  const disciplineKey = workspaceSlug ? `WORKSPACE_MEMBER_DISCIPLINES_${workspaceSlug}` : null;
+  const { data: disciplineData, mutate: mutateDisciplines } = useSWR(
+    disciplineKey,
+    workspaceSlug ? () => workspaceService.fetchMemberDisciplines(workspaceSlug.toString()) : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+  const disciplineChoices = disciplineData?.choices ?? [];
+  const disciplineByMemberId = new Map<string, { disciplines: string[]; source: string }>();
+  (disciplineData?.members ?? []).forEach((row) =>
+    disciplineByMemberId.set(row.member_id, { disciplines: row.disciplines, source: row.source })
+  );
+
   // derived values
   const isAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
+
+  const handleDisciplineChange = async (memberId: string, disciplines: string[]) => {
+    if (!workspaceSlug) return;
+    await workspaceService.updateMemberDisciplines(workspaceSlug.toString(), {
+      member_id: memberId,
+      disciplines,
+    });
+    await mutateDisciplines();
+  };
 
   // oxlint-disable-next-line unicorn/consistent-function-scoping
   const isSuspended = (rowData: RowData) => rowData.is_active === false;
@@ -180,6 +204,29 @@ export const useMemberColumns = () => {
           handleDisplayFilterUpdate={handleDisplayFilterUpdate}
         />
       ),
+    },
+    {
+      // CCI: what this member works on. Separate from project membership on purpose - a project
+      // says which product someone can be assigned work in, this says what kind of work suits
+      // them, and someone can be Frontend across all three products at once.
+      key: "Discipline",
+      content: "Discipline",
+      thClassName: "text-left",
+      tdRender: (rowData: RowData) => {
+        if (isSuspended(rowData)) return null;
+        const memberId = rowData?.member?.id ?? "";
+        const row = disciplineByMemberId.get(memberId);
+        return (
+          <DisciplineCell
+            memberId={memberId}
+            value={row?.disciplines ?? []}
+            choices={disciplineChoices}
+            source={row?.source}
+            canEdit={isAdmin}
+            onChange={handleDisciplineChange}
+          />
+        );
+      },
     },
   ];
   return { columns, workspaceSlug, removeMemberModal, setRemoveMemberModal };

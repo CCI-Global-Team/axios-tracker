@@ -57,30 +57,35 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
     const byMember = new Map<string, TMemberAvailability>();
     (data || []).forEach((row) => byMember.set(row.member_id, row));
 
-    return (workspaceMemberIds || [])
-      .map((memberId) => {
-        const details = getWorkspaceMemberDetails(memberId);
-        const row = byMember.get(memberId);
-        return {
-          memberId,
-          displayName: details?.member?.display_name ?? "",
-          avatarUrl: details?.member?.avatar_url ?? "",
-          hours: row ? row.available_hours : null,
-          note: row?.note ?? "",
-          isCarried: row?.is_carried ?? false,
-          carriedFrom: row?.source_week_start ?? "",
-          isRepeating: row?.is_persistent ?? false,
-        };
-      })
-      .toSorted((a, b) => {
-        // Declared first, most hours at the top — the person with capacity is who you are
-        // looking for. Undeclared sink to the bottom, alphabetically, as a to-chase list.
-        if (a.hours === null && b.hours === null) return a.displayName.localeCompare(b.displayName);
-        if (a.hours === null) return 1;
-        if (b.hours === null) return -1;
-        if (b.hours !== a.hours) return b.hours - a.hours;
-        return a.displayName.localeCompare(b.displayName);
-      });
+    return (
+      (workspaceMemberIds || [])
+        .map((memberId) => {
+          const details = getWorkspaceMemberDetails(memberId);
+          const row = byMember.get(memberId);
+          return {
+            memberId,
+            displayName: details?.member?.display_name ?? "",
+            avatarUrl: details?.member?.avatar_url ?? "",
+            hours: row ? row.available_hours : null,
+            note: row?.note ?? "",
+            isCarried: row?.is_carried ?? false,
+            carriedFrom: row?.source_week_start ?? "",
+            isRepeating: row?.is_persistent ?? false,
+          };
+        })
+        // Copy-then-sort rather than toSorted: that is ES2023, absent from this project's lib
+        // target and from Safari before 16.4, so it neither type-checks nor reliably runs.
+        .slice()
+        .sort((a, b) => {
+          // Declared first, most hours at the top — the person with capacity is who you are
+          // looking for. Undeclared sink to the bottom, alphabetically, as a to-chase list.
+          if (a.hours === null && b.hours === null) return a.displayName.localeCompare(b.displayName);
+          if (a.hours === null) return 1;
+          if (b.hours === null) return -1;
+          if (b.hours !== a.hours) return b.hours - a.hours;
+          return a.displayName.localeCompare(b.displayName);
+        })
+    );
   }, [data, workspaceMemberIds, getWorkspaceMemberDetails]);
 
   // Three states, not two. "Told us this week", "repeating until changed" and
