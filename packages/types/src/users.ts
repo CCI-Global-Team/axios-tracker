@@ -182,6 +182,7 @@ export interface IUserProjectsRole {
 }
 
 export interface IUserEmailNotificationSettings {
+  assignment: boolean;
   property_change: boolean;
   state_change: boolean;
   comment: boolean;

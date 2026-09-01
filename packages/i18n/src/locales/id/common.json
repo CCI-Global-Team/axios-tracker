@@ -106,6 +106,8 @@
   "email_notification_setting_updated_successfully": "Pengaturan notifikasi email berhasil diperbarui",
   "failed_to_update_email_notification_setting": "Gagal memperbarui pengaturan notifikasi email",
   "notify_me_when": "Beri tahu saya ketika",
+  "assignment": "Assigned to me",
+  "assignment_description": "Email me when someone assigns a work item to me. Sent on its own, not batched with other updates.",
   "property_changes": "Perubahan properti",
   "property_changes_description": "Beri tahu saya ketika properti item kerja seperti penugasannya, prioritas, estimasi, atau hal lainnya berubah.",
   "state_change": "Perubahan status",

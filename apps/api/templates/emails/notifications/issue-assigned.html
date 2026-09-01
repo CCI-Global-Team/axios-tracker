@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{{assigner_name}} assigned you {{issue.identifier}}</title>
+    <style>
+      body, table, td, p { margin: 0; padding: 0; }
+      img { border: 0; line-height: 100%; }
+      body { background-color: #f3f3f3; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+      @media (max-width: 620px) {
+        .email-container { width: 100% !important; max-width: 100% !important; }
+        .pad { padding-left: 24px !important; padding-right: 24px !important; }
+      }
+    </style>
+  </head>
+  <body style="background-color: #f3f3f3;">
+    <!-- Preheader: shown in the inbox list, hidden in the body. -->
+    <div style="display: none; max-height: 0; overflow: hidden; opacity: 0;">
+      {{assigner_name}} assigned you {{issue.identifier}} in {{project}}.
+    </div>
+
+    <table role="presentation" width="100%" style="background-color: #f3f3f3; padding: 40px 0;">
+      <tr>
+        <td></td>
+        <td class="email-container" width="620" style="width: 620px; max-width: 620px; margin: 0 auto;">
+
+          <!-- Header -->
+          <table role="presentation" width="100%" style="background-color: #000000;">
+            <tr>
+              <td style="padding: 24px 40px; text-align: center;">
+                <img src="{{ current_site }}/icons/icon-192x192.png" width="120" alt="Axios" style="height: auto; display: block; margin: 0 auto;" />
+              </td>
+            </tr>
+          </table>
+
+          <!-- Body -->
+          <table role="presentation" width="100%" style="background-color: #ffffff;">
+            <tr>
+              <td class="pad" style="padding: 40px;">
+
+                <p style="font-size: 20px; font-weight: 600; color: #1a1a1a; margin: 0 0 8px;">
+                  {{assigner_name}} assigned you a work item
+                </p>
+                <p style="font-size: 14px; color: #5f5e5e; margin: 0 0 28px;">
+                  in {{workspace}} / {{project}}
+                </p>
+
+                <!-- The work item -->
+                <table role="presentation" width="100%" style="background-color: #f9f9f9; border: 1px solid #e9e9e9; border-radius: 6px; margin: 0 0 28px;">
+                  <tr>
+                    <td style="padding: 20px 24px;">
+                      <p style="font-size: 13px; font-weight: 600; color: #943F3C; letter-spacing: 0.04em; margin: 0 0 6px;">
+                        {{issue.identifier}}
+                      </p>
+                      <p style="font-size: 16px; font-weight: 500; color: #1a1a1a; line-height: 24px; margin: 0;">
+                        {{issue.name}}
+                      </p>
+
+                      {% if issue.state or issue.priority or issue.target_date %}
+                      <table role="presentation" style="margin: 16px 0 0;">
+                        <tr>
+                          {% if issue.state %}
+                          <td style="padding-right: 20px; font-size: 13px; color: #5f5e5e;">
+                            Status<br /><span style="color: #1a1a1a; font-weight: 500;">{{issue.state}}</span>
+                          </td>
+                          {% endif %}
+                          {% if issue.priority %}
+                          <td style="padding-right: 20px; font-size: 13px; color: #5f5e5e;">
+                            Priority<br /><span style="color: #1a1a1a; font-weight: 500;">{{issue.priority|title}}</span>
+                          </td>
+                          {% endif %}
+                          {% if issue.target_date %}
+                          <td style="font-size: 13px; color: #5f5e5e;">
+                            Due<br /><span style="color: #1a1a1a; font-weight: 500;">{{issue.target_date|date:"j M Y"}}</span>
+                          </td>
+                          {% endif %}
+                        </tr>
+                      </table>
+                      {% endif %}
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- CTA -->
+                <table role="presentation" style="margin: 0 0 8px;">
+                  <tr>
+                    <td>
+                      <a href="{{issue_url}}" target="_blank" style="background-color: #943F3C; border-radius: 6px; color: #ffffff; padding: 12px 24px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; font-weight: 500; white-space: nowrap;">
+                        Open work item
+                      </a>
+                    </td>
+                  </tr>
+                </table>
+
+              </td>
+            </tr>
+          </table>
+
+          <!-- Footer -->
+          <table role="presentation" width="100%" style="background-color: #ffffff; border-top: 1px solid #e9e9e9;">
+            <tr>
+              <td class="pad" style="padding: 24px 40px 32px;">
+                <p style="font-size: 12px; color: #979797; line-height: 18px; margin: 0;">
+                  Sent to {{receiver.email}} because you were assigned this work item.
+                  <a href="{{user_preference}}" style="color: #5f5e5e; text-decoration: underline;">Manage your email preferences</a>.
+                </p>
+              </td>
+            </tr>
+          </table>
+
+        </td>
+        <td></td>
+      </tr>
+    </table>
+  </body>
+</html>

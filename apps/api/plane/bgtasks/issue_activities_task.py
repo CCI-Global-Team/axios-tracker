@@ -16,6 +16,7 @@ from django.utils import timezone
 
 # Module imports
 from plane.app.serializers import IssueActivitySerializer
+from plane.bgtasks.assignment_notification_task import send_assignment_email
 from plane.bgtasks.notification_task import notifications
 from plane.db.models import (
     CommentReaction,
@@ -406,6 +407,16 @@ def track_assignees(
 
     # Create assignees subscribers to the issue and ignore if already
     IssueSubscriber.objects.bulk_create(bulk_subscribers, batch_size=10, ignore_conflicts=True)
+
+    # CCI: tell each new assignee directly. Sent from here rather than left to the digest so it
+    # covers both creating a work item with assignees and adding them later - both paths land
+    # here - and so it cannot arrive bundled with unrelated edits. See the task for why it does
+    # not go through stack_email_notification.
+    for added_assignee in added_assignees:
+        if is_valid_uuid(added_assignee):
+            send_assignment_email.delay(
+                issue_id=str(issue_id), assignee_id=str(added_assignee), actor_id=str(actor_id)
+            )
 
     for dropped_assignee in dropped_assginees:
         # validate uuids
