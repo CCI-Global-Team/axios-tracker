@@ -10,6 +10,7 @@ import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { createPortal } from "react-dom";
 import { usePopper } from "react-popper";
+import useSWR from "swr";
 import { Combobox } from "@headlessui/react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
@@ -22,6 +23,12 @@ import { cn, getFileURL, sortByCurrentUserThenSelected } from "@plane/utils";
 import { useMember } from "@/hooks/store/use-member";
 import { useUser } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+// lib
+import { weekStartFor } from "@/lib/availability-week";
+// services
+import { WorkspaceService } from "@/services/workspace.service";
+
+const memberOptionsWorkspaceService = new WorkspaceService();
 
 interface Props {
   className?: string;
@@ -53,6 +60,24 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
   // states
   const [query, setQuery] = useState("");
   const [popperElement, setPopperElement] = useState<HTMLDivElement | null>(null);
+
+  // CCI: declared hours for the current week, shown beside each name so the person allocating
+  // work can see capacity at the moment they choose — rather than having to leave, read the
+  // roster, and come back.
+  //
+  // Fetched only while the dropdown is OPEN. This component mounts once per work item in a list
+  // view, so an unconditional fetch would fire a request per row on every page load. SWR dedupes
+  // on the shared key, so many open dropdowns still cost one request.
+  const availabilityWeek = weekStartFor();
+  const { data: availabilityRows } = useSWR(
+    isOpen && workspaceSlug ? `WORKSPACE_MEMBER_AVAILABILITY_${workspaceSlug}_${availabilityWeek}` : null,
+    isOpen && workspaceSlug
+      ? () => memberOptionsWorkspaceService.fetchMemberAvailability(workspaceSlug.toString(), availabilityWeek)
+      : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+  const hoursByMemberId = new Map<string, number>();
+  (availabilityRows || []).forEach((row) => hoursByMemberId.set(row.member_id, row.available_hours));
   // plane hooks
   const { t } = useTranslation();
   // store hooks
@@ -78,9 +103,14 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     if (isOpen) {
       onDropdownOpen?.();
       if (!isMobile) {
+        // oxlint-disable-next-line no-unused-expressions
         inputRef.current && inputRef.current.focus();
       }
     }
+    // Pre-existing upstream effect. Both warnings here predate this file being touched; adding
+    // onDropdownOpen to the deps would change how often the callback fires, which is a behaviour
+    // change unrelated to showing availability.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, isMobile]);
 
   const searchInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -113,6 +143,14 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
             >
               {currentUser?.id === userId ? t("you") : userDetails?.display_name}
             </span>
+            {/* Silence is left blank rather than dashed: this is a picking surface, and a column
+                of dashes would add noise to every row without helping anyone choose. The roster
+                is where "who hasn't told us" gets answered. */}
+            {hoursByMemberId.has(userId) && (
+              <span className="text-xs flex-shrink-0 whitespace-nowrap text-tertiary tabular-nums">
+                {hoursByMemberId.get(userId)}h
+              </span>
+            )}
           </div>
         ),
       };
