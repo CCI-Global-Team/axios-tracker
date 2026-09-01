@@ -137,3 +137,4 @@ from .draft import (
 )
 
 from .availability import MemberAvailabilitySerializer
+from .discipline import MemberDisciplineSerializer

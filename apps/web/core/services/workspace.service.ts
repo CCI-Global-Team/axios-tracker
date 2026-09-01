@@ -27,6 +27,8 @@ import type {
   IWorkspaceSidebarNavigation,
   IWorkspaceUserPropertiesResponse,
   TMemberAvailability,
+  TMemberDiscipline,
+  TMemberDisciplineResponse,
   TMemberWorkload,
 } from "@plane/types";
 // services
@@ -147,6 +149,26 @@ export class WorkspaceService extends APIService {
     return this.get(`/api/workspaces/${workspaceSlug}/availability/`, {
       params: weekStart ? { week_start: weekStart } : undefined,
     })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  async fetchMemberDisciplines(workspaceSlug: string): Promise<TMemberDisciplineResponse> {
+    return this.get(`/api/workspaces/${workspaceSlug}/disciplines/`)
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
+  }
+
+  /** Omit `member_id` to set your own. Naming someone else requires workspace Admin. */
+  async updateMemberDisciplines(
+    workspaceSlug: string,
+    data: { member_id?: string; disciplines: string[]; source?: string }
+  ): Promise<TMemberDiscipline> {
+    return this.post(`/api/workspaces/${workspaceSlug}/disciplines/`, data)
       .then((response) => response?.data)
       .catch((error) => {
         throw error?.response?.data;

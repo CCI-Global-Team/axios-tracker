@@ -119,7 +119,9 @@ export const sortMembers = <T>(
 
   const { field, direction } = parseOrderKey(orderBy);
 
-  return members.toSorted((a, b) => {
+  // Copy-then-sort rather than toSorted (ES2023): not in this project's lib target, and absent
+  // from Safari before 16.4. The copy keeps this non-mutating, which is the reason for toSorted.
+  return members.slice().toSorted((a, b) => {
     const aKey = getMemberKey(a);
     const bKey = getMemberKey(b);
     const aMemberDetails = memberDetailsMap[aKey];

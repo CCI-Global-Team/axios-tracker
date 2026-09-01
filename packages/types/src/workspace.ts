@@ -115,6 +115,24 @@ export type TMemberWorkload = {
   open_issues: number;
 };
 
+/** CCI: what a member works on, independent of which product they work on. */
+export type TMemberDiscipline = {
+  member_id: string;
+  display_name: string;
+  /** stored slugs, e.g. ["frontend", "mobile"]; at most three */
+  disciplines: string[];
+  /** where the value came from, e.g. "application form" - most were derived from intake sheets
+   *  of differing reliability, so how firm the label is matters when handing out work */
+  source: string;
+};
+
+export type TDisciplineChoice = { value: string; label: string };
+
+export type TMemberDisciplineResponse = {
+  choices: TDisciplineChoice[];
+  members: TMemberDiscipline[];
+};
+
 export type TMemberAvailability = {
   member_id: string;
   display_name: string;

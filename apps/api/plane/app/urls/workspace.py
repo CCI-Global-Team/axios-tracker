@@ -38,6 +38,7 @@ from plane.app.views import (
     WorkspaceUserPreferenceViewSet,
     MemberAvailabilityViewSet,
     MemberWorkloadEndpoint,
+    MemberDisciplineViewSet,
 )
 
 
@@ -270,5 +271,11 @@ urlpatterns = [
         "workspaces/<str:slug>/member-workload/",
         MemberWorkloadEndpoint.as_view(),
         name="member-workload",
+    ),
+    # CCI: what each member works on
+    path(
+        "workspaces/<str:slug>/disciplines/",
+        MemberDisciplineViewSet.as_view(),
+        name="member-disciplines",
     ),
 ]
