@@ -42,8 +42,10 @@ jobs:
         with:
           repository: CCI-Global-Team/axios-tracker
           ref: cci/patches
+          # Cone mode (the default). Non-cone mode reads gitignore-style patterns, where a bare
+          # directory path matches nothing — the checkout then succeeds with the script absent and
+          # the failure surfaces as "Cannot find module" one step later.
           sparse-checkout: .github/scripts
-          sparse-checkout-cone-mode: false
 
       - name: Transition
         env:
