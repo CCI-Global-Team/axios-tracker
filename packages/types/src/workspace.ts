@@ -192,9 +192,22 @@ export interface IWorkspaceProjectSearchResult {
   workspace__slug: string;
 }
 
+/** CCI: a person in the workspace. `name` mirrors display_name so the shared results renderer,
+ *  which keys on id and name, needs no special case. */
+export interface IWorkspaceMemberSearchResult {
+  id: string;
+  name: string;
+  display_name: string;
+  email: string;
+  /** e.g. ["frontend"]; named for the slug because MemberDiscipline already reverses onto User
+   *  as `disciplines`, which an annotation cannot shadow */
+  discipline_slugs: string[];
+}
+
 export interface IWorkspaceSearchResults {
   results: {
     workspace: IWorkspaceSearchResult[];
+    member: IWorkspaceMemberSearchResult[];
     project: IWorkspaceProjectSearchResult[];
     issue: IWorkspaceIssueSearchResult[];
     cycle: IWorkspaceDefaultSearchResult[];
