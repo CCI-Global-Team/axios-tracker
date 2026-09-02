@@ -32,12 +32,18 @@ type TRow = {
   carriedFrom: string;
   /** the member marked this as repeating until they change it */
   isRepeating: boolean;
+  /** what this member works on; set by an admin, not self-declared */
+  disciplines: string[];
 };
 
 type TProps = { workspaceSlug: string };
 
 export const AvailabilityRoster = observer(function AvailabilityRoster({ workspaceSlug }: TProps) {
   const [weekStart, setWeekStart] = useState<string>(() => weekStartFor());
+  // Narrowing the roster rather than the week. Kept separate from weekStart so stepping between
+  // weeks holds the filter — comparing the same discipline across two weeks is the point.
+  const [disciplineFilter, setDisciplineFilter] = useState<string | null>(null);
+  const [hoursOnly, setHoursOnly] = useState(false);
 
   const {
     workspace: { workspaceMemberIds, getWorkspaceMemberDetails },
@@ -49,6 +55,15 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
     { revalidateOnFocus: false }
   );
 
+  // Disciplines do not change by week, so this is fetched once and reused as the week is stepped
+  // through. Hours answer "who is free"; discipline answers "free to do what" — the pair is the
+  // question a lead actually has, and splitting them across two pages meant doing the join by hand.
+  const { data: disciplineData } = useSWR(
+    workspaceSlug ? `WORKSPACE_MEMBER_DISCIPLINES_${workspaceSlug}` : null,
+    workspaceSlug ? () => workspaceService.fetchMemberDisciplines(workspaceSlug) : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+
   // The API returns only the rows that EXIST. Joining against the full member list is what turns
   // "here are two declarations" into "here are 25 people, 23 of whom haven't told us" — and the
   // second is the question a lead actually has. A member with no row is `hours: null`, which is
@@ -56,6 +71,8 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
   const rows: TRow[] = useMemo(() => {
     const byMember = new Map<string, TMemberAvailability>();
     (data || []).forEach((row) => byMember.set(row.member_id, row));
+    const disciplinesByMember = new Map<string, string[]>();
+    (disciplineData?.members || []).forEach((row) => disciplinesByMember.set(row.member_id, row.disciplines));
 
     return (workspaceMemberIds || [])
       .map((memberId) => {
@@ -70,6 +87,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
           isCarried: row?.is_carried ?? false,
           carriedFrom: row?.source_week_start ?? "",
           isRepeating: row?.is_persistent ?? false,
+          disciplines: disciplinesByMember.get(memberId) ?? [],
         };
       })
       .toSorted((a, b) => {
@@ -81,12 +99,28 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
         if (b.hours !== a.hours) return b.hours - a.hours;
         return a.displayName.localeCompare(b.displayName);
       });
-  }, [data, workspaceMemberIds, getWorkspaceMemberDetails]);
+  }, [data, disciplineData, workspaceMemberIds, getWorkspaceMemberDetails]);
+
+  const disciplineChoices = disciplineData?.choices ?? [];
+  const disciplineLabel = new Map(disciplineChoices.map((c) => [c.value, c.label]));
+  // Offer only disciplines somebody in this workspace actually holds.
+  const offeredDisciplines = disciplineChoices.filter((c) => rows.some((r) => r.disciplines.includes(c.value)));
+  const isFiltered = disciplineFilter !== null || hoursOnly;
+
+  const visibleRows = rows.filter((r) => {
+    if (hoursOnly && r.hours === null) return false;
+    if (disciplineFilter && !r.disciplines.includes(disciplineFilter)) return false;
+    return true;
+  });
 
   // Three states, not two. "Told us this week", "repeating until changed" and
   // "never said" are different facts, and a lead chasing people needs the third separated from
   // the other two.
-  const withHours = rows.filter((r) => r.hours !== null);
+  //
+  // Counted over the FILTERED rows, so the tiles describe the table beneath them. Totals that
+  // stayed workspace-wide while the table showed six people would just be a second, contradictory
+  // answer on the same screen; the heading says which set is being counted.
+  const withHours = visibleRows.filter((r) => r.hours !== null);
   const repeating = withHours.filter((r) => r.isRepeating);
   const totalHours = withHours.reduce((sum, r) => sum + (r.hours ?? 0), 0);
 
@@ -132,11 +166,58 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
           </div>
         </div>
 
+        {(offeredDisciplines.length > 0 || rows.length > 0) && (
+          <div className="mb-4 flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setHoursOnly((v) => !v)}
+              className={cn(
+                "text-xs rounded-full border px-2.5 py-1 font-medium",
+                hoursOnly
+                  ? "border-accent-strong bg-accent-primary text-on-color"
+                  : "border-subtle text-tertiary hover:text-secondary"
+              )}
+            >
+              Has hours
+            </button>
+            {offeredDisciplines.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => setDisciplineFilter((v) => (v === c.value ? null : c.value))}
+                className={cn(
+                  "text-xs rounded-full border px-2.5 py-1 font-medium",
+                  disciplineFilter === c.value
+                    ? "border-accent-strong bg-accent-primary text-on-color"
+                    : "border-subtle text-tertiary hover:text-secondary"
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+            {isFiltered && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDisciplineFilter(null);
+                  setHoursOnly(false);
+                }}
+                className="text-xs px-2 py-1 text-tertiary underline hover:text-secondary"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        )}
+
         <div className="mb-5 flex flex-wrap gap-3">
-          <Summary label="Have hours" value={`${withHours.length} of ${rows.length}`} />
+          <Summary
+            label={isFiltered ? "Have hours (filtered)" : "Have hours"}
+            value={`${withHours.length} of ${visibleRows.length}`}
+          />
           <Summary label="Repeating" value={`${repeating.length}`} />
-          <Summary label="Total hours" value={`${totalHours}h`} />
-          <Summary label="No answer" value={`${rows.length - withHours.length}`} muted />
+          <Summary label={isFiltered ? "Hours (filtered)" : "Total hours"} value={`${totalHours}h`} />
+          <Summary label="No answer" value={`${visibleRows.length - withHours.length}`} muted />
         </div>
 
         {isLoading && !data ? (
@@ -151,18 +232,35 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
               <thead>
                 <tr className="text-xs bg-surface-2 text-left tracking-wide text-tertiary uppercase">
                   <th className="px-4 py-2.5 font-medium">Member</th>
+                  <th className="px-4 py-2.5 font-medium">Discipline</th>
                   <th className="px-4 py-2.5 text-right font-medium whitespace-nowrap">Hours</th>
                   <th className="px-4 py-2.5 font-medium">Note</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {visibleRows.map((row) => (
                   <tr key={row.memberId} className="border-t border-subtle">
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2">
-                        <Avatar name={row.displayName} src={getFileURL(row.avatarUrl)} />
+                        <Avatar name={row.displayName} src={getFileURL(row.avatarUrl)} fallbackSeed={row.memberId} />
                         <span className={cn("truncate", row.hours === null && "text-tertiary")}>{row.displayName}</span>
                       </div>
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {row.disciplines.length === 0 ? (
+                        <span className="text-tertiary">&mdash;</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {row.disciplines.map((slug) => (
+                            <span
+                              key={slug}
+                              className="text-xs rounded border border-subtle bg-surface-2 px-1.5 py-0.5 whitespace-nowrap text-secondary"
+                            >
+                              {disciplineLabel.get(slug) ?? slug}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-2.5 text-right font-medium whitespace-nowrap tabular-nums">
                       {row.hours === null ? (
@@ -192,10 +290,10 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
                     </td>
                   </tr>
                 ))}
-                {rows.length === 0 && (
+                {visibleRows.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-tertiary">
-                      No members in this workspace yet.
+                    <td colSpan={4} className="px-4 py-8 text-center text-tertiary">
+                      {rows.length === 0 ? "No members in this workspace yet." : "No one matches those filters."}
                     </td>
                   </tr>
                 )}
@@ -209,7 +307,8 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
           <a href="/settings/profile/preferences" className="underline hover:text-secondary">
             profile preferences
           </a>
-          . A dash means they haven&apos;t declared for this week &mdash; which is not the same as declaring zero.
+          . A dash under Hours means they haven&apos;t declared for this week &mdash; which is not the same as declaring
+          zero. Disciplines are set by an admin on the members page, not declared by the member.
         </p>
       </div>
     </div>
