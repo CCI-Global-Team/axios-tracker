@@ -17,9 +17,11 @@ class MemberDisciplineViewSet(BaseAPIView):
     """CCI: what each member works on.
 
     Read is open to any workspace member: choosing who to hand a work item to is everyone's
-    problem, not just a lead's. Writing your own is likewise open; writing someone ELSE's needs
-    Admin, because a discipline is partly an assessment and partly a claim on the work someone
-    gets offered, and neither should be editable by a peer.
+    problem, not just a lead's.
+
+    Writing is Admin only, including writing your own. A discipline here is an assessment used to
+    decide who gets offered which work - not a self-description - so letting people set their own
+    would turn it into a claim, and the roster would stop meaning what a lead needs it to mean.
     """
 
     @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
@@ -37,21 +39,13 @@ class MemberDisciplineViewSet(BaseAPIView):
             status=status.HTTP_200_OK,
         )
 
-    @allow_permission([ROLE.ADMIN, ROLE.MEMBER], level="WORKSPACE")
+    @allow_permission([ROLE.ADMIN], level="WORKSPACE")
     def post(self, request, slug):
-        """Upsert one member's disciplines. Defaults to the caller; Admin may name another."""
+        """Upsert one member's disciplines. Admin only - see the class docstring for why."""
         workspace = Workspace.objects.get(slug=slug)
         member_id = request.data.get("member_id")
 
-        if member_id and str(member_id) != str(request.user.id):
-            actor = WorkspaceMember.objects.filter(
-                workspace=workspace, member=request.user, is_active=True
-            ).first()
-            if actor is None or actor.role != ROLE.ADMIN.value:
-                return Response(
-                    {"error": "Only an admin can set another member's disciplines"},
-                    status=status.HTTP_403_FORBIDDEN,
-                )
+        if member_id:
             target = WorkspaceMember.objects.filter(
                 workspace=workspace, member_id=member_id, is_active=True
             ).first()
@@ -62,6 +56,7 @@ class MemberDisciplineViewSet(BaseAPIView):
                 )
             member = target.member
         else:
+            # An admin setting their own; the permission gate above already applies.
             member = request.user
 
         serializer = MemberDisciplineSerializer(data=request.data)

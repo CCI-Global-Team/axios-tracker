@@ -163,7 +163,7 @@ export class WorkspaceService extends APIService {
       });
   }
 
-  /** Omit `member_id` to set your own. Naming someone else requires workspace Admin. */
+  /** Workspace Admin only — a discipline is an assessment, not a self-description. */
   async updateMemberDisciplines(
     workspaceSlug: string,
     data: { member_id?: string; disciplines: string[]; source?: string }
