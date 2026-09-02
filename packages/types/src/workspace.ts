@@ -60,7 +60,9 @@ export interface IWorkspaceMemberInvitation {
 }
 
 export interface IWorkspaceBulkInviteFormData {
-  emails: { email: string; role: TUserPermissions }[];
+  /** `disciplines` is carried on the invite and applied when the person accepts — there is no
+   *  account to attach it to before that. Optional; validated server-side. */
+  emails: { email: string; role: TUserPermissions; disciplines?: string[] }[];
 }
 
 export type Properties = {

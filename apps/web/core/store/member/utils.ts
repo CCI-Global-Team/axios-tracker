@@ -11,6 +11,10 @@ import type { IUserLite, TProjectMembership } from "@plane/types";
 export interface IMemberFilters {
   order_by?: TMemberOrderByOptions;
   roles?: string[];
+  /** CCI: discipline slugs; a member matches if they hold ANY of them */
+  disciplines?: string[];
+  /** CCI: whether they have declared hours for the current week */
+  availability?: "declared" | "undeclared";
 }
 
 // Helper function to parse order key and direction
@@ -187,10 +191,31 @@ export const sortWorkspaceMembers = <T extends { role: string | EUserPermissions
   memberDetailsMap: Record<string, IUserLite>,
   getMemberKey: (member: T) => string,
   filters?: IMemberFilters,
-  availableHoursByMemberId?: Record<string, number>
+  availableHoursByMemberId?: Record<string, number>,
+  disciplinesByMemberId?: Record<string, string[]>
 ): T[] => {
-  const filteredMembers =
+  let filteredMembers =
     filters?.roles && filters.roles.length > 0 ? filterWorkspaceMembersByRole(members, filters.roles) : members;
+
+  // CCI: discipline and availability narrow the same list as role. ANY-match rather than ALL —
+  // picking Frontend and Backend means "someone who can do either", which is the question being
+  // asked; requiring both would return almost nobody.
+  if (filters?.disciplines && filters.disciplines.length > 0) {
+    const wanted = new Set(filters.disciplines);
+    filteredMembers = filteredMembers.filter((member) =>
+      (disciplinesByMemberId?.[getMemberKey(member)] ?? []).some((d) => wanted.has(d))
+    );
+  }
+
+  if (filters?.availability) {
+    // Declared 0 still counts as declared: saying "no time this week" is an answer, and the
+    // undeclared list exists to be chased rather than to include people who already replied.
+    const wantDeclared = filters.availability === "declared";
+    filteredMembers = filteredMembers.filter((member) => {
+      const hasDeclared = availableHoursByMemberId?.[getMemberKey(member)] !== undefined;
+      return hasDeclared === wantDeclared;
+    });
+  }
 
   // If no order_by filter, return filtered members
   if (!filters?.order_by) return filteredMembers;

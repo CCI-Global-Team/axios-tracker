@@ -34,7 +34,7 @@ export const useMemberColumns = () => {
   const { allowPermissions } = useUserPermissions();
   const {
     workspace: {
-      filtersStore: { filters, updateFilters, setAvailableHours },
+      filtersStore: { filters, updateFilters, setAvailableHours, setDisciplines },
     },
   } = useMember();
   const { t } = useTranslation();
@@ -71,6 +71,13 @@ export const useMemberColumns = () => {
   (disciplineData?.members ?? []).forEach((row) =>
     disciplineByMemberId.set(row.member_id, { disciplines: row.disciplines, source: row.source })
   );
+
+  // Hand the same values to the store so the column can be filtered on. Without this the chips
+  // render and match nothing, which is worse than offering no filter.
+  useEffect(() => {
+    setDisciplines(Object.fromEntries([...disciplineByMemberId].map(([id, v]) => [id, v.disciplines])));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disciplineData]);
 
   // derived values
   const isAdmin = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);

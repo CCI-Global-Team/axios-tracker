@@ -5,6 +5,7 @@
  */
 
 import { useState } from "react";
+import useSWR from "swr";
 import { observer } from "mobx-react";
 // types
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
@@ -26,9 +27,12 @@ import { SendWorkspaceInvitationModal } from "@/components/workspace/members";
 import { useMember } from "@/hooks/store/use-member";
 import { useWorkspace } from "@/hooks/store/use-workspace";
 import { useUserPermissions } from "@/hooks/store/user";
+import { WorkspaceService } from "@/services/workspace.service";
 // local imports
 import type { Route } from "./+types/page";
 import { MembersWorkspaceSettingsHeader } from "./header";
+
+const membersPageWorkspaceService = new WorkspaceService();
 
 const WorkspaceMembersSettingsPage = observer(function WorkspaceMembersSettingsPage({ params }: Route.ComponentProps) {
   // states
@@ -93,6 +97,29 @@ const WorkspaceMembersSettingsPage = observer(function WorkspaceMembersSettingsP
   const pageTitle = currentWorkspace?.name ? `${currentWorkspace.name} - Members` : undefined;
   const appliedRoleFilters = filtersStore.filters?.roles || [];
 
+  // CCI: discipline and availability narrow the same list as role. Options come from the
+  // workspace's own disciplines, so a filter matching nobody is never offered.
+  const { data: disciplineData } = useSWR(
+    workspaceSlug ? `WORKSPACE_MEMBER_DISCIPLINES_${workspaceSlug}` : null,
+    workspaceSlug ? () => membersPageWorkspaceService.fetchMemberDisciplines(workspaceSlug.toString()) : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+  const heldDisciplines = new Set((disciplineData?.members ?? []).flatMap((m) => m.disciplines));
+  const disciplineOptions = (disciplineData?.choices ?? [])
+    .filter((c) => heldDisciplines.has(c.value))
+    .map((c) => ({ value: c.value, label: c.label }));
+
+  const handleDisciplineFilterUpdate = (value: string) => {
+    const current = filtersStore.filters?.disciplines || [];
+    const updated = current.includes(value) ? current.filter((d) => d !== value) : [...current, value];
+    filtersStore.updateFilters({ disciplines: updated.length > 0 ? updated : undefined });
+  };
+
+  const handleAvailabilityFilterUpdate = (value: "declared" | "undeclared") => {
+    // The two options are opposites, so picking one clears the other rather than stacking.
+    filtersStore.updateFilters({ availability: filtersStore.filters?.availability === value ? undefined : value });
+  };
+
   // if user is not authorized to view this page
   if (workspaceUserInfo && !canPerformWorkspaceMemberActions) {
     return <NotAuthorizedView section="settings" className="h-auto" />;
@@ -134,6 +161,11 @@ const WorkspaceMembersSettingsPage = observer(function WorkspaceMembersSettingsP
               appliedFilters={appliedRoleFilters}
               handleUpdate={handleRoleFilterUpdate}
               memberType="workspace"
+              disciplineOptions={disciplineOptions}
+              appliedDisciplines={filtersStore.filters?.disciplines ?? []}
+              onDisciplineToggle={handleDisciplineFilterUpdate}
+              appliedAvailability={filtersStore.filters?.availability ?? null}
+              onAvailabilityToggle={handleAvailabilityFilterUpdate}
             />
             {canPerformWorkspaceAdminActions && (
               <Button variant="primary" size="lg" onClick={() => setInviteModal(true)}>

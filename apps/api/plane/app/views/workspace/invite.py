@@ -28,6 +28,9 @@ from plane.app.serializers import (
 from plane.app.views.base import BaseAPIView
 from plane.bgtasks.event_tracking_task import track_event
 from plane.bgtasks.workspace_invitation_task import workspace_invitation
+from plane.app.serializers.discipline import MAX_DISCIPLINES
+from plane.db.models import DISCIPLINE_VALUES
+from plane.utils.invited_disciplines import apply_invited_disciplines
 from plane.db.models import User, Workspace, WorkspaceMember, WorkspaceMemberInvite
 from plane.utils.cache import invalidate_cache, invalidate_cache_directly
 from plane.utils.host import base_host
@@ -100,6 +103,11 @@ class WorkspaceInvitationsViewset(BaseViewSet):
                             algorithm="HS256",
                         ),
                         role=email.get("role", 5),
+                        # CCI: optional; validated against the known set so a typo cannot put a
+                        # value in that nothing will ever render.
+                        disciplines=[
+                            d for d in (email.get("disciplines") or []) if d in DISCIPLINE_VALUES
+                        ][:MAX_DISCIPLINES],
                         created_by=request.user,
                     )
                 )
@@ -216,6 +224,9 @@ class WorkspaceJoinEndpoint(BaseAPIView):
                             role=workspace_invite.role,
                         )
 
+                    # CCI: carry across whatever the admin set on the invite.
+                    apply_invited_disciplines(user, [workspace_invite])
+
                     # Set the user last_workspace_id to the accepted workspace
                     user.last_workspace_id = workspace_invite.workspace.id
                     user.save()
@@ -317,6 +328,10 @@ class UserWorkspaceInvitationsViewSet(BaseViewSet):
             ],
             ignore_conflicts=True,
         )
+
+        # CCI: carry across whatever the admin set on each invite. Must run BEFORE the delete
+        # below - the rows are the only place those disciplines exist.
+        apply_invited_disciplines(request.user, list(workspace_invitations))
 
         # Delete joined workspace invites
         workspace_invitations.delete()

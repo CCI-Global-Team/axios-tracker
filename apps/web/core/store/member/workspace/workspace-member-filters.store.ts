@@ -25,6 +25,7 @@ export interface IWorkspaceMemberFiltersStore {
   // observables
   filters: IMemberFilters;
   availableHoursByMemberId: Record<string, number>;
+  disciplinesByMemberId: Record<string, string[]>;
   // computed actions
   getFilteredMemberIds: (
     members: IWorkspaceMembership[],
@@ -34,6 +35,7 @@ export interface IWorkspaceMemberFiltersStore {
   // actions
   updateFilters: (filters: Partial<IMemberFilters>) => void;
   setAvailableHours: (hoursByMemberId: Record<string, number>) => void;
+  setDisciplines: (disciplinesByMemberId: Record<string, string[]>) => void;
 }
 
 export class WorkspaceMemberFiltersStore implements IWorkspaceMemberFiltersStore {
@@ -43,15 +45,20 @@ export class WorkspaceMemberFiltersStore implements IWorkspaceMemberFiltersStore
   // column component because sorting happens in this store — a value the sort cannot see is a
   // column that renders but cannot be ordered by.
   availableHoursByMemberId: Record<string, number> = {};
+  // CCI: same reasoning as the hours above — filtering happens in this store, and a value the
+  // filter cannot see is a column that renders but cannot be filtered by.
+  disciplinesByMemberId: Record<string, string[]> = {};
 
   constructor() {
     makeObservable(this, {
       // observables
       filters: observable,
       availableHoursByMemberId: observable,
+      disciplinesByMemberId: observable,
       // actions
       updateFilters: action,
       setAvailableHours: action,
+      setDisciplines: action,
     });
   }
 
@@ -75,7 +82,8 @@ export class WorkspaceMemberFiltersStore implements IWorkspaceMemberFiltersStore
         memberDetailsMap,
         getMemberKey,
         this.filters,
-        this.availableHoursByMemberId
+        this.availableHoursByMemberId,
+        this.disciplinesByMemberId
       );
 
       return sortedMembers.map(getMemberKey);
@@ -95,5 +103,12 @@ export class WorkspaceMemberFiltersStore implements IWorkspaceMemberFiltersStore
    */
   setAvailableHours = (hoursByMemberId: Record<string, number>) => {
     this.availableHoursByMemberId = hoursByMemberId;
+  };
+
+  /**
+   * @description record disciplines so the members table can filter by them
+   */
+  setDisciplines = (disciplinesByMemberId: Record<string, string[]>) => {
+    this.disciplinesByMemberId = disciplinesByMemberId;
   };
 }
