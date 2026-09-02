@@ -7,15 +7,17 @@
 import { observer } from "mobx-react";
 import type { Control, FieldArrayWithId, FormState } from "react-hook-form";
 import { Controller } from "react-hook-form";
+import useSWR from "swr";
 // plane imports
 import { ROLE } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { CloseIcon } from "@plane/propel/icons";
-import { CustomSelect, Input } from "@plane/ui";
+import { CustomSearchSelect, CustomSelect, Input } from "@plane/ui";
 import { cn } from "@plane/utils";
 // hooks
 import { useUserPermissions } from "@/hooks/store/user";
 import type { InvitationFormValues } from "@/hooks/use-workspace-invitation";
+import { WorkspaceService } from "@/services/workspace.service";
 
 type TInvitationFieldsProps = {
   workspaceSlug: string;
@@ -25,6 +27,8 @@ type TInvitationFieldsProps = {
   remove: (index: number) => void;
   className?: string;
 };
+
+const inviteFieldsWorkspaceService = new WorkspaceService();
 
 export const InvitationFields = observer(function InvitationFields(props: TInvitationFieldsProps) {
   const {
@@ -41,6 +45,15 @@ export const InvitationFields = observer(function InvitationFields(props: TInvit
   const { workspaceInfoBySlug } = useUserPermissions();
   // derived values
   const currentWorkspaceRole = workspaceInfoBySlug(workspaceSlug.toString())?.role;
+
+  // The discipline vocabulary comes from the API rather than a local constant, so the field can
+  // never offer a value the backend will reject.
+  const { data: disciplineData } = useSWR(
+    workspaceSlug ? `WORKSPACE_MEMBER_DISCIPLINES_${workspaceSlug}` : null,
+    workspaceSlug ? () => inviteFieldsWorkspaceService.fetchMemberDisciplines(workspaceSlug.toString()) : null,
+    { revalidateOnFocus: false, shouldRetryOnError: false }
+  );
+  const disciplineOptions = disciplineData?.choices ?? [];
 
   return (
     <div className={cn("mb-3 space-y-4", className)}>
@@ -83,6 +96,37 @@ export const InvitationFields = observer(function InvitationFields(props: TInvit
             />
           </div>
           <div className="flex shrink-0 items-center justify-between gap-2">
+            {/* CCI: set the discipline at invite time. Waiting until the person accepts means
+                remembering to come back for it, which is how it ends up never being set. */}
+            <div className="flex flex-col gap-1">
+              <Controller
+                control={control}
+                name={`emails.${index}.disciplines`}
+                render={({ field: { value, onChange } }) => (
+                  <CustomSearchSelect
+                    value={value ?? []}
+                    onChange={(next: string[]) => onChange(next.slice(0, 3))}
+                    options={disciplineOptions.map((d) => ({
+                      value: d.value,
+                      query: d.label,
+                      content: <div>{d.label}</div>,
+                    }))}
+                    label={
+                      <span className="text-caption-sm-regular sm:text-body-xs-regular">
+                        {(value ?? []).length === 0
+                          ? "Discipline"
+                          : (value ?? [])
+                              .map((slug: string) => disciplineOptions.find((d) => d.value === slug)?.label ?? slug)
+                              .join(", ")}
+                      </span>
+                    }
+                    className="w-32 flex-grow"
+                    multiple
+                    input
+                  />
+                )}
+              />
+            </div>
             <div className="flex flex-col gap-1">
               <Controller
                 control={control}
@@ -96,11 +140,11 @@ export const InvitationFields = observer(function InvitationFields(props: TInvit
                     className="w-24 flex-grow"
                     input
                   >
-                    {Object.entries(ROLE).map(([key, value]) => {
+                    {Object.entries(ROLE).map(([key, roleLabel]) => {
                       if (currentWorkspaceRole && currentWorkspaceRole >= parseInt(key))
                         return (
                           <CustomSelect.Option key={key} value={parseInt(key)}>
-                            {value}
+                            {roleLabel}
                           </CustomSelect.Option>
                         );
                     })}

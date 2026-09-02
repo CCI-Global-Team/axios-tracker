@@ -9,6 +9,7 @@ from typing import Optional, Any
 # Django imports
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 # Module imports
@@ -239,6 +240,10 @@ class WorkspaceMemberInvite(BaseModel):
     message = models.TextField(null=True)
     responded_at = models.DateTimeField(null=True)
     role = models.PositiveSmallIntegerField(choices=ROLE_CHOICES, default=5)
+    # CCI: what the admin says this person will work on, carried until they accept. There is no
+    # User row to attach a MemberDiscipline to before that, and asking the admin to remember to
+    # come back and set it afterwards is how it ends up never being set.
+    disciplines = ArrayField(models.CharField(max_length=32), blank=True, default=list)
 
     class Meta:
         unique_together = ["email", "workspace", "deleted_at"]

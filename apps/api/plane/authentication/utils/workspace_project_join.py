@@ -6,6 +6,7 @@
 from django.utils import timezone
 
 # Module imports
+from plane.utils.invited_disciplines import apply_invited_disciplines
 from plane.db.models import (
     ProjectMember,
     ProjectMemberInvite,
@@ -34,6 +35,9 @@ def process_workspace_project_invitations(user):
         ],
         ignore_conflicts=True,
     )
+
+    # CCI: carry across whatever the admin set on the invite.
+    apply_invited_disciplines(user, workspace_member_invites)
 
     for workspace_member_invite in workspace_member_invites:
         invalidate_cache_directly(

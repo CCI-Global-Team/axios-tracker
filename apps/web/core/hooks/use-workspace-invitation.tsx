@@ -13,6 +13,9 @@ import { EUserPermissions } from "@plane/constants";
 type EmailRole = {
   email: string;
   role: EUserPermissions;
+  /** CCI: what this person will work on. Carried on the invite and applied when they accept —
+   *  there is no account to attach it to before that. */
+  disciplines?: string[];
 };
 
 export type InvitationFormValues = {
@@ -24,6 +27,7 @@ const SEND_WORKSPACE_INVITATION_MODAL_DEFAULT_VALUES: InvitationFormValues = {
     {
       email: "",
       role: EUserPermissions.MEMBER,
+      disciplines: [],
     },
   ],
 };
@@ -65,17 +69,20 @@ export const useWorkspaceInvitationActions = (props: TUseWorkspaceInvitationProp
   };
 
   const appendField = () => {
-    append({ email: "", role: EUserPermissions.MEMBER });
+    append({ email: "", role: EUserPermissions.MEMBER, disciplines: [] });
   };
 
   const onSubmitForm = async (data: InvitationFormValues) => {
-    await onSubmit(data)?.then(() => {
-      reset(SEND_WORKSPACE_INVITATION_MODAL_DEFAULT_VALUES);
-    });
+    // onSubmit may return undefined rather than a promise, so the reset is guarded on there
+    // actually having been a submission to wait for.
+    const submission = onSubmit(data);
+    if (!submission) return;
+    await submission;
+    reset(SEND_WORKSPACE_INVITATION_MODAL_DEFAULT_VALUES);
   };
 
   useEffect(() => {
-    if (fields.length === 0) append([{ email: "", role: EUserPermissions.MEMBER }]);
+    if (fields.length === 0) append([{ email: "", role: EUserPermissions.MEMBER, disciplines: [] }]);
   }, [fields, append]);
 
   return {

@@ -24,6 +24,13 @@ type Props = {
   appliedFilters: string[] | null;
   handleUpdate: (role: string) => void;
   memberType: "project" | "workspace";
+  // CCI: optional extra groups. The project member list passes none and is unchanged; only the
+  // workspace members page, which has disciplines and declared hours to filter on, supplies them.
+  disciplineOptions?: IRoleOption[];
+  appliedDisciplines?: string[];
+  onDisciplineToggle?: (value: string) => void;
+  appliedAvailability?: "declared" | "undeclared" | null;
+  onAvailabilityToggle?: (value: "declared" | "undeclared") => void;
 };
 
 const PROJECT_ROLE_OPTIONS: IRoleOption[] = [
@@ -80,22 +87,92 @@ const RoleFilterGroup = observer(function RoleFilterGroup({
   );
 });
 
+const SimpleFilterGroup = observer(function SimpleFilterGroup({
+  title,
+  options,
+  applied,
+  onToggle,
+}: {
+  title: string;
+  options: IRoleOption[];
+  applied: string[];
+  onToggle: (value: string) => void;
+}) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  return (
+    <div className="space-y-2">
+      <FilterHeader
+        title={`${title}${applied.length > 0 ? ` (${applied.length})` : ""}`}
+        isPreviewEnabled={isExpanded}
+        handleIsPreviewEnabled={() => setIsExpanded(!isExpanded)}
+      />
+      {isExpanded && (
+        <div className="space-y-1">
+          {options.map((option) => (
+            <FilterOption
+              key={`${title}-${option.value}`}
+              isChecked={applied.includes(option.value)}
+              title={option.label}
+              onClick={() => onToggle(option.value)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+});
+
+const AVAILABILITY_OPTIONS: IRoleOption[] = [
+  { value: "declared", label: "Declared hours" },
+  { value: "undeclared", label: "No answer" },
+];
+
 export const MemberListFilters = observer(function MemberListFilters(props: Props) {
-  const { appliedFilters, handleUpdate, memberType } = props;
+  const {
+    appliedFilters,
+    handleUpdate,
+    memberType,
+    disciplineOptions,
+    appliedDisciplines,
+    onDisciplineToggle,
+    appliedAvailability,
+    onAvailabilityToggle,
+  } = props;
 
   return (
     <div className="space-y-4">
       {/* Role Filter Group */}
       <RoleFilterGroup appliedFilters={appliedFilters} handleUpdate={handleUpdate} memberType={memberType} />
+
+      {onDisciplineToggle && disciplineOptions && disciplineOptions.length > 0 && (
+        <SimpleFilterGroup
+          title="Discipline"
+          options={disciplineOptions}
+          applied={appliedDisciplines ?? []}
+          onToggle={onDisciplineToggle}
+        />
+      )}
+
+      {onAvailabilityToggle && (
+        <SimpleFilterGroup
+          title="Availability"
+          options={AVAILABILITY_OPTIONS}
+          applied={appliedAvailability ? [appliedAvailability] : []}
+          onToggle={(v) => onAvailabilityToggle(v as "declared" | "undeclared")}
+        />
+      )}
     </div>
   );
 });
 
 // Dropdown component for member list filters
 export const MemberListFiltersDropdown = observer(function MemberListFiltersDropdown(props: Props) {
-  const { appliedFilters, handleUpdate, memberType } = props;
+  const { appliedFilters, appliedDisciplines, appliedAvailability } = props;
 
-  const appliedFiltersCount = appliedFilters?.length ?? 0;
+  // Counts every group, not just roles - a dot that ignores the discipline filter would say
+  // "nothing applied" while the table is filtered.
+  const appliedFiltersCount =
+    (appliedFilters?.length ?? 0) + (appliedDisciplines?.length ?? 0) + (appliedAvailability ? 1 : 0);
 
   return (
     <CustomMenu
@@ -112,7 +189,7 @@ export const MemberListFiltersDropdown = observer(function MemberListFiltersDrop
       }
       placement="bottom-start"
     >
-      <MemberListFilters appliedFilters={appliedFilters} handleUpdate={handleUpdate} memberType={memberType} />
+      <MemberListFilters {...props} />
     </CustomMenu>
   );
 });
