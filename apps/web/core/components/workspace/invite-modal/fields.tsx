@@ -54,6 +54,15 @@ export const InvitationFields = observer(function InvitationFields(props: TInvit
     { revalidateOnFocus: false, shouldRetryOnError: false }
   );
   const disciplineOptions = disciplineData?.choices ?? [];
+  const labelForDiscipline = (slug: string) => disciplineOptions.find((d) => d.value === slug)?.label ?? slug;
+  /** First name plus a count. Listing every pick wrapped the button to four lines on three
+   *  selections and dragged the whole row's height with it. */
+  const describeDisciplines = (selected?: string[]) => {
+    const picks = selected ?? [];
+    if (picks.length === 0) return "Discipline";
+    if (picks.length === 1) return labelForDiscipline(picks[0]);
+    return `${labelForDiscipline(picks[0])} +${picks.length - 1}`;
+  };
 
   return (
     <div className={cn("mb-3 space-y-4", className)}>
@@ -112,15 +121,19 @@ export const InvitationFields = observer(function InvitationFields(props: TInvit
                       content: <div>{d.label}</div>,
                     }))}
                     label={
-                      <span className="text-caption-sm-regular sm:text-body-xs-regular">
-                        {(value ?? []).length === 0
-                          ? "Discipline"
-                          : (value ?? [])
-                              .map((slug: string) => disciplineOptions.find((d) => d.value === slug)?.label ?? slug)
-                              .join(", ")}
+                      // One line, always. Listing every selection wrapped the button to four
+                      // lines on three picks and dragged the whole row's height with it, so the
+                      // first name carries the label and a count carries the rest. The title
+                      // holds the full list for anyone who needs to check it.
+                      <span
+                        title={(value ?? []).map((slug: string) => labelForDiscipline(slug)).join(", ")}
+                        className="block truncate text-caption-sm-regular whitespace-nowrap sm:text-body-xs-regular"
+                      >
+                        {describeDisciplines(value)}
                       </span>
                     }
-                    className="w-32 flex-grow"
+                    className="w-32 shrink-0"
+                    buttonClassName="truncate"
                     multiple
                     input
                   />
