@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { Briefcase, FileText, Layers, LayoutGrid } from "lucide-react";
+import { Briefcase, FileText, Layers, LayoutGrid, User as UserIcon } from "lucide-react";
 // plane imports
 import { ContrastIcon, DiceIcon } from "@plane/propel/icons";
 import type {
@@ -12,6 +12,7 @@ import type {
   IWorkspaceIssueSearchResult,
   IWorkspacePageSearchResult,
   IWorkspaceProjectSearchResult,
+  IWorkspaceMemberSearchResult,
   IWorkspaceSearchResult,
 } from "@plane/types";
 import { generateWorkItemLink } from "@plane/utils";
@@ -19,14 +20,37 @@ import { generateWorkItemLink } from "@plane/utils";
 import type { TPowerKSearchResultsKeys } from "@/components/power-k/core/types";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 
+/** "project_management" -> "Project management". Slugs are stored, labels are read. */
+const humaniseDiscipline = (slug: string) => {
+  const words = slug.replace(/_/g, " ");
+  return words.charAt(0).toUpperCase() + words.slice(1);
+};
+
 export type TPowerKSearchResultGroupDetails = {
   icon?: React.ComponentType<{ className?: string }>;
   itemName: (item: any) => React.ReactNode;
-  path: (item: any, projectId: string | undefined) => string;
+  path: (item: any, projectId: string | undefined, workspaceSlug: string | undefined) => string;
   title: string;
 };
 
 export const POWER_K_SEARCH_RESULTS_GROUPS_MAP: Record<TPowerKSearchResultsKeys, TPowerKSearchResultGroupDetails> = {
+  member: {
+    icon: UserIcon,
+    // CCI: the discipline sits beside the name because it is usually WHY you are looking someone
+    // up - "who can take this" rather than "what is this person called".
+    itemName: (member: IWorkspaceMemberSearchResult) => (
+      <p className="flex items-center gap-2">
+        <span>{member.display_name}</span>
+        {member.discipline_slugs?.length > 0 && (
+          <span className="text-11 text-tertiary">{member.discipline_slugs.map(humaniseDiscipline).join(", ")}</span>
+        )}
+      </p>
+    ),
+    // Their profile, which is where availability and what they are working on already live.
+    path: (member: IWorkspaceMemberSearchResult, _projectId, workspaceSlug?: string) =>
+      `/${workspaceSlug}/profile/${member.id}`,
+    title: "People",
+  },
   cycle: {
     icon: ContrastIcon,
     itemName: (cycle: IWorkspaceDefaultSearchResult) => (

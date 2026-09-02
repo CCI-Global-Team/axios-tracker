@@ -24,9 +24,12 @@ export const PowerKModalSearchResults = observer(function PowerKModalSearchResul
   const { closePalette, results } = props;
   // router
   const router = useAppRouter();
-  const { projectId: routerProjectId } = useParams();
+  const { projectId: routerProjectId, workspaceSlug: routerWorkspaceSlug } = useParams();
   // derived values
   const projectId = routerProjectId?.toString();
+  // CCI: member results link to a profile, which is workspace-scoped rather than project-scoped,
+  // so the slug has to reach path(). Every other group ignores the extra argument.
+  const workspaceSlug = routerWorkspaceSlug?.toString();
 
   return (
     <>
@@ -57,7 +60,7 @@ export const PowerKModalSearchResults = observer(function PowerKModalSearchResul
                   icon={currentSection.icon}
                   onSelect={() => {
                     closePalette();
-                    router.push(currentSection.path(item, projectId));
+                    router.push(currentSection.path(item, projectId, workspaceSlug));
                     // const itemProjectId =
                     //   item?.project_id ||
                     //   (Array.isArray(item?.project_ids) && item?.project_ids?.length > 0

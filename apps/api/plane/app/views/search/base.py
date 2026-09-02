@@ -8,6 +8,7 @@ import re
 # Django imports
 from django.db import models
 from django.db.models import (
+    F,
     Q,
     OuterRef,
     Subquery,
@@ -40,6 +41,8 @@ from plane.db.models import (
     ProjectMember,
     ProjectPage,
     WorkspaceMember,
+    MemberDiscipline,
+    User,
 )
 
 
@@ -78,6 +81,62 @@ class GlobalSearchEndpoint(BaseAPIView):
             .order_by("-created_at")
             .distinct()
             .values("name", "id", "identifier", "workspace__slug")
+        )
+
+    def filter_members(self, query, slug, _project_id, _workspace_search):
+        """CCI: people are searchable, which upstream does not do.
+
+        A tracker that can find a work item but not the person you would hand it to sends you off
+        to a settings page for something the search bar is already open for.
+
+        Disciplines are matched as well as names, so typing "frontend" answers "who can do this?"
+        rather than only "who is called that?". The query is normalised to the stored slug, because
+        the label a person reads ("Project Management") is not the value stored
+        ("project_management").
+
+        Queried from User rather than WorkspaceMember so the rows carry a plain `id` and `name`,
+        which is what the shared results renderer keys on; prefixed columns would have made every
+        row collide on an undefined key.
+        """
+        q = Q()
+        if query:
+            for field in ["display_name", "first_name", "last_name"]:
+                q |= Q(**{f"{field}__icontains": query})
+            # Email matches from the START only. As a substring, "gmail" returned all 66 people,
+            # which is a result set nobody wanted and which buries the work items underneath it.
+            q |= Q(email__istartswith=query)
+            slug_query = query.strip().lower().replace(" ", "_").replace("-", "_")
+            q |= Q(
+                id__in=MemberDiscipline.objects.filter(
+                    workspace__slug=slug, disciplines__contains=[slug_query]
+                ).values_list("member_id", flat=True)
+            )
+
+        disciplines_for_member = MemberDiscipline.objects.filter(
+            workspace__slug=slug, member_id=OuterRef("id")
+        ).values("disciplines")[:1]
+
+        return (
+            User.objects.filter(
+                q,
+                member_workspace__workspace__slug=slug,
+                member_workspace__is_active=True,
+                is_bot=False,
+                is_active=True,
+            )
+            .annotate(
+                name=F("display_name"),
+                # Not `disciplines`: MemberDiscipline reverses onto User under that name, and an
+                # annotation cannot shadow a relation. The slug spelling is also the honest one -
+                # these are stored values, not the labels a reader sees.
+                discipline_slugs=Coalesce(
+                    Subquery(disciplines_for_member, output_field=ArrayField(CharField())),
+                    Value([], output_field=ArrayField(CharField())),
+                ),
+            )
+            .order_by("display_name")
+            .distinct()
+            .values("id", "name", "display_name", "email", "discipline_slugs")
         )
 
     def filter_issues(self, query, slug, project_id, workspace_search):
@@ -283,6 +342,7 @@ class GlobalSearchEndpoint(BaseAPIView):
             "issue_view": self.filter_views,
             "page": self.filter_pages,
             "intake": self.filter_intakes,
+            "member": self.filter_members,
         }
 
         # Determine which entities to search
