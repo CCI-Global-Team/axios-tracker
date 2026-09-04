@@ -18,7 +18,7 @@ import { CheckIcon, SearchIcon, SuspendedUserIcon } from "@plane/propel/icons";
 import { EPillSize, EPillVariant, Pill } from "@plane/propel/pill";
 import type { IUserLite } from "@plane/types";
 import { Avatar } from "@plane/ui";
-import { cn, getFileURL, sortByCurrentUserThenSelected } from "@plane/utils";
+import { cn, getFileURL, getMemberHandle, getMemberName, sortByCurrentUserThenSelected } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 import { useUser } from "@/hooks/store/user";
@@ -169,9 +169,7 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
         value: userId,
         // Discipline labels join the search text, so typing "front" narrows to Frontend people
         // without touching the chips - the two ways of narrowing compose rather than compete.
-        query: `${userDetails?.display_name} ${userDetails?.first_name} ${userDetails?.last_name} ${(
-          disciplinesByMemberId.get(userId) || []
-        )
+        query: `${getMemberName(userDetails)} ${userDetails?.display_name} ${(disciplinesByMemberId.get(userId) || [])
           .map((d) => disciplineLabel.get(d) ?? d)
           .join(" ")}`,
         content: (
@@ -181,7 +179,7 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
                 <SuspendedUserIcon className="h-3.5 w-3.5 text-placeholder" />
               ) : (
                 <Avatar
-                  name={userDetails?.display_name}
+                  name={getMemberName(userDetails)}
                   src={getFileURL(userDetails?.avatar_url ?? "")}
                   fallbackSeed={userId}
                 />
@@ -193,7 +191,14 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
                 isUserSuspended(userId, workspaceSlug?.toString()) ? "text-placeholder" : ""
               )}
             >
-              {currentUser?.id === userId ? t("you") : userDetails?.display_name}
+              {/* The real name, not the handle: display_name is the email local part for almost
+                  everyone here, and nobody recognises `dikedaniel7917` in a list of seventy. The
+                  handle follows in muted text ONLY when it differs, so it disambiguates without
+                  putting a redundant second string under every row. */}
+              {currentUser?.id === userId ? t("you") : getMemberName(userDetails)}
+              {currentUser?.id !== userId && getMemberHandle(userDetails) && (
+                <span className="ml-1.5 text-tertiary">{getMemberHandle(userDetails)}</span>
+              )}
             </span>
             {/* Silence is left blank rather than dashed: this is a picking surface, and a column
                 of dashes would add noise to every row without helping anyone choose. The roster
