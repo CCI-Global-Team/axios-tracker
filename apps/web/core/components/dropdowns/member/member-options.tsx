@@ -230,7 +230,10 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     <Combobox.Options data-prevent-outside-click static>
       <div
         className={cn(
-          "z-30 my-1 w-48 rounded-sm border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 text-11 shadow-raised-200 focus:outline-none",
+          // w-72, not the w-48 this inherited: the row now carries a real name, the handle where it
+          // differs, and hours beside an open count. At 192px that truncated people mid-name, which
+          // defeats the point of showing names at all.
+          "z-30 my-1 w-72 rounded-sm border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 text-11 shadow-raised-200 focus:outline-none",
           optionsClassName
         )}
         ref={setPopperElement}
