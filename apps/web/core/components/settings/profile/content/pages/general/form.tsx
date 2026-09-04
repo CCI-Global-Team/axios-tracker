@@ -227,12 +227,14 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
                       </div>
                     ) : (
                       <div className="relative h-16 w-16 overflow-hidden">
+                        {/* No onClick or role here: this sits inside a <button> that already
+                            opens the same modal, so the handler was redundant and the role put a
+                            button inside a button. Removing both also clears the two a11y
+                            warnings the duplication produced. */}
                         <img
                           src={getFileURL(userAvatar)}
                           className="absolute top-0 left-0 h-full w-full rounded-lg object-cover"
-                          onClick={() => setIsImageUploadModalOpen(true)}
                           alt={currentUser?.display_name}
-                          role="button"
                         />
                       </div>
                     )}
@@ -290,7 +292,7 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
                       placeholder="Enter your first name"
                       className={`w-full rounded-md ${errors.first_name ? "border-danger-strong" : ""}`}
                       maxLength={50}
-                      autoComplete="on"
+                      autoComplete="given-name"
                     />
                   )}
                 />
@@ -316,7 +318,7 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
                       placeholder="Enter your last name"
                       className="w-full rounded-md"
                       maxLength={50}
-                      autoComplete="on"
+                      autoComplete="family-name"
                     />
                   )}
                 />
@@ -376,7 +378,7 @@ export const GeneralProfileSettingsForm = observer(function GeneralProfileSettin
                       className={`w-full cursor-not-allowed rounded-md !bg-surface-2 ${
                         errors.email ? "border-danger-strong" : ""
                       }`}
-                      autoComplete="on"
+                      autoComplete="email"
                       disabled
                     />
                   )}

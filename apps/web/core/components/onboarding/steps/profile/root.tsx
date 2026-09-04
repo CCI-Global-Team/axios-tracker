@@ -193,23 +193,27 @@ export const ProfileSetupStep = observer(function ProfileSetupStep({ handleStepC
       </div>
 
       <div className="flex w-full flex-col gap-6">
-        {/* Name Input */}
+        {/* CCI: two fields, not one. This asked for "your full name" and wrote all of it into
+            first_name while last_name - already in the form state and already submitted - was
+            never rendered. 48 of 77 members ended up with their whole name in first_name and an
+            empty last_name, and the settings form two clicks away asks for the two separately.
+            People were doing exactly what the form told them to. */}
         <div className="flex flex-col gap-2">
           <label
             className="block text-13 font-medium text-tertiary after:ml-0.5 after:text-danger-primary after:content-['*']"
             htmlFor="first_name"
           >
-            Name
+            First name
           </label>
           <Controller
             control={control}
             name="first_name"
             rules={{
-              required: "Name is required",
+              required: "First name is required",
               validate: validatePersonName,
               maxLength: {
                 value: 50,
-                message: "Name must be within 50 characters.",
+                message: "First name must be within 50 characters.",
               },
             }}
             render={({ field: { value, onChange, ref } }) => (
@@ -227,12 +231,59 @@ export const ProfileSetupStep = observer(function ProfileSetupStep({ handleStepC
                     "border-danger-strong": errors.first_name,
                   }
                 )}
-                placeholder="Enter your full name"
-                autoComplete="on"
+                placeholder="Enter your first name"
+                // oxlint's autocomplete-valid token list is missing the name tokens; both are valid
+                // per the HTML spec. The token it does accept here is "name", which means FULL name -
+                // browsers would autofill the whole name into this box, which is the bug being fixed.
+                // oxlint-disable-next-line jsx-a11y/autocomplete-valid
+                autoComplete="given-name"
               />
             )}
           />
           {errors.first_name && <span className="text-13 text-danger-primary">{errors.first_name.message}</span>}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {/* Optional: plenty of people go by a single name, and forcing a second one just gets a
+              placeholder typed into it. */}
+          <label className="block text-13 font-medium text-tertiary" htmlFor="last_name">
+            Last name
+          </label>
+          <Controller
+            control={control}
+            name="last_name"
+            rules={{
+              validate: (value) => (value ? validatePersonName(value) : true),
+              maxLength: {
+                value: 50,
+                message: "Last name must be within 50 characters.",
+              },
+            }}
+            render={({ field: { value, onChange, ref } }) => (
+              <input
+                ref={ref}
+                id="last_name"
+                name="last_name"
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className={cn(
+                  "w-full rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-all duration-200 placeholder:text-placeholder focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
+                  {
+                    "border-strong": !errors.last_name,
+                    "border-danger-strong": errors.last_name,
+                  }
+                )}
+                placeholder="Enter your last name"
+                // oxlint's autocomplete-valid token list is missing the name tokens; both are valid
+                // per the HTML spec. The token it does accept here is "name", which means FULL name -
+                // browsers would autofill the whole name into this box, which is the bug being fixed.
+                // oxlint-disable-next-line jsx-a11y/autocomplete-valid
+                autoComplete="family-name"
+              />
+            )}
+          />
+          {errors.last_name && <span className="text-13 text-danger-primary">{errors.last_name.message}</span>}
         </div>
 
         {/* setting up password for the first time */}
