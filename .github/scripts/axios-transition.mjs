@@ -4,6 +4,9 @@
  *   branch created / PR opened, with a ticket key in the name  ->  In Progress
  *   PR merged into the default branch                          ->  Ready for Test
  *
+ * It also comments the pull request onto the work item, whether or not the state moves - see
+ * linkPullRequest for why that separation matters.
+ *
  * Run from .github/workflows/axios-transition.yml. Reads the GitHub event payload; talks to
  * Axios with the bot's API token.
  *
