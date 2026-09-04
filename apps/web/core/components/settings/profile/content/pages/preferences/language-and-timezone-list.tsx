@@ -12,6 +12,7 @@ import { CustomSelect } from "@plane/ui";
 // components
 import { TimezoneSelect } from "@/components/global";
 import { AvailabilityPreference } from "@/components/profile/availability-preference";
+import { DisciplinePreference } from "@/components/profile/discipline-preference";
 import { StartOfWeekPreference } from "@/components/profile/start-of-week-preference";
 import { SettingsControlItem } from "@/components/settings/control-item";
 // hooks
@@ -104,6 +105,7 @@ export const ProfileSettingsLanguageAndTimezonePreferencesList = observer(
           }}
         />
         <AvailabilityPreference />
+        <DisciplinePreference />
       </div>
     );
   }

@@ -96,11 +96,45 @@ async function otherOpenPRs(key, repo, thisNumber) {
   );
 }
 
-async function transition(key, targetName, { repo, prNumber } = {}) {
+/** Put the pull request on the work item, so someone reading the ticket can find the code.
+ *
+ *  Deliberately separate from the state change and run BEFORE it: the link is useful even when
+ *  the ticket does not move — a second PR against a ticket already In Progress, or a merge held
+ *  back because sibling PRs are still open, are exactly the cases where you want the trail.
+ *
+ *  Idempotent by searching existing comments for the PR's own URL, because the same PR fires this
+ *  on open and again on merge, and a ticket accumulating the same link four times is noise. */
+async function linkPullRequest(issue, pr) {
+  const url = pr?.html_url;
+  if (!url) return;
+
+  const listed = await axios(`/projects/${issue.project}/issues/${issue.id}/comments/`);
+  if (listed.ok) {
+    const existing = (await listed.json()).results || [];
+    if (existing.some((c) => (c.comment_html || "").includes(url))) return;
+  } else {
+    // Not fatal: a duplicate link is better than losing the link entirely.
+    log(`  could not read comments (HTTP ${listed.status}) — posting anyway`);
+  }
+
+  const title = String(pr.title || "").replace(/[<>&]/g, (ch) => `&#${ch.charCodeAt(0)};`);
+  const res = await axios(`/projects/${issue.project}/issues/${issue.id}/comments/`, {
+    method: "POST",
+    body: JSON.stringify({
+      comment_html: `<p>Pull request: <a href="${url}">${url}</a><br/>${title}</p>`,
+    }),
+  });
+  log(res.ok ? `  linked ${url}` : `  could not link PR (HTTP ${res.status})`);
+}
+
+async function transition(key, targetName, { repo, prNumber, pr } = {}) {
   const issueRes = await axios(`/issues/${key}/`);
   if (issueRes.status === 404) return log(`  ${key}: no such work item — skipping`);
   if (!issueRes.ok) return log(`  ${key}: lookup failed (HTTP ${issueRes.status}) — skipping`);
   const issue = await issueRes.json();
+
+  // Before the rank checks below, all of which can return early.
+  await linkPullRequest(issue, pr);
 
   const statesRes = await axios(`/projects/${issue.project}/states/`);
   if (!statesRes.ok) return log(`  ${key}: could not read states (HTTP ${statesRes.status})`);
@@ -152,9 +186,12 @@ async function main() {
   let keys = [];
   let target = null;
   let prNumber;
+  // Declared out here because transition() below needs it, and a push event simply leaves it
+  // undefined - linkPullRequest returns immediately without one.
+  let pr;
 
   if (name === "pull_request") {
-    const pr = event.pull_request;
+    pr = event.pull_request;
     prNumber = pr.number;
     // The title wins when it carries a key. A branch name is fixed once it is pushed and
     // people have it checked out, so it is the field that goes stale; the title is the one
@@ -192,7 +229,7 @@ async function main() {
   // at 60 requests a minute and each transition spends three or four, so firing a PR's keys in
   // parallel is how you get a 429 instead of a state change.
   // eslint-disable-next-line no-await-in-loop
-  for (const key of keys) await transition(key, target, { repo, prNumber });
+  for (const key of keys) await transition(key, target, { repo, prNumber, pr });
 }
 
 main().catch((e) => {
