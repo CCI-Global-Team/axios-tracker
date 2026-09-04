@@ -197,7 +197,11 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                         {
                             "actor_comments": comment,
                             "actor_detail": {
-                                "avatar_url": f"{base_api}{actor.avatar_url}",
+                                # The template falls back to an initial in a coloured circle when this is empty, but
+                                # an unconditional f-string is truthy even with no avatar - it renders as the
+                                # bare site URL, so the guard never fired and every avatarless actor showed a
+                                # broken image instead of their initial.
+                                "avatar_url": f"{base_api}{actor.avatar_url}" if actor.avatar_url else "",
                                 "first_name": actor.first_name,
                                 "last_name": actor.last_name,
                             },
@@ -210,7 +214,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                         {
                             "actor_comments": mention,
                             "actor_detail": {
-                                "avatar_url": f"{base_api}{actor.avatar_url}",
+                                "avatar_url": f"{base_api}{actor.avatar_url}" if actor.avatar_url else "",
                                 "first_name": actor.first_name,
                                 "last_name": actor.last_name,
                             },
@@ -224,7 +228,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                     template_data.append(
                         {
                             "actor_detail": {
-                                "avatar_url": f"{base_api}{actor.avatar_url}",
+                                "avatar_url": f"{base_api}{actor.avatar_url}" if actor.avatar_url else "",
                                 "first_name": actor.first_name,
                                 "last_name": actor.last_name,
                             },
