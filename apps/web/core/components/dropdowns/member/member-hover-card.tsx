@@ -50,7 +50,10 @@ export const MemberHoverCard = observer(function MemberHoverCard(props: Props) {
       {/* Rendered as a div, not the default button: this sits inside a Combobox.Option, and a
           nested button swallows the click that selects the person. */}
       <Popover.Button render={<div className="w-full" />}>{children}</Popover.Button>
-      <Popover.Panel side="right" align="start" sideOffset={12}>
+      {/* Opens to the LEFT. The assignee dropdown sits at the right-hand end of a work item
+          row, so "right" had no room and the card was clipped mid-word - the labels came out
+          as "ne" and "ek". Leftwards it opens over the table, where there is space. */}
+      <Popover.Panel side="left" align="start" sideOffset={12}>
         <div className="w-64 rounded-lg border-[0.5px] border-strong bg-surface-1 p-3 text-11 shadow-raised-200">
           <div className="flex items-center gap-3">
             <Avatar
