@@ -60,7 +60,11 @@ export const MemberHoverCard = observer(function MemberHoverCard(props: Props) {
           and roughly 60px of its left edge failed to paint - the labels were there in the
           DOM, at the right coordinates, with nothing clipping them, but the table showed
           through on top of them. Not worth more time when a working placement exists. */}
-      <Popover.Panel side="bottom" align="end" sideOffset={8}>
+      {/* z-50 on the positioner. The dropdown this sits inside renders a full-viewport layer
+          at z-30, and the popover positioner defaults to z-index auto - so the card was
+          painted UNDERNEATH it. It was in the DOM at the right coordinates, reported
+          visible, and elementFromPoint even returned the card, but nothing was drawn. */}
+      <Popover.Panel side="bottom" align="end" sideOffset={8} positionerClassName="z-50">
         <div className="w-60 rounded-lg border-[0.5px] border-strong bg-surface-1 p-3 text-11 shadow-raised-200">
           <div className="flex items-center gap-3">
             <Avatar
