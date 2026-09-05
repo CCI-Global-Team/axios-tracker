@@ -17,7 +17,7 @@ import { useMember } from "@/hooks/store/use-member";
 import { useUser, useUserPermissions } from "@/hooks/store/user";
 import type { IMemberFilters } from "@/store/member/utils";
 // lib
-import { weekStartFor } from "@/lib/availability-week";
+import { formatDeclaredHoursShort, weekStartFor } from "@/lib/availability-week";
 import { DisciplineCell } from "@/components/discipline/discipline-cell";
 // services
 import { WorkspaceService } from "@/services/workspace.service";
@@ -49,7 +49,11 @@ export const useMemberColumns = () => {
     { revalidateOnFocus: false, shouldRetryOnError: false }
   );
   const hoursByMemberId = new Map<string, number>();
-  (availabilityRows || []).forEach((row) => hoursByMemberId.set(row.member_id, row.available_hours));
+  const repeatingByMemberId = new Map<string, boolean>();
+  (availabilityRows || []).forEach((row) => {
+    hoursByMemberId.set(row.member_id, row.available_hours);
+    repeatingByMemberId.set(row.member_id, row.is_persistent);
+  });
 
   // Hand the same numbers to the store so the column is sortable. Without this the column
   // renders correctly and its sort silently does nothing, which is worse than no sort at all.
@@ -201,7 +205,11 @@ export const useMemberColumns = () => {
         return hours === undefined ? (
           <div className="text-tertiary">&mdash;</div>
         ) : (
-          <div className="font-medium tabular-nums">{hours}h</div>
+          // "8h" for this week against "8h weekly" for a standing commitment. The column heading
+          // already says "this week", so only the standing case needs spelling out.
+          <div className="font-medium whitespace-nowrap tabular-nums">
+            {formatDeclaredHoursShort(hours, repeatingByMemberId.get(rowData?.member?.id ?? "") ?? false)}
+          </div>
         );
       },
       thRender: () => (

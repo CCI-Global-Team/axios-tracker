@@ -13,6 +13,8 @@ import { Avatar } from "@plane/ui";
 import { getFileURL, getMemberHandle, getMemberName } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
+// lib
+import { formatDeclaredHours } from "@/lib/availability-week";
 
 type Props = {
   userId: string;
@@ -96,9 +98,8 @@ export const MemberHoverCard = observer(function MemberHoverCard(props: Props) {
                 // Distinct from a declared 0: silence is a person to chase, zero is an answer.
                 <span className="text-tertiary">No answer</span>
               ) : (
-                <span className="text-secondary">
-                  <span className="font-medium tabular-nums">{hours}h</span>
-                  {availability?.is_persistent && <span className="text-tertiary"> · repeats</span>}
+                <span className="font-medium text-secondary tabular-nums">
+                  {formatDeclaredHours(hours, availability?.is_persistent ?? false)}
                 </span>
               )}
             </Row>

@@ -14,7 +14,13 @@ import { cn, getFileURL } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 // lib
-import { formatWeekRange, isCurrentWeek, shiftWeek, weekStartFor } from "@/lib/availability-week";
+import {
+  formatDeclaredHoursShort,
+  formatWeekRange,
+  isCurrentWeek,
+  shiftWeek,
+  weekStartFor,
+} from "@/lib/availability-week";
 // services
 import { WorkspaceService } from "@/services/workspace.service";
 
@@ -215,7 +221,7 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
             label={isFiltered ? "Have hours (filtered)" : "Have hours"}
             value={`${withHours.length} of ${visibleRows.length}`}
           />
-          <Summary label="Repeating" value={`${repeating.length}`} />
+          <Summary label="Weekly" value={`${repeating.length}`} />
           <Summary label={isFiltered ? "Hours (filtered)" : "Total hours"} value={`${totalHours}h`} />
           <Summary label="No answer" value={`${visibleRows.length - withHours.length}`} muted />
         </div>
@@ -266,28 +272,24 @@ export const AvailabilityRoster = observer(function AvailabilityRoster({ workspa
                       {row.hours === null ? (
                         <span className="font-normal text-tertiary">&mdash;</span>
                       ) : (
-                        `${row.hours}h`
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5 text-secondary">
-                      {row.isRepeating && (
-                        // Bordered and tinted so it reads as an object rather than more note text
-                        // — the previous flat chip disappeared into whatever sat beside it. The
-                        // title carries the origin week: "repeats" says the number is not fresh,
-                        // the date says how stale, and staleness is what gets acted on.
+                        // The distinction lives in the value now rather than a chip beside it, so
+                        // "8h weekly" reads as one fact instead of two halves to assemble. The
+                        // title keeps the origin week: "weekly" says the number is not fresh, the
+                        // date says how stale, and staleness is what gets acted on.
                         <span
                           title={
-                            row.carriedFrom
-                              ? `Repeating — last set in the week of ${formatWeekRange(row.carriedFrom)}, carried forward`
-                              : "Repeating — set this week, and will carry into later weeks until changed"
+                            !row.isRepeating
+                              ? undefined
+                              : row.carriedFrom
+                                ? `Set in the week of ${formatWeekRange(row.carriedFrom)} and carried forward`
+                                : "Set this week, and carries into later weeks until changed"
                           }
-                          className="text-xs mr-2 inline-flex items-center rounded-full border border-subtle bg-surface-2 px-2 py-0.5 font-medium tracking-wide text-tertiary uppercase"
                         >
-                          repeats
+                          {formatDeclaredHoursShort(row.hours, row.isRepeating)}
                         </span>
                       )}
-                      {row.note}
                     </td>
+                    <td className="px-4 py-2.5 text-secondary">{row.note}</td>
                   </tr>
                 ))}
                 {visibleRows.length === 0 && (

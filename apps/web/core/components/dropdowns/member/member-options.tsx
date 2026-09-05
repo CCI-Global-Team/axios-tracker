@@ -25,7 +25,7 @@ import { useMember } from "@/hooks/store/use-member";
 import { useUser } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // lib
-import { weekStartFor } from "@/lib/availability-week";
+import { formatDeclaredHoursShort, weekStartFor } from "@/lib/availability-week";
 // services
 import { WorkspaceService } from "@/services/workspace.service";
 
@@ -223,7 +223,11 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
                 hours, so an "hours left" would be invented arithmetic. */}
               {(hoursByMemberId.has(userId) || openIssuesByMemberId.has(userId)) && (
                 <span className="text-xs flex-shrink-0 whitespace-nowrap text-tertiary tabular-nums">
-                  {hoursByMemberId.has(userId) && `${hoursByMemberId.get(userId)}h`}
+                  {hoursByMemberId.has(userId) &&
+                    formatDeclaredHoursShort(
+                      hoursByMemberId.get(userId) ?? 0,
+                      availabilityByMemberId.get(userId)?.is_persistent ?? false
+                    )}
                   {hoursByMemberId.has(userId) && openIssuesByMemberId.has(userId) && " · "}
                   {openIssuesByMemberId.has(userId) && `${openIssuesByMemberId.get(userId)} open`}
                 </span>
