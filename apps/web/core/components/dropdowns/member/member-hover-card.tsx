@@ -47,14 +47,14 @@ export const MemberHoverCard = observer(function MemberHoverCard(props: Props) {
   const handle = getMemberHandle(userDetails);
   const hours = availability?.available_hours;
 
+  // 200ms, not 350: long enough that cards do not flash while someone runs down the list, short
+  // enough that a deliberate hover feels answered. At 350 the pause read as nothing happening,
+  // and the first person to try it concluded the card was missing.
   return (
-    <Popover delay={350} openOnHover>
+    <Popover delay={200} openOnHover>
       {/* Rendered as a div, not the default button: this sits inside a Combobox.Option, and a
           nested button swallows the click that selects the person. */}
       <Popover.Button render={<div className="w-full" />}>{children}</Popover.Button>
-      {/* Opens to the LEFT. The assignee dropdown sits at the right-hand end of a work item
-          row, so "right" had no room and the card was clipped mid-word - the labels came out
-          as "ne" and "ek". Leftwards it opens over the table, where there is space. */}
       {/* Opens below, matching the @-mention card, which is the one placement in this app
           proven to render reliably. Side placements put the card over the work item table
           and roughly 60px of its left edge failed to paint - the labels were there in the
