@@ -303,7 +303,7 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
             <input
               type="checkbox"
               checked={isPersistent}
-              aria-label="Keep these hours for following weeks"
+              aria-label="Use these hours every week"
               onChange={(e) => {
                 persistRef.current = e.target.checked;
                 setIsPersistent(e.target.checked);
@@ -311,7 +311,7 @@ export const AvailabilityPreference = observer(function AvailabilityPreference()
               }}
               className="size-3.5 cursor-pointer"
             />
-            Keep for following weeks
+            Every week
           </label>
         </div>
       }

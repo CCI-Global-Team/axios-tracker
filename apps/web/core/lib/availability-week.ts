@@ -51,3 +51,22 @@ const fromISODate = (iso: string): Date => {
 
 const toISODate = (d: Date): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+/**
+ * CCI: how a declared figure reads.
+ *
+ * "8h" alone cannot say whether someone answered for THIS week or set a standing commitment, and
+ * "repeats" as a separate chip made the reader assemble the two halves themselves. Saying it in
+ * one phrase - "8h this week" against "8h weekly" - is the whole distinction in the value itself.
+ *
+ * Defined once because it appears on five surfaces, and five copies drift.
+ */
+export const formatDeclaredHours = (hours: number, isRepeating: boolean): string =>
+  isRepeating ? `${hours}h weekly` : `${hours}h this week`;
+
+/**
+ * The same distinction, for surfaces whose column heading already says "this week" - repeating the
+ * words in every row of a column called "Available this week" is noise.
+ */
+export const formatDeclaredHoursShort = (hours: number, isRepeating: boolean): string =>
+  isRepeating ? `${hours}h weekly` : `${hours}h`;
