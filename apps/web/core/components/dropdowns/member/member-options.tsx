@@ -16,10 +16,11 @@ import { Combobox } from "@headlessui/react";
 import { useTranslation } from "@plane/i18n";
 import { CheckIcon, SearchIcon, SuspendedUserIcon } from "@plane/propel/icons";
 import { EPillSize, EPillVariant, Pill } from "@plane/propel/pill";
-import type { IUserLite } from "@plane/types";
+import type { IUserLite, TMemberAvailability } from "@plane/types";
 import { Avatar } from "@plane/ui";
 import { cn, getFileURL, getMemberHandle, getMemberName, sortByCurrentUserThenSelected } from "@plane/utils";
 // hooks
+import { MemberHoverCard } from "@/components/dropdowns/member/member-hover-card";
 import { useMember } from "@/hooks/store/use-member";
 import { useUser } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -81,7 +82,12 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     { revalidateOnFocus: false, shouldRetryOnError: false }
   );
   const hoursByMemberId = new Map<string, number>();
-  (availabilityRows || []).forEach((row) => hoursByMemberId.set(row.member_id, row.available_hours));
+  // The whole row, not just the number: the hover card shows the note and the repeating flag.
+  const availabilityByMemberId = new Map<string, TMemberAvailability>();
+  (availabilityRows || []).forEach((row) => {
+    hoursByMemberId.set(row.member_id, row.available_hours);
+    availabilityByMemberId.set(row.member_id, row);
+  });
 
   // Open work items each member already holds, workspace-wide. Hours alone answer "who is free";
   // hours beside load answer "who should take this". Same open-only gate as the availability
@@ -173,48 +179,57 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
           .map((d) => disciplineLabel.get(d) ?? d)
           .join(" ")}`,
         content: (
-          <div className="flex items-center gap-2">
-            <div className="w-4">
-              {isUserSuspended(userId, workspaceSlug?.toString()) ? (
-                <SuspendedUserIcon className="h-3.5 w-3.5 text-placeholder" />
-              ) : (
-                <Avatar
-                  name={getMemberName(userDetails)}
-                  src={getFileURL(userDetails?.avatar_url ?? "")}
-                  fallbackSeed={userId}
-                />
-              )}
-            </div>
-            <span
-              className={cn(
-                "flex-grow truncate",
-                isUserSuspended(userId, workspaceSlug?.toString()) ? "text-placeholder" : ""
-              )}
-            >
-              {/* The real name, not the handle: display_name is the email local part for almost
+          <MemberHoverCard
+            userId={userId}
+            userDetails={userDetails}
+            availability={availabilityByMemberId.get(userId)}
+            disciplines={disciplinesByMemberId.get(userId) ?? []}
+            disciplineLabel={(slug) => disciplineLabel.get(slug) ?? slug}
+            openIssues={openIssuesByMemberId.get(userId)}
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-4">
+                {isUserSuspended(userId, workspaceSlug?.toString()) ? (
+                  <SuspendedUserIcon className="h-3.5 w-3.5 text-placeholder" />
+                ) : (
+                  <Avatar
+                    name={getMemberName(userDetails)}
+                    src={getFileURL(userDetails?.avatar_url ?? "")}
+                    fallbackSeed={userId}
+                  />
+                )}
+              </div>
+              <span
+                className={cn(
+                  "flex-grow truncate",
+                  isUserSuspended(userId, workspaceSlug?.toString()) ? "text-placeholder" : ""
+                )}
+              >
+                {/* The real name, not the handle: display_name is the email local part for almost
                   everyone here, and nobody recognises `dikedaniel7917` in a list of seventy. The
                   handle follows in muted text ONLY when it differs, so it disambiguates without
                   putting a redundant second string under every row. */}
-              {currentUser?.id === userId ? t("you") : getMemberName(userDetails)}
-              {currentUser?.id !== userId && getMemberHandle(userDetails) && (
-                <span className="ml-1.5 text-tertiary">{getMemberHandle(userDetails)}</span>
-              )}
-            </span>
-            {/* Silence is left blank rather than dashed: this is a picking surface, and a column
+                {currentUser?.id === userId ? t("you") : getMemberName(userDetails)}
+                {currentUser?.id !== userId && getMemberHandle(userDetails) && (
+                  <span className="ml-1.5 text-tertiary">{getMemberHandle(userDetails)}</span>
+                )}
+              </span>
+              {/* Silence is left blank rather than dashed: this is a picking surface, and a column
                 of dashes would add noise to every row without helping anyone choose. The roster
                 is where "who hasn't told us" gets answered. */}
-            {/* "15h · 4 open" — a declared figure beside a counted one. Separated rather than
+              {/* "15h · 4 open" — a declared figure beside a counted one. Separated rather than
                 subtracted because they are different KINDS of number: one is what the person
                 said, the other is what is true. Nothing in this edition denominates load in
                 hours, so an "hours left" would be invented arithmetic. */}
-            {(hoursByMemberId.has(userId) || openIssuesByMemberId.has(userId)) && (
-              <span className="text-xs flex-shrink-0 whitespace-nowrap text-tertiary tabular-nums">
-                {hoursByMemberId.has(userId) && `${hoursByMemberId.get(userId)}h`}
-                {hoursByMemberId.has(userId) && openIssuesByMemberId.has(userId) && " · "}
-                {openIssuesByMemberId.has(userId) && `${openIssuesByMemberId.get(userId)} open`}
-              </span>
-            )}
-          </div>
+              {(hoursByMemberId.has(userId) || openIssuesByMemberId.has(userId)) && (
+                <span className="text-xs flex-shrink-0 whitespace-nowrap text-tertiary tabular-nums">
+                  {hoursByMemberId.has(userId) && `${hoursByMemberId.get(userId)}h`}
+                  {hoursByMemberId.has(userId) && openIssuesByMemberId.has(userId) && " · "}
+                  {openIssuesByMemberId.has(userId) && `${openIssuesByMemberId.get(userId)} open`}
+                </span>
+              )}
+            </div>
+          </MemberHoverCard>
         ),
       };
     })
