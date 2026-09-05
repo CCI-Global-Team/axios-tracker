@@ -55,12 +55,13 @@ export const MemberHoverCard = observer(function MemberHoverCard(props: Props) {
       {/* Opens to the LEFT. The assignee dropdown sits at the right-hand end of a work item
           row, so "right" had no room and the card was clipped mid-word - the labels came out
           as "ne" and "ek". Leftwards it opens over the table, where there is space. */}
-      {/* max-w-none on the positioner: base-ui caps the popup at the space it measures to the
-          side of the trigger, and inside a dropdown that measured ~200px - narrower than the
-          card, so the left-aligned labels were clipped to "ne" and "ek". The card sits over
-          the table, where the room actually is. */}
-      <Popover.Panel side="left" align="start" sideOffset={12} positionerClassName="max-w-none">
-        <div className="w-64 rounded-lg border-[0.5px] border-strong bg-surface-1 p-3 text-11 shadow-raised-200">
+      {/* Opens below, matching the @-mention card, which is the one placement in this app
+          proven to render reliably. Side placements put the card over the work item table
+          and roughly 60px of its left edge failed to paint - the labels were there in the
+          DOM, at the right coordinates, with nothing clipping them, but the table showed
+          through on top of them. Not worth more time when a working placement exists. */}
+      <Popover.Panel side="bottom" align="end" sideOffset={8}>
+        <div className="w-60 rounded-lg border-[0.5px] border-strong bg-surface-1 p-3 text-11 shadow-raised-200">
           <div className="flex items-center gap-3">
             <Avatar
               src={getFileURL(userDetails?.avatar_url ?? "")}
