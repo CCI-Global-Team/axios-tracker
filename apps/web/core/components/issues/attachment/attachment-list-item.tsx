@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import { useState } from "react";
 import { observer } from "mobx-react";
 
 import { useTranslation } from "@plane/i18n";
@@ -13,13 +14,21 @@ import type { TIssueServiceType } from "@plane/types";
 import { EIssueServiceType } from "@plane/types";
 // ui
 import { CustomMenu } from "@plane/ui";
-import { convertBytesToSize, getFileExtension, getFileName, getFileURL, renderFormattedDate } from "@plane/utils";
+import {
+  convertBytesToSize,
+  getFileExtension,
+  getFileName,
+  getFileURL,
+  isPreviewableImage,
+  renderFormattedDate,
+} from "@plane/utils";
 // components
 //
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
 import { getFileIcon } from "@/components/icons";
 // helpers
 // hooks
+import { AttachmentImagePreview } from "@/components/issues/attachment/attachment-image-preview";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
 import { usePlatformOS } from "@/hooks/use-platform-os";
@@ -46,23 +55,52 @@ export const IssueAttachmentsListItem = observer(function IssueAttachmentsListIt
   const fileExtension = getFileExtension(attachment?.attributes.name ?? "");
   const fileIcon = getFileIcon(fileExtension, 18);
   const fileURL = getFileURL(attachment?.asset_url ?? "");
+  // Requires a URL as well as a previewable extension: getFileURL can return undefined, and a
+  // preview with no source is a broken box rather than a preview.
+  const isImage = !!fileURL && isPreviewableImage(attachment?.attributes.name);
   // hooks
   const { isMobile } = usePlatformOS();
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   if (!attachment) return <></>;
 
   return (
     <>
+      {isImage && (
+        <AttachmentImagePreview
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          src={fileURL}
+          alt={`${fileName}.${fileExtension}`}
+        />
+      )}
       <button
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          window.open(fileURL, "_blank");
+          // Images open in place; anything the browser cannot render still goes to a new tab.
+          if (isImage) setIsPreviewOpen(true);
+          else window.open(fileURL, "_blank");
         }}
       >
         <div className="group flex h-11 items-center justify-between gap-3 pr-2 pl-9 hover:bg-surface-2">
           <div className="flex items-center gap-3 truncate text-13">
-            <div className="flex items-center gap-3">{fileIcon}</div>
+            <div className="flex items-center gap-3">
+              {isImage ? (
+                <img
+                  src={fileURL}
+                  alt=""
+                  loading="lazy"
+                  className="size-7 flex-shrink-0 rounded border border-subtle object-cover"
+                  // Fall back to the generic icon rather than a broken-image box.
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                fileIcon
+              )}
+            </div>
             <Tooltip tooltipContent={`${fileName}.${fileExtension}`} isMobile={isMobile}>
               <p className="truncate font-medium text-secondary">{`${fileName}.${fileExtension}`}</p>
             </Tooltip>

@@ -5,3 +5,4 @@
  */
 
 export * from "./root";
+export * from "./attachment-image-preview";
