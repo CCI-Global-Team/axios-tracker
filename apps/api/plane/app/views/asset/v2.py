@@ -476,12 +476,19 @@ class WorkspaceFileAssetEndpoint(BaseAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Get the presigned URL
+        # CCI: serve inline so an image opens in the browser instead of landing in the downloads
+        # folder. Script-capable types stay forced to attachment - the same rule
+        # StaticFileAssetEndpoint below already applies, for the same reason: an SVG or HTML file
+        # rendered inline can carry script.
         storage = S3Storage(request=request)
+        asset_mime_type = (asset.attributes.get("type") or "").split(";")[0].strip().lower()
+        disposition = (
+            "attachment" if asset_mime_type in settings.SCRIPT_CAPABLE_MIME_TYPES else "inline"
+        )
         # Generate a presigned URL to share an S3 object
         signed_url = storage.generate_presigned_url(
             object_name=asset.asset.name,
-            disposition="attachment",
+            disposition=disposition,
             filename=asset.attributes.get("name"),
         )
         # Redirect to the signed URL
@@ -683,12 +690,19 @@ class ProjectAssetEndpoint(BaseAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # Get the presigned URL
+        # CCI: serve inline so an image opens in the browser instead of landing in the downloads
+        # folder. Script-capable types stay forced to attachment - the same rule
+        # StaticFileAssetEndpoint below already applies, for the same reason: an SVG or HTML file
+        # rendered inline can carry script.
         storage = S3Storage(request=request)
+        asset_mime_type = (asset.attributes.get("type") or "").split(";")[0].strip().lower()
+        disposition = (
+            "attachment" if asset_mime_type in settings.SCRIPT_CAPABLE_MIME_TYPES else "inline"
+        )
         # Generate a presigned URL to share an S3 object
         signed_url = storage.generate_presigned_url(
             object_name=asset.asset.name,
-            disposition="attachment",
+            disposition=disposition,
             filename=asset.attributes.get("name"),
         )
         # Redirect to the signed URL

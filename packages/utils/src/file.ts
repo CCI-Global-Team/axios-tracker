@@ -42,9 +42,10 @@ export const getBase64Image = async (url: string): Promise<string> => {
     throw new Error("Invalid URL provided");
   }
 
-  // Try to create a URL object to validate the URL
+  // Try to create a URL object to validate the URL. `void` because the parsed value is not
+  // wanted - only whether parsing throws.
   try {
-    new URL(url);
+    void new URL(url);
   } catch {
     throw new Error("Invalid URL format");
   }
@@ -59,17 +60,17 @@ export const getBase64Image = async (url: string): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
-    reader.onloadend = () => {
+    reader.addEventListener("loadend", () => {
       if (reader.result) {
         resolve(reader.result as string);
       } else {
         reject(new Error("Failed to convert image to base64."));
       }
-    };
+    });
 
-    reader.onerror = () => {
+    reader.addEventListener("error", () => {
       reject(new Error("Failed to read the image file."));
-    };
+    });
 
     reader.readAsDataURL(blob);
   });
@@ -93,4 +94,19 @@ export const csvDownload = (data: Array<Array<string>> | { [key: string]: string
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+};
+
+/**
+ * CCI: extensions the browser renders natively, so an attachment can be shown rather than
+ * downloaded.
+ *
+ * SVG is deliberately absent. It can carry script, and the API forces script-capable types to
+ * download for that reason - previewing one here would put back exactly what that guards against.
+ */
+const PREVIEWABLE_IMAGE_EXTENSIONS = new Set(["png", "jpg", "jpeg", "gif", "webp", "avif", "bmp", "ico"]);
+
+export const isPreviewableImage = (fileNameOrExtension: string | undefined | null): boolean => {
+  if (!fileNameOrExtension) return false;
+  const ext = fileNameOrExtension.split(".").pop()?.toLowerCase() ?? "";
+  return PREVIEWABLE_IMAGE_EXTENSIONS.has(ext);
 };
