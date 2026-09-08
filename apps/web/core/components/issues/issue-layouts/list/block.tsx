@@ -168,6 +168,8 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
     isEpic,
     isArchived: !!issue?.archived_at,
   });
+  const isIssuePeeked = getIsIssuePeeked(issue.id) && peekIssue?.nestingLevel === nestingLevel;
+
   return (
     <ControlLink
       id={`issue-${issue.id}`}
@@ -181,9 +183,15 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
         className={cn(
           "group/list-block relative flex min-h-11 flex-col gap-3 bg-layer-transparent py-3 text-13 transition-colors hover:bg-layer-transparent-hover",
           {
-            "border-accent-strong": getIsIssuePeeked(issue.id) && peekIssue?.nestingLevel === nestingLevel,
+            // CCI: the row you are reading in the side pane. This used to be a border COLOUR
+            // change only, which on the dark theme is indistinguishable from the ordinary row
+            // separators - so nothing marked which of thirty rows was open. A left bar plus a
+            // tint reads at a glance, and is deliberately stronger than the checkbox-selection
+            // tint below so the two states stay distinguishable.
+            "bg-accent-primary/10 before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-accent-primary":
+              isIssuePeeked,
             "border-strong-1": isIssueActive,
-            "last:border-b-transparent": !getIsIssuePeeked(issue.id) && !isIssueActive,
+            "last:border-b-transparent": !isIssuePeeked && !isIssueActive,
             "bg-accent-primary/5 hover:bg-accent-primary/10": isIssueSelected,
             "bg-layer-1": isCurrentBlockDragging,
             "md:flex-row md:items-center": isSidebarCollapsed,
