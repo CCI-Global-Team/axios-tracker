@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import { useState } from "react";
 import { observer } from "mobx-react";
 
 import { useTranslation } from "@plane/i18n";
@@ -44,6 +45,11 @@ export const IssueLinkItem = observer(function IssueLinkItem(props: TIssueLinkIt
 
   // const Icon = getIconForLink(linkDetail.url);
   const faviconUrl: string | undefined = linkDetail.metadata?.favicon;
+  // CCI: a stored favicon is not necessarily loadable. Rows written before the crawler validated
+  // content type hold `data:text/html` - a whole challenge page - which renders as a broken-image
+  // icon. Falling back on error covers those without a data migration, and any future bad value.
+  const [faviconFailed, setFaviconFailed] = useState(false);
+  const hasOwnTitle = !!linkDetail.title && linkDetail.title !== "";
   const linkTitle: string | undefined = linkDetail.metadata?.title;
 
   const toggleIssueLinkModal = (modalToggle: boolean) => {
@@ -57,8 +63,8 @@ export const IssueLinkItem = observer(function IssueLinkItem(props: TIssueLinkIt
         className="group 3xl:col-span-2 col-span-12 flex h-10 flex-shrink-0 items-center justify-between gap-3 rounded-sm border-[0.5px] border-subtle bg-surface-2 px-3 hover:bg-layer-1 lg:col-span-6 xl:col-span-4 2xl:col-span-3"
       >
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          {faviconUrl ? (
-            <img src={faviconUrl} alt="favicon" className="size-4 flex-shrink-0" />
+          {faviconUrl && !faviconFailed ? (
+            <img src={faviconUrl} alt="" className="size-4 flex-shrink-0" onError={() => setFaviconFailed(true)} />
           ) : (
             <LinkIcon className="size-4 flex-shrink-0 text-tertiary group-hover:text-primary" />
           )}
@@ -70,10 +76,12 @@ export const IssueLinkItem = observer(function IssueLinkItem(props: TIssueLinkIt
               className="flex w-0 flex-1 cursor-pointer items-center text-body-xs-regular"
             >
               <span className="w-0 flex-1 truncate">
-                {linkDetail.title && linkDetail.title !== "" ? linkDetail.title : linkDetail.url}
-                {linkTitle && linkTitle !== "" && (
-                  <span className="text-caption-sm-regular text-placeholder"> {linkTitle}</span>
-                )}
+                {/* CCI: the crawled title only fills in for a title the person did not give. It
+                    used to be appended to theirs, so a link they had already named read
+                    "GAM-145 - the root fix Just a moment..." - the crawler having been served a
+                    bot-challenge page by our own edge. Their own words are never improved by
+                    whatever a <title> tag happened to say. */}
+                {hasOwnTitle ? linkDetail.title : linkTitle && linkTitle !== "" ? linkTitle : linkDetail.url}
               </span>
             </a>
           </Tooltip>
@@ -82,7 +90,12 @@ export const IssueLinkItem = observer(function IssueLinkItem(props: TIssueLinkIt
           <p className="group-hover-text-secondary p-1 align-bottom text-caption-sm-regular leading-5 text-placeholder">
             {calculateTimeAgo(linkDetail.created_at)}
           </p>
-          <span
+          {/* A real button, not a span: this was a click handler on static markup, so copying a
+              link was impossible by keyboard. The element carries the role and the Enter/Space
+              handling for free. */}
+          <button
+            type="button"
+            aria-label={t("common.link_copied")}
             onClick={() => {
               copyTextToClipboard(linkDetail.url);
               setToast({
@@ -94,7 +107,7 @@ export const IssueLinkItem = observer(function IssueLinkItem(props: TIssueLinkIt
             className="relative grid cursor-pointer place-items-center rounded-sm p-1 text-placeholder outline-none group-hover:text-secondary hover:bg-layer-1"
           >
             <CopyIcon className="h-3.5 w-3.5 stroke-[1.5]" />
-          </span>
+          </button>
           <CustomMenu
             ellipsis
             buttonClassName="text-placeholder group-hover:text-secondary"

@@ -228,6 +228,19 @@ def fetch_and_encode_favicon(
         # Get content type
         content_type = response.headers.get("content-type", "image/x-icon")
 
+        # CCI: a 200 does not mean we were handed an image. A host behind a bot challenge serves
+        # the challenge PAGE for /favicon.ico, and trusting the response's content-type then built
+        # `data:text/html;base64,<an html document>` and stored it as the favicon - which no <img>
+        # can ever render, so every such link showed a broken-image icon. Our own domain does
+        # exactly this, so links between work items were the worst affected.
+        media_type = content_type.split(";")[0].strip().lower()
+        if not media_type.startswith("image/"):
+            logger.warning(f"Favicon at {favicon_url} is {media_type!r}, not an image; using default")
+            return {
+                "favicon_url": None,
+                "favicon_base64": f"data:image/svg+xml;base64,{DEFAULT_FAVICON}",
+            }
+
         # Convert to base64
         favicon_base64 = base64.b64encode(response.content).decode("utf-8")
 
