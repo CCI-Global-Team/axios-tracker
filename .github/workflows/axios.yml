@@ -10,7 +10,12 @@ name: Axios
 on:
   push:
   pull_request:
-    types: [opened, reopened, closed]
+    # `edited` matters: the title takes precedence over the branch name when looking for a ticket
+    # key, and people routinely add the key by renaming a PR they have already opened. Without it
+    # that rename fires nothing, and the work item sits in Todo until the PR merges - skipping In
+    # Progress entirely. Body edits fire this too; the script exits cheaply with no key, and the
+    # PR link it posts is idempotent.
+    types: [opened, reopened, edited, closed]
 
 jobs:
   transition:
