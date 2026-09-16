@@ -5,7 +5,8 @@
  *   PR merged into the default branch                          ->  Ready for Test
  *
  * It also comments the pull request onto the work item, whether or not the state moves - see
- * linkPullRequest for why that separation matters.
+ * linkPullRequest for why that separation matters - and comments the work item back onto the PR,
+ * so the link goes both ways. See linkTicketsOnPullRequest for how that comment stays single.
  *
  * Run from .github/workflows/axios-transition.yml. Reads the GitHub event payload; talks to
  * Axios with the bot's API token.
