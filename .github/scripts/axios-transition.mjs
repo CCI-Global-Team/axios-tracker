@@ -130,33 +130,98 @@ async function linkPullRequest(issue, pr) {
   log(res.ok ? `  linked ${url}` : `  could not link PR (HTTP ${res.status})`);
 }
 
+/** Hidden marker so the bot can find and UPDATE its own comment instead of stacking a new one
+ *  every time the PR is edited, reopened or merged. */
+const PR_COMMENT_MARKER = "<!-- axios-tracker:work-items -->";
+
+/** Put the Axios work item(s) on the pull request, so someone reading the PR can get to the
+ *  ticket. The mirror of linkPullRequest: each side should point at the other, and a link that
+ *  only goes one way means whoever starts at the PR still has to go hunting. */
+async function linkTicketsOnPullRequest(repo, prNumber, keys) {
+  if (!GH_TOKEN || !repo || !prNumber || !keys.length) return;
+
+  const lines = keys.map((k) => `- [${k}](${AXIOS_HOST}/${WORKSPACE}/browse/${k}/)`);
+  const body = [PR_COMMENT_MARKER, "**Axios**", ...lines].join("\n");
+  const api = "https://api.github.com";
+  const headers = {
+    Authorization: `Bearer ${GH_TOKEN}`,
+    Accept: "application/vnd.github+json",
+    "Content-Type": "application/json",
+  };
+
+  const listed = await fetch(`${api}/repos/${repo}/issues/${prNumber}/comments?per_page=100`, { headers });
+  if (listed.ok) {
+    const existing = (await listed.json()).find((c) => (c.body || "").includes(PR_COMMENT_MARKER));
+    if (existing) {
+      // Same keys as last time: nothing to say, and an edit would bump the PR for no reason.
+      if ((existing.body || "").trim() === body.trim()) return log(`  PR comment already current`);
+      const patched = await fetch(`${api}/repos/${repo}/issues/comments/${existing.id}`, {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify({ body }),
+      });
+      return log(
+        patched.ok ? `  updated the PR comment` : `  could not update the PR comment (HTTP ${patched.status})`
+      );
+    }
+  } else {
+    log(`  could not read PR comments (HTTP ${listed.status}) — posting a new one`);
+  }
+
+  const posted = await fetch(`${api}/repos/${repo}/issues/${prNumber}/comments`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ body }),
+  });
+  log(posted.ok ? `  linked ${keys.join(", ")} on the PR` : `  could not comment on the PR (HTTP ${posted.status})`);
+}
+
 async function transition(key, targetName, { repo, prNumber, pr } = {}) {
   const issueRes = await axios(`/issues/${key}/`);
-  if (issueRes.status === 404) return log(`  ${key}: no such work item — skipping`);
-  if (!issueRes.ok) return log(`  ${key}: lookup failed (HTTP ${issueRes.status}) — skipping`);
+  if (issueRes.status === 404) {
+    log(`  ${key}: no such work item — skipping`);
+    return null;
+  }
+  if (!issueRes.ok) {
+    log(`  ${key}: lookup failed (HTTP ${issueRes.status}) — skipping`);
+    return null;
+  }
   const issue = await issueRes.json();
 
   // Before the rank checks below, all of which can return early.
   await linkPullRequest(issue, pr);
 
   const statesRes = await axios(`/projects/${issue.project}/states/`);
-  if (!statesRes.ok) return log(`  ${key}: could not read states (HTTP ${statesRes.status})`);
+  if (!statesRes.ok) {
+    log(`  ${key}: could not read states (HTTP ${statesRes.status})`);
+    return issue;
+  }
   const states = (await statesRes.json()).results || [];
   const byId = Object.fromEntries(states.map((s) => [s.id, s.name]));
   const target = states.find((s) => s.name === targetName);
-  if (!target) return log(`  ${key}: project has no "${targetName}" state — skipping`);
+  if (!target) {
+    log(`  ${key}: project has no "${targetName}" state — skipping`);
+    return issue;
+  }
 
   const currentName = byId[issue.state] || "(unknown)";
-  if (TERMINAL.has(currentName)) return log(`  ${key}: is ${currentName} — leaving it alone`);
+  if (TERMINAL.has(currentName)) {
+    log(`  ${key}: is ${currentName} — leaving it alone`);
+    return issue;
+  }
 
   const from = RANK[currentName] ?? 0;
   const to = RANK[targetName] ?? 0;
-  if (to <= from) return log(`  ${key}: already ${currentName} — not moving back to ${targetName}`);
+  if (to <= from) {
+    log(`  ${key}: already ${currentName} — not moving back to ${targetName}`);
+    return issue;
+  }
 
   if (targetName === "Ready for Test" && repo) {
     const siblings = await otherOpenPRs(key, repo, prNumber);
     if (siblings.length) {
-      return log(`  ${key}: still has open PRs (${siblings.join(", ")}) — not advancing yet`);
+      log(`  ${key}: still has open PRs (${siblings.join(", ")}) — not advancing yet`);
+      return issue;
     }
   }
 
@@ -166,6 +231,7 @@ async function transition(key, targetName, { repo, prNumber, pr } = {}) {
   });
   if (patch.ok) log(`  ${key}: ${currentName} -> ${targetName}`);
   else log(`  ${key}: PATCH failed (HTTP ${patch.status}) ${(await patch.text()).slice(0, 200)}`);
+  return issue;
 }
 
 async function main() {
@@ -231,8 +297,18 @@ async function main() {
   // Sequential on purpose; the lint rule's Promise.all suggestion does not apply. Axios throttles
   // at 60 requests a minute and each transition spends three or four, so firing a PR's keys in
   // parallel is how you get a 429 instead of a state change.
-  // eslint-disable-next-line no-await-in-loop
-  for (const key of keys) await transition(key, target, { repo, prNumber, pr });
+  // Track which keys are real work items, so the PR only links tickets that actually exist.
+  const resolved = [];
+  for (const key of keys) {
+    // Sequential on purpose; the rule's Promise.all suggestion does not apply. See the note on
+    // the old loop below - Axios throttles at 60 requests a minute and each transition spends
+    // three or four.
+    // eslint-disable-next-line no-await-in-loop
+    const issue = await transition(key, target, { repo, prNumber, pr });
+    if (issue) resolved.push(key);
+  }
+
+  if (pr) await linkTicketsOnPullRequest(repo, prNumber, resolved);
 }
 
 main().catch((e) => {
