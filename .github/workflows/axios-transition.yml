@@ -34,7 +34,9 @@ jobs:
     continue-on-error: true
     permissions:
       contents: read
-      pull-requests: read   # to find sibling PRs before advancing to Ready for Test
+      # write, not read: the bot comments the Axios work item onto the PR so the link goes
+      # both ways. Still read-only for finding sibling PRs before advancing to Ready for Test.
+      pull-requests: write
     steps:
       - name: Fetch the transition script
         # From THIS repo, not the caller's, so product repos carry no Axios logic.
