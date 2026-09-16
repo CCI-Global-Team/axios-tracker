@@ -112,23 +112,36 @@ async function linkPullRequest(issue, pr) {
   const url = pr?.html_url;
   if (!url) return;
 
-  const listed = await axios(`/projects/${issue.project}/issues/${issue.id}/comments/`);
+  const title = String(pr.title || url).slice(0, 255);
+  const base = `/projects/${issue.project}/issues/${issue.id}/links/`;
+
+  // A real link, not a comment: the work item has a Links section built for exactly this, and a
+  // link put there is a first-class thing you can see, open and remove. Buried in the activity
+  // feed it scrolls away under every subsequent state change.
+  const listed = await axios(base);
   if (listed.ok) {
-    const existing = (await listed.json()).results || [];
-    if (existing.some((c) => (c.comment_html || "").includes(url))) return;
+    const existing = ((await listed.json()).results || []).find((l) => l.url === url);
+    if (existing) {
+      // The PR title can change after the link is made; keep the label honest.
+      if (existing.title === title) return log(`  ${url} already linked`);
+      const patched = await axios(`${base}${existing.id}/`, {
+        method: "PATCH",
+        body: JSON.stringify({ title }),
+      });
+      return log(
+        patched.ok ? `  retitled the link to ${url}` : `  could not retitle the link (HTTP ${patched.status})`
+      );
+    }
   } else {
-    // Not fatal: a duplicate link is better than losing the link entirely.
-    log(`  could not read comments (HTTP ${listed.status}) — posting anyway`);
+    // Not fatal: the API rejects a duplicate URL on the same work item, so a blind POST is safe.
+    log(`  could not read links (HTTP ${listed.status}) — posting anyway`);
   }
 
-  const title = String(pr.title || "").replace(/[<>&]/g, (ch) => `&#${ch.charCodeAt(0)};`);
-  const res = await axios(`/projects/${issue.project}/issues/${issue.id}/comments/`, {
-    method: "POST",
-    body: JSON.stringify({
-      comment_html: `<p>Pull request: <a href="${url}">${url}</a><br/>${title}</p>`,
-    }),
-  });
-  log(res.ok ? `  linked ${url}` : `  could not link PR (HTTP ${res.status})`);
+  const res = await axios(base, { method: "POST", body: JSON.stringify({ url, title }) });
+  if (res.ok) return log(`  linked ${url}`);
+  // 400 here is almost always the serializer's own "URL already exists for this Issue".
+  const detail = (await res.text()).slice(0, 120);
+  log(res.status === 400 ? `  ${url} already linked` : `  could not link PR (HTTP ${res.status}) ${detail}`);
 }
 
 /** Hidden marker so the bot can find and UPDATE its own comment instead of stacking a new one
