@@ -13,8 +13,8 @@ on:
     # `edited` matters: the title takes precedence over the branch name when looking for a ticket
     # key, and people routinely add the key by renaming a PR they have already opened. Without it
     # that rename fires nothing, and the work item sits in Todo until the PR merges - skipping In
-    # Progress entirely. Body edits fire this too; the script exits cheaply with no key, and the
-    # PR link it posts is idempotent.
+    # Progress entirely. Edits that leave the title alone are refused by the reusable workflow's
+    # job-level if:, which is the only place a run can be stopped before it costs a minute.
     types: [opened, reopened, edited, closed]
 
 jobs:
