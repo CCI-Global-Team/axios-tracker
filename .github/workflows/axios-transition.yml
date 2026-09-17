@@ -9,7 +9,7 @@
 #   on:
 #     push:
 #     pull_request:
-#       types: [opened, reopened, closed]
+#       types: [opened, reopened, edited, closed]
 #   jobs:
 #     transition:
 #       uses: CCI-Global-Team/axios-tracker/.github/workflows/axios-transition.yml@cci/patches
@@ -29,6 +29,16 @@ on:
 jobs:
   transition:
     runs-on: ubuntu-latest
+    # Billing starts when a job reaches a runner, not when a step runs, and every job is rounded
+    # up to a whole minute. So the two cases the script exits on immediately - a push to a branch
+    # that already exists, and a PR edit that left the title alone - have to be refused here or
+    # they are paid for in full. They were about two thirds of this workflow's minutes, against a
+    # 2,000-minute monthly allowance the org has already exhausted once.
+    # github here is the CALLER's context, so this reads the product repo's own event.
+    if: >-
+      (github.event_name == 'push' && github.event.created) ||
+      (github.event_name == 'pull_request' &&
+      (github.event.action != 'edited' || github.event.changes.title != null))
     # Never block a merge or a push. A PR with no ticket key is normal, and a red X on those
     # would teach people to ignore this check entirely.
     continue-on-error: true
