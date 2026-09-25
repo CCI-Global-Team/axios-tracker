@@ -339,12 +339,21 @@ async function currentPullRequest(repo, fromEvent) {
  *  a ticket someone has just asked for changes on. */
 async function openPullRequestTarget(repo, pr) {
   if (pr.draft) return "In Progress";
-  const res = await github(`/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`);
-  if (!res.ok) {
-    log(`  could not read reviews (HTTP ${res.status}) — leaving the state alone`);
-    return null;
+  // Every page: each batch of inline comments is a review of its own, so a busy PR passes 100 and
+  // the verdict that matters is the newest one.
+  const reviews = [];
+  for (let page = 1; ; page++) {
+    // eslint-disable-next-line no-await-in-loop
+    const res = await github(`/repos/${repo}/pulls/${pr.number}/reviews?per_page=100&page=${page}`);
+    if (!res.ok) {
+      log(`  could not read reviews (HTTP ${res.status}) — leaving the state alone`);
+      return null;
+    }
+    // eslint-disable-next-line no-await-in-loop
+    const batch = await res.json();
+    reviews.push(...batch);
+    if (batch.length < 100) break;
   }
-  const reviews = await res.json();
   const blocking = outstandingChangeRequests(reviews, pr.requested_reviewers);
   if (blocking.length) log(`  changes requested by ${blocking.join(", ")}, not yet re-requested`);
   return reviewTarget(pr, reviews);
