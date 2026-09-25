@@ -1,0 +1,25 @@
+{
+  "name": "@plane/axios-transition",
+  "version": "1.4.2",
+  "private": true,
+  "description": "Moves Axios work items on GitHub branch and pull request events; shared by the Actions workflow and the live webhook receiver",
+  "license": "AGPL-3.0",
+  "type": "module",
+  "main": "./index.mjs",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.mjs"
+    },
+    "./cli": "./cli.mjs",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check:lint": "oxlint --max-warnings=0 .",
+    "check:format": "oxfmt --check .",
+    "fix:lint": "oxlint --fix .",
+    "fix:format": "oxfmt ."
+  }
+}
