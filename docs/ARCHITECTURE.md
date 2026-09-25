@@ -57,9 +57,12 @@ zero hours, silently, with no error.
 - **No Discord integration.** Nothing here talks to Discord. If CCI wants Axios Tracker activity in
   Discord, that's an external bot subscribing to Plane's webhooks/API, not an in-tree patch — see
   `axios-tracker-ops/bot`.
-- **No GitHub automation** (auto-linking commits/PRs to work items, status transitions on PR merge,
-  etc.). Same reasoning: an external integration against the public API, not a fork patch, if it's
-  ever built.
+- **GitHub automation is the one exception to "external, not in-tree".** Work item transitions from
+  branches, PRs and reviews live in `packages/axios-transition` and are received by a webhook endpoint
+  in `apps/live` (`/live/github/webhook`). It started as an external Actions workflow and moved in
+  because every Actions run cost a billed minute against the org's hard cap, and a webhook on the
+  server costs none. It still talks to Axios only through the public API with the bot's token, so it
+  touches no Plane internals. See `packages/axios-transition/README.md`.
 - **No vocabulary rename.** An earlier patch (`cci: rename Cycles to Sprints in en locale`) rewrote
   the user-facing English locale strings for Plane's "Cycle" concept to "Sprint," on the theory that
   "Sprint" is the term CCI actually uses. It was **dropped** (`cci: drop the Cycles->Sprints rename`)
