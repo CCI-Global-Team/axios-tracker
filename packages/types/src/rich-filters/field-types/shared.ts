@@ -36,6 +36,8 @@ export type TBaseFilterFieldConfig = {
 export interface IFilterOption<V extends TFilterValue> {
   id: string;
   label: string;
+  /** CCI: extra text the option search matches besides the label */
+  searchText?: string;
   value: V;
   icon?: React.ReactNode;
   iconClassName?: string;

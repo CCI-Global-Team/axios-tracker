@@ -11,6 +11,7 @@ import { COMPARISON_OPERATOR, EQUALITY_OPERATOR } from "@plane/types";
 import { getDatePickerConfig, getDateRangePickerConfig, getMultiSelectConfig } from "../core";
 import type { IFilterIconConfig, TCreateDateFilterParams, TCreateFilterConfigParams, TFilterIconType } from "../shared";
 import { createOperatorConfigEntry } from "../shared";
+import { getMemberName } from "../../../../member-name";
 
 // ------------ Base User Filter Types ------------
 
@@ -32,7 +33,9 @@ export const getMemberMultiSelectConfig = (params: TCreateUserFilterParams, sing
     {
       items: params.members,
       getId: (member) => member.id,
-      getLabel: (member) => member.display_name,
+      // CCI: people are known by name, not by the email-derived handle; the handle and email stay searchable.
+      getLabel: (member) => getMemberName(member),
+      getSearchText: (member) => `${member.display_name} ${member.email ?? ""}`,
       getValue: (member) => member.id,
       getIconData: (member) => member,
     },

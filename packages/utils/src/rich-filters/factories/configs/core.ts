@@ -22,6 +22,8 @@ export interface TOptionTransforms<TItem, TValue extends TFilterValue = string, 
   getLabel: (item: TItem) => string;
   getValue: (item: TItem) => TValue;
   getIconData?: (item: TItem) => TIconData;
+  /** CCI: extra text the option search matches besides the label (e.g. a person's handle and email). */
+  getSearchText?: (item: TItem) => string;
 }
 
 /**
@@ -54,6 +56,7 @@ export const getSingleSelectConfig = <
       transforms.items.map((item) => ({
         id: transforms.getId(item),
         label: transforms.getLabel(item),
+        searchText: transforms.getSearchText?.(item),
         value: transforms.getValue(item),
         icon: iconConfig?.getOptionIcon?.(transforms.getIconData?.(item) as TIconData),
       })),
@@ -91,6 +94,7 @@ export const getMultiSelectConfig = <
       transforms.items.map((item) => ({
         id: transforms.getId(item),
         label: transforms.getLabel(item),
+        searchText: transforms.getSearchText?.(item),
         value: transforms.getValue(item),
         icon: iconConfig?.getOptionIcon?.(transforms.getIconData?.(item) as TIconData),
       })),
