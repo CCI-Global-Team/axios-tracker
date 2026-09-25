@@ -40,7 +40,8 @@ export const POWER_K_SEARCH_RESULTS_GROUPS_MAP: Record<TPowerKSearchResultsKeys,
     // up - "who can take this" rather than "what is this person called".
     itemName: (member: IWorkspaceMemberSearchResult) => (
       <p className="flex items-center gap-2">
-        <span>{member.display_name}</span>
+        <span>{member.name}</span>
+        {member.name !== member.display_name && <span className="text-11 text-tertiary">{member.display_name}</span>}
         {member.discipline_slugs?.length > 0 && (
           <span className="text-11 text-tertiary">{member.discipline_slugs.map(humaniseDiscipline).join(", ")}</span>
         )}

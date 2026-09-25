@@ -10,7 +10,7 @@ import { observer } from "mobx-react";
 // plane ui
 import { Avatar, Loader } from "@plane/ui";
 // components
-import { getFileURL } from "@plane/utils";
+import { getFileURL, getMemberName, memberMatchesSearch } from "@plane/utils";
 import { FilterHeader, FilterOption } from "@/components/issues/issue-layouts/filters";
 // helpers
 // hooks
@@ -37,13 +37,13 @@ export const FilterAssignees = observer(function FilterAssignees(props: Props) {
 
   const sortedOptions = useMemo(() => {
     const filteredOptions = (memberIds || []).filter((memberId) =>
-      getUserDetails(memberId)?.display_name.toLowerCase().includes(searchQuery.toLowerCase())
+      memberMatchesSearch(getUserDetails(memberId), searchQuery)
     );
 
     return sortBy(filteredOptions, [
       (memberId) => !(appliedFilters ?? []).includes(memberId),
       (memberId) => memberId !== currentUser?.id,
-      (memberId) => getUserDetails(memberId)?.display_name.toLowerCase(),
+      (memberId) => getMemberName(getUserDetails(memberId)).toLowerCase(),
     ]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
@@ -74,7 +74,7 @@ export const FilterAssignees = observer(function FilterAssignees(props: Props) {
                   return (
                     <FilterOption
                       key={`assignees-${member.id}`}
-                      isChecked={appliedFilters?.includes(member.id) ? true : false}
+                      isChecked={!!appliedFilters?.includes(member.id)}
                       onClick={() => handleUpdate(member.id)}
                       icon={
                         <Avatar
@@ -84,7 +84,7 @@ export const FilterAssignees = observer(function FilterAssignees(props: Props) {
                           size="md"
                         />
                       }
-                      title={currentUser?.id === member.id ? "You" : member?.display_name}
+                      title={currentUser?.id === member.id ? "You" : getMemberName(member)}
                     />
                   );
                 })}

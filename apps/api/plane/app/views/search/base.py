@@ -20,7 +20,7 @@ from django.db.models import (
 )
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.contrib.postgres.fields import ArrayField
-from django.db.models.functions import Cast, Coalesce, Concat
+from django.db.models.functions import Cast, Coalesce, Concat, NullIf, Trim
 from django.utils import timezone
 
 # Third party imports
@@ -125,7 +125,13 @@ class GlobalSearchEndpoint(BaseAPIView):
                 is_active=True,
             )
             .annotate(
-                name=F("display_name"),
+                # The real name, which is what people type and expect to read. display_name is the
+                # email-derived handle for most of this workspace; it is still returned below.
+                name=Coalesce(
+                    NullIf(Trim(Concat("first_name", Value(" "), "last_name")), Value("")),
+                    F("display_name"),
+                    output_field=CharField(),
+                ),
                 # Not `disciplines`: MemberDiscipline reverses onto User under that name, and an
                 # annotation cannot shadow a relation. The slug spelling is also the honest one -
                 # these are stored values, not the labels a reader sees.
@@ -134,7 +140,7 @@ class GlobalSearchEndpoint(BaseAPIView):
                     Value([], output_field=ArrayField(CharField())),
                 ),
             )
-            .order_by("display_name")
+            .order_by("name")
             .distinct()
             .values("id", "name", "display_name", "email", "discipline_slugs")
         )
