@@ -53,6 +53,12 @@ export const PowerKModalSearchResults = observer(function PowerKModalSearchResul
                 value = `${value}-${item.sequence_id}`;
               }
 
+              // CCI: a person is found by name, handle or email on the server; the palette filters
+              // again on this string, so it has to carry all three or it hides what the server found.
+              if ("display_name" in item && "email" in item) {
+                value = `${value}-${item.display_name}-${item.email}`;
+              }
+
               return (
                 <PowerKModalCommandItem
                   key={item.id}

@@ -36,3 +36,18 @@ export const getMemberHandle = (user: TNameable | null | undefined): string => {
   if (!user?.display_name) return "";
   return getMemberName(user) === user.display_name ? "" : user.display_name;
 };
+
+/**
+ * CCI: whether a member matches what someone typed into a member search. People search for a
+ * colleague by the name they know ("Happy", "Chukwuma"), not by the email-derived handle, so the
+ * real name, the handle and the email all count. Case-insensitive; an empty query matches everyone.
+ */
+export const memberMatchesSearch = (
+  user: (TNameable & { email?: string | null }) | null | undefined,
+  query: string
+): boolean => {
+  if (!user) return false;
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return `${getMemberName(user)} ${user.display_name ?? ""} ${user.email ?? ""}`.toLowerCase().includes(needle);
+};

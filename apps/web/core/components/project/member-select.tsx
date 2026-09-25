@@ -12,7 +12,7 @@ import { EUserProjectRoles } from "@plane/types";
 // plane ui
 import { Avatar, CustomSearchSelect } from "@plane/ui";
 // helpers
-import { getFileURL } from "@plane/utils";
+import { getFileURL, getMemberName } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 
@@ -41,11 +41,11 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
 
       return {
         value: `${memberDetails?.member.id}`,
-        query: `${memberDetails?.member.display_name}`,
+        query: `${getMemberName(memberDetails?.member)} ${memberDetails?.member.display_name} ${memberDetails?.member.email ?? ""}`,
         content: (
           <div className="flex items-center gap-2">
             <Avatar name={memberDetails?.member.display_name} src={getFileURL(memberDetails?.member.avatar_url)} />
-            {memberDetails?.member.display_name}
+            {getMemberName(memberDetails?.member)}
           </div>
         ),
       };
@@ -68,7 +68,7 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
             <Avatar name={selectedOption.member?.display_name} src={getFileURL(selectedOption.member?.avatar_url)} />
           )}
           {selectedOption ? (
-            selectedOption.member?.display_name
+            getMemberName(selectedOption.member)
           ) : (
             <div className="flex items-center gap-2">
               <Ban className="h-3.5 w-3.5 rotate-90 text-placeholder" />
@@ -79,7 +79,6 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
       }
       buttonClassName="!px-3 !py-2 bg-surface-1"
       options={
-        options &&
         options && [
           ...options,
           {
