@@ -28,6 +28,12 @@ const envSchema = z.object({
   REDIS_HOST: z.string().optional(),
   REDIS_PORT: z.string().default("6379").transform(Number),
   REDIS_URL: z.string().optional(),
+  // GitHub webhook -> Axios work item transitions (GAM-316). Without the secret the endpoint
+  // answers 503 and does nothing.
+  GITHUB_WEBHOOK_SECRET: z.string().optional(),
+  AXIOS_HOST: z.string().default("https://axios.joincci.org"),
+  AXIOS_BOT_TOKEN: z.string().optional(),
+  AXIOS_GITHUB_TOKEN: z.string().optional(),
 });
 
 const validateEnv = () => {

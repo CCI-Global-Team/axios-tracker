@@ -35,6 +35,7 @@
     "@hocuspocus/extension-redis": "catalog:",
     "@hocuspocus/server": "catalog:",
     "@hocuspocus/transformer": "catalog:",
+    "@plane/axios-transition": "workspace:*",
     "@plane/decorators": "workspace:*",
     "@plane/editor": "workspace:*",
     "@plane/logger": "workspace:*",

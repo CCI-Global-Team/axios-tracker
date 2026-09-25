@@ -746,6 +746,9 @@ importers:
       '@hocuspocus/transformer':
         specifier: 'catalog:'
         version: 2.15.2(@tiptap/core@2.26.3(@tiptap/pm@3.6.6))(@tiptap/pm@3.6.6)(y-prosemirror@1.3.7(prosemirror-model@1.25.3)(prosemirror-state@1.4.3)(prosemirror-view@1.40.0)(y-protocols@1.0.6(yjs@13.6.27))(yjs@13.6.27))(yjs@13.6.27)
+      '@plane/axios-transition':
+        specifier: workspace:*
+        version: link:../../packages/axios-transition
       '@plane/decorators':
         specifier: workspace:*
         version: link:../../packages/decorators
@@ -1220,6 +1223,8 @@ importers:
       vite-tsconfig-paths:
         specifier: 'catalog:'
         version: 5.1.4(typescript@5.8.3)(vite@8.0.16(@types/node@22.12.0)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.43.1)(tsx@4.20.6)(yaml@2.8.3))
+
+  packages/axios-transition: {}
 
   packages/codemods:
     devDependencies:

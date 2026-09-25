@@ -67,7 +67,8 @@ jobs:
       pull-requests: write
     steps:
       - name: Fetch the transition script
-        # From THIS repo, not the caller's, so product repos carry no Axios logic.
+        # From THIS repo, not the caller's, so product repos carry no Axios logic. The whole repo,
+        # because the script imports packages/axios-transition.
         uses: actions/checkout@v4
         with:
           repository: CCI-Global-Team/axios-tracker
@@ -79,9 +80,12 @@ jobs:
         # .gitignore has a bare `scripts/` that matches .github/scripts at any depth, so the
         # script was untracked and every checkout came back without it. Two rounds went into
         # blaming the checkout because node reported it a step later as "Cannot find module".
-        # Fail here instead, naming the cause.
-        run: test -f .github/scripts/axios-transition.mjs || {
-          echo "::error::transition script missing from the checkout"; exit 1; }
+        # Fail here instead, naming the cause. The entry script only imports the shared package,
+        # so that has to be in the checkout too.
+        run: |
+          for f in .github/scripts/axios-transition.mjs packages/axios-transition/index.mjs packages/axios-transition/cli.mjs; do
+            test -f "$f" || { echo "::error::$f missing from the checkout"; exit 1; }
+          done
 
       - name: Transition
         env:

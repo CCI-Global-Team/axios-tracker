@@ -17,6 +17,7 @@ import { registerController } from "@plane/decorators";
 import { logger, loggerMiddleware } from "@plane/logger";
 // controllers
 import { CONTROLLERS } from "@/controllers";
+import { GITHUB_WEBHOOK_PATH } from "@/controllers/github-webhook.controller";
 // env
 import { env } from "@/env";
 // hocuspocus server
@@ -62,6 +63,12 @@ export class Server {
     // Logging middleware
     this.app.use(loggerMiddleware);
     // Body parsing middleware
+    // The GitHub webhook signs the exact bytes it sent, so its body stays a raw Buffer. Mounted
+    // first: express.json skips a body that has already been read. 25mb is GitHub's own cap.
+    this.app.use(
+      `${env.LIVE_BASE_PATH.replace(/\/$/, "")}${GITHUB_WEBHOOK_PATH}`,
+      express.raw({ type: () => true, limit: "25mb" })
+    );
     this.app.use(express.json());
     this.app.use(express.urlencoded({ extended: true }));
     // cors middleware
