@@ -9,7 +9,9 @@
 #   on:
 #     push:
 #     pull_request:
-#       types: [opened, reopened, edited, closed]
+#       types: [opened, reopened, edited, closed, ready_for_review, converted_to_draft, review_requested]
+#     pull_request_review:
+#       types: [submitted, dismissed]
 #   jobs:
 #     transition:
 #       uses: CCI-Global-Team/axios-tracker/.github/workflows/axios-transition.yml@cci/patches
@@ -35,10 +37,26 @@ jobs:
     # they are paid for in full. They were about two thirds of this workflow's minutes, against a
     # 2,000-minute monthly allowance the org has already exhausted once.
     # github here is the CALLER's context, so this reads the product repo's own event.
+    #
+    # Reviews: only a verdict can move the ticket. Comments and plain review notes are refused
+    # here for free; an approval runs because it clears an earlier "changes requested". A review
+    # request on a draft cannot move anything either - the draft already holds it In Progress.
     if: >-
       (github.event_name == 'push' && github.event.created) ||
       (github.event_name == 'pull_request' &&
-      (github.event.action != 'edited' || github.event.changes.title != null))
+      (github.event.action != 'edited' || github.event.changes.title != null) &&
+      (github.event.action != 'review_requested' || !github.event.pull_request.draft)) ||
+      (github.event_name == 'pull_request_review' &&
+      (github.event.action == 'dismissed' ||
+      github.event.review.state == 'approved' || github.event.review.state == 'changes_requested'))
+    # One run per PR at a time; while one runs, a newer event REPLACES the queued one instead of
+    # queueing behind it, and a replaced run never reaches a runner, so it is never billed. That is
+    # what turns "open a PR with three reviewers" (four events) into two billed minutes. It is only
+    # safe because the script reads the PR's current state rather than the event's action.
+    # Pushes are grouped by ref; they share nothing with PR runs.
+    concurrency:
+      group: axios-${{ github.repository }}-${{ github.event.pull_request.number || github.ref }}
+      cancel-in-progress: false
     # Never block a merge or a push. A PR with no ticket key is normal, and a red X on those
     # would teach people to ignore this check entirely.
     continue-on-error: true
