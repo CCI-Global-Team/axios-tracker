@@ -1,9 +1,10 @@
 # Reusable: move an Axios work item when a branch or pull request says so.
 #
-# Called by each product repo with a ten-line caller, so the logic lives in ONE place. Six copies
-# would drift, and the copy that drifts is the one nobody notices has stopped working.
-#
-# In the calling repo, .github/workflows/axios.yml:
+# FALLBACK PATH. Since 2026-09-25 the product repos send their events to Axios by webhook
+# (packages/axios-transition/README.md), and their callers of this workflow were deleted, because
+# every run here is a billed minute against the org's 2,000-minute cap. It still runs for this repo's
+# own PRs (.github/workflows/axios.yml, free: the repo is public) and is how a product repo gets
+# transitions back if the webhook has to be switched off - restore its caller:
 #
 #   name: Axios
 #   on:
@@ -19,7 +20,9 @@
 #         axios_bot_token: ${{ secrets.AXIOS_BOT_TOKEN }}
 #
 # The caller needs one secret: AXIOS_BOT_TOKEN, the Axios Bot's API token. Org-level secrets are
-# not available for private repos on a Free plan, so each repo carries its own copy.
+# not available for private repos on a Free plan, so each repo carries its own copy (the product
+# repos still have theirs). Do not run a caller AND the webhook for the same repo: both are
+# idempotent, but the caller spends the minutes the webhook exists to save.
 name: Axios work item transition
 
 on:
