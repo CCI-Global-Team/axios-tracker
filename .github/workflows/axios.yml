@@ -15,7 +15,13 @@ on:
     # that rename fires nothing, and the work item sits in Todo until the PR merges - skipping In
     # Progress entirely. Edits that leave the title alone are refused by the reusable workflow's
     # job-level if:, which is the only place a run can be stopped before it costs a minute.
-    types: [opened, reopened, edited, closed]
+    #
+    # ready_for_review / converted_to_draft / review_requested and the review verdicts drive
+    # In Progress <-> Ready for Review. The reusable workflow refuses the ones that cannot move
+    # anything before a runner starts.
+    types: [opened, reopened, edited, closed, ready_for_review, converted_to_draft, review_requested]
+  pull_request_review:
+    types: [submitted, dismissed]
 
 jobs:
   transition:
