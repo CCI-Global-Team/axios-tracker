@@ -17,6 +17,7 @@ import { cn, EHeaderVariant, Header, Loader } from "@plane/ui";
 import type { TAddFilterButtonProps } from "./add-filters/button";
 import { AddFilterButton } from "./add-filters/button";
 import { FilterItem } from "./filter-item/root";
+import { LogicalConnector } from "./logical-connector";
 
 export type TFiltersRowProps<K extends TFilterProperty, E extends TExternalFilter> = {
   buttonConfig?: TAddFilterButtonProps<K, E>["buttonConfig"];
@@ -67,8 +68,11 @@ export const FiltersRow = observer(function FiltersRow<K extends TFilterProperty
 
   const leftContent = (
     <>
-      {filter.allConditionsForDisplay.map((condition) => (
-        <FilterItem key={condition.id} filter={filter} condition={condition} isDisabled={disabledAllOperations} />
+      {filter.allConditionsForDisplay.map((condition, index) => (
+        <React.Fragment key={condition.id}>
+          {index > 0 && <LogicalConnector filter={filter} isDisabled={disabledAllOperations} />}
+          <FilterItem filter={filter} condition={condition} isDisabled={disabledAllOperations} />
+        </React.Fragment>
       ))}
       <AddFilterButton
         filter={filter}
