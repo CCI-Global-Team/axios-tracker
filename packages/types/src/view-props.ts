@@ -118,11 +118,21 @@ export type TWorkItemFilterConditionData = Partial<{
   [K in TWorkItemFilterConditionKey]: string | boolean | number;
 }>;
 
+// Children are expressions, not just conditions, so groups can nest - an AND of a condition and
+// a NOT group is the whole point of negation surviving a round trip.
 export type TWorkItemFilterAndGroup = {
-  [LOGICAL_OPERATOR.AND]: TWorkItemFilterConditionData[];
+  [LOGICAL_OPERATOR.AND]: TWorkItemFilterExpressionData[];
 };
 
-export type TWorkItemFilterGroup = TWorkItemFilterAndGroup;
+export type TWorkItemFilterOrGroup = {
+  [LOGICAL_OPERATOR.OR]: TWorkItemFilterExpressionData[];
+};
+
+export type TWorkItemFilterNotGroup = {
+  [LOGICAL_OPERATOR.NOT]: TWorkItemFilterExpressionData;
+};
+
+export type TWorkItemFilterGroup = TWorkItemFilterAndGroup | TWorkItemFilterOrGroup | TWorkItemFilterNotGroup;
 
 export type TWorkItemFilterExpressionData = TWorkItemFilterConditionData | TWorkItemFilterGroup;
 

@@ -18,7 +18,16 @@ import type {
   TWorkItemFilterProperty,
 } from "@plane/types";
 import { LOGICAL_OPERATOR, MULTI_VALUE_OPERATORS, WORK_ITEM_FILTER_PROPERTY_KEYS } from "@plane/types";
-import { createConditionNode, createAndGroupNode, isAndGroupNode, isConditionNode } from "@plane/utils";
+import {
+  createAndGroupNode,
+  createConditionNode,
+  createNotGroupNode,
+  createOrGroupNode,
+  isAndGroupNode,
+  isConditionNode,
+  isNotGroupNode,
+  isOrGroupNode,
+} from "@plane/utils";
 // local imports
 import { FilterAdapter } from "../rich-filters/adapter";
 
@@ -81,6 +90,29 @@ class WorkItemFiltersAdapter extends FilterAdapter<TWorkItemFilterProperty, TWor
       return createAndGroupNode(convertedConditions);
     }
 
+    if (LOGICAL_OPERATOR.OR in expression) {
+      const orExpression = expression as { [LOGICAL_OPERATOR.OR]: TWorkItemFilterExpressionData[] };
+      const orConditions = orExpression[LOGICAL_OPERATOR.OR];
+
+      if (!Array.isArray(orConditions) || orConditions.length === 0) {
+        throw new Error("OR group must contain at least one condition");
+      }
+
+      const convertedConditions = orConditions.map((item) => this._convertExpressionToInternal(item));
+      return createOrGroupNode(convertedConditions);
+    }
+
+    if (LOGICAL_OPERATOR.NOT in expression) {
+      const notExpression = expression as { [LOGICAL_OPERATOR.NOT]: TWorkItemFilterExpressionData };
+      const notCondition = notExpression[LOGICAL_OPERATOR.NOT];
+
+      if (!notCondition || Array.isArray(notCondition)) {
+        throw new Error("NOT group must contain exactly one expression");
+      }
+
+      return createNotGroupNode(this._convertExpressionToInternal(notCondition));
+    }
+
     throw new Error(`Invalid expression: unknown structure with keys [${expressionKeys.join(", ")}]`);
   }
 
@@ -122,6 +154,18 @@ class WorkItemFiltersAdapter extends FilterAdapter<TWorkItemFilterProperty, TWor
       } as TWorkItemFilterExpressionData;
     }
 
+    if (isOrGroupNode(expression)) {
+      return {
+        [LOGICAL_OPERATOR.OR]: expression.children.map((child) => this._convertExpressionToExternal(child)),
+      } as TWorkItemFilterExpressionData;
+    }
+
+    if (isNotGroupNode(expression)) {
+      return {
+        [LOGICAL_OPERATOR.NOT]: this._convertExpressionToExternal(expression.child),
+      } as TWorkItemFilterExpressionData;
+    }
+
     throw new Error(`Unknown group node type for expression`);
   }
 
@@ -137,7 +181,8 @@ class WorkItemFiltersAdapter extends FilterAdapter<TWorkItemFilterProperty, TWor
     if (keys.length === 0) return false;
 
     // Check if any key contains logical operators (would indicate it's a group)
-    const hasLogicalOperators = keys.some((key) => key === LOGICAL_OPERATOR.AND);
+    const logicalOperators = Object.values(LOGICAL_OPERATOR) as string[];
+    const hasLogicalOperators = keys.some((key) => logicalOperators.includes(key));
     if (hasLogicalOperators) return false;
 
     // All keys must match the work item filter condition key pattern

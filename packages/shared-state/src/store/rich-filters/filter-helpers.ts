@@ -21,7 +21,17 @@ import type {
   TFilterConditionPayload,
 } from "@plane/types";
 import { LOGICAL_OPERATOR } from "@plane/types";
-import { addAndCondition, createConditionNode, updateNodeInExpression } from "@plane/utils";
+import {
+  addAndCondition,
+  addOrCondition,
+  createConditionNode,
+  createNotGroupNode,
+  findImmediateParent,
+  findNodeById,
+  isNotGroupNode,
+  replaceNodeInExpression,
+  updateNodeInExpression,
+} from "@plane/utils";
 // local imports
 import type { IFilterInstance } from "./filter";
 
@@ -233,11 +243,13 @@ export class FilterInstanceHelper<
    */
   private _getConditionPayloadToAdd = (
     condition: TFilterConditionPayload<P, TFilterValue>,
-    _isNegation: boolean
+    isNegation: boolean
   ): TFilterExpression<P> => {
     const conditionNode = createConditionNode(condition);
 
-    return conditionNode;
+    // A negated condition is the condition wrapped in a NOT group. The condition itself always
+    // stores the positive operator, so nothing downstream has to know about negated operators.
+    return isNegation ? createNotGroupNode(conditionNode) : conditionNode;
   };
 
   /**
@@ -255,6 +267,8 @@ export class FilterInstanceHelper<
     switch (groupOperator) {
       case LOGICAL_OPERATOR.AND:
         return addAndCondition(expression, conditionToAdd);
+      case LOGICAL_OPERATOR.OR:
+        return addOrCondition(expression, conditionToAdd);
       default:
         console.warn(`Unsupported logical operator: ${groupOperator}`);
         return expression;
@@ -273,11 +287,47 @@ export class FilterInstanceHelper<
     expression: TFilterExpression<P>,
     conditionId: string,
     payload: Partial<TFilterConditionNode<P, TFilterValue>>,
-    _isNegation: boolean
+    isNegation: boolean
   ): TFilterExpression<P> | null => {
     // Update the condition with the payload
     updateNodeInExpression(expression, conditionId, payload);
 
-    return expression;
+    return this._applyNegation(expression, conditionId, isNegation);
+  };
+
+  /**
+   * Brings the tree in line with the requested negation by wrapping the condition in a NOT group
+   * or unwrapping the one already around it. Returns the expression unchanged when it already
+   * matches, so switching between two positive operators costs nothing.
+   * @param expression - The filter expression to operate on
+   * @param conditionId - The ID of the condition whose negation is being set
+   * @param isNegation - Whether the condition should end up negated
+   * @returns The expression, with the condition's negation applied
+   */
+  private _applyNegation = (
+    expression: TFilterExpression<P>,
+    conditionId: string,
+    isNegation: boolean
+  ): TFilterExpression<P> | null => {
+    const parent = findImmediateParent(expression, conditionId);
+    const negatingParent = parent && isNotGroupNode(parent) ? parent : null;
+
+    // Negating: put a NOT group where the condition sits
+    if (isNegation) {
+      if (negatingParent) return expression;
+
+      const conditionNode = findNodeById(expression, conditionId);
+      if (!conditionNode) return expression;
+
+      return replaceNodeInExpression(expression, conditionId, createNotGroupNode(conditionNode));
+    }
+
+    // Un-negating: put the condition back where its NOT group sits
+    if (!negatingParent) return expression;
+
+    const conditionNode = findNodeById(expression, conditionId);
+    if (!conditionNode) return expression;
+
+    return replaceNodeInExpression(expression, negatingParent.id, conditionNode);
   };
 }
