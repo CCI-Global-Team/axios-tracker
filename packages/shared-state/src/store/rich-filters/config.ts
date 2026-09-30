@@ -210,11 +210,14 @@ export class FilterConfig<P extends TFilterProperty> implements IFilterConfig<P>
     operator: TSupportedOperators,
     value: TFilterValue
   ): TOperatorOptionForDisplay | undefined => {
+    const operatorConfig = this.getOperatorConfig(operator);
+    if (!operatorConfig?.allowNegative) return undefined;
+
     const displayOperator = this.getDisplayOperatorByValue(operator, value);
 
     return {
       value: getNegatedOperator(operator),
-      label: this.getLabelForOperator(getNegatedOperator(displayOperator)),
+      label: operatorConfig.negOperatorLabel ?? this.getLabelForOperator(getNegatedOperator(displayOperator)),
     };
   };
 }

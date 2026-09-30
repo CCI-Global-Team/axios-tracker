@@ -8,7 +8,7 @@ from django.db import models
 from django.db.models import Q
 from django_filters import FilterSet, filters
 
-from plane.db.models import Issue
+from plane.db.models import CycleIssue, Issue, IssueAssignee, IssueLabel, ModuleIssue
 
 
 class UUIDInFilter(filters.BaseInFilter, filters.UUIDFilter):
@@ -137,18 +137,22 @@ class IssueFilterSet(BaseFilterSet):
 
     assignee_id = filters.UUIDFilter(method="filter_assignee_id")
     assignee_id__in = UUIDInFilter(method="filter_assignee_id_in", lookup_expr="in")
+    assignee_id__isnull = filters.BooleanFilter(method="filter_assignee_id_isnull")
 
     cycle_id = filters.UUIDFilter(method="filter_cycle_id")
     cycle_id__in = UUIDInFilter(method="filter_cycle_id_in", lookup_expr="in")
+    cycle_id__isnull = filters.BooleanFilter(method="filter_cycle_id_isnull")
 
     module_id = filters.UUIDFilter(method="filter_module_id")
     module_id__in = UUIDInFilter(method="filter_module_id_in", lookup_expr="in")
+    module_id__isnull = filters.BooleanFilter(method="filter_module_id_isnull")
 
     mention_id = filters.UUIDFilter(method="filter_mention_id")
     mention_id__in = UUIDInFilter(method="filter_mention_id_in", lookup_expr="in")
 
     label_id = filters.UUIDFilter(method="filter_label_id")
     label_id__in = UUIDInFilter(method="filter_label_id_in", lookup_expr="in")
+    label_id__isnull = filters.BooleanFilter(method="filter_label_id_isnull")
 
     # Direct field lookups remain the same
     created_by_id = filters.UUIDFilter(field_name="created_by_id")
@@ -225,6 +229,36 @@ class IssueFilterSet(BaseFilterSet):
             issue_assignee__assignee_id__in=value,
             issue_assignee__deleted_at__isnull=True,
         )
+
+    @staticmethod
+    def _membership_q(through_model, column="issue_id"):
+        """Q matching work items that have at least one live row in a through table.
+
+        Expressed as a subquery rather than a join so that negating it stays unambiguous: a plain
+        ``~Q(issue_cycle__...)`` over a multi-valued relation asks "has a row that does not match",
+        which is not the same question as "has no matching row" for an item with several rows.
+        """
+        return Q(pk__in=through_model.objects.filter(deleted_at__isnull=True).values(column))
+
+    def filter_cycle_id_isnull(self, queryset, name, value):
+        """Filter work items that are in no cycle (value=True) or in some cycle (value=False)"""
+        has_cycle = self._membership_q(CycleIssue)
+        return ~has_cycle if value else has_cycle
+
+    def filter_module_id_isnull(self, queryset, name, value):
+        """Filter work items that are in no module (value=True) or in some module (value=False)"""
+        has_module = self._membership_q(ModuleIssue)
+        return ~has_module if value else has_module
+
+    def filter_label_id_isnull(self, queryset, name, value):
+        """Filter work items that carry no label (value=True) or carry some label (value=False)"""
+        has_label = self._membership_q(IssueLabel)
+        return ~has_label if value else has_label
+
+    def filter_assignee_id_isnull(self, queryset, name, value):
+        """Filter work items with no assignee (value=True) or with some assignee (value=False)"""
+        has_assignee = self._membership_q(IssueAssignee)
+        return ~has_assignee if value else has_assignee
 
     def filter_cycle_id(self, queryset, name, value):
         """Filter by cycle ID, excluding soft deleted cycles"""
