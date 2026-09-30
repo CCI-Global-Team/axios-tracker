@@ -496,6 +496,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
         ?.getOperatorConfig(operator);
       // Reset the value if the operator config types are different
       const shouldResetConditionValue = currentOperatorConfig?.type !== newOperatorConfig?.type;
+      const takesNoValue = newOperatorConfig?.type === FILTER_FIELD_TYPE.NONE;
 
       // Use restructuring logic for operator changes
       const updatedExpression = this.helper.restructureExpressionForOperatorChange(
@@ -508,9 +509,17 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
 
       if (updatedExpression) {
         this.expression = updatedExpression;
+
+        // Switching to an operator that takes no value resets the value like any other operator
+        // change, but there is no input to refill it - so hand back the constant. Without this the
+        // condition reads "is empty" in the bar while being dropped from the request for want of
+        // a value, and the filter silently does nothing.
+        if (takesNoValue) {
+          updateNodeInExpression(this.expression, conditionId, { value: true });
+        }
       }
 
-      if (hasValidValue(conditionBeforeUpdate.value)) {
+      if (takesNoValue || hasValidValue(conditionBeforeUpdate.value)) {
         this._notifyExpressionChange();
       }
     }
