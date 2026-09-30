@@ -20,7 +20,9 @@ export const EXTENDED_EQUALITY_OPERATOR = {} as const;
 /**
  * Extended collection operators
  */
-export const EXTENDED_COLLECTION_OPERATOR = {} as const;
+export const EXTENDED_COLLECTION_OPERATOR = {
+  IS_NULL: "isnull",
+} as const;
 
 /**
  * Extended comparison operators

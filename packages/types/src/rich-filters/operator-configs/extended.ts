@@ -4,6 +4,9 @@
  * See the LICENSE file for details.
  */
 
+import type { TNoneFilterFieldConfig } from "../field-types/extended";
+import { EXTENDED_COLLECTION_OPERATOR } from "../operators/extended";
+
 // ----------------------------- EXACT Operator -----------------------------
 export type TExtendedExactOperatorConfigs = never;
 
@@ -13,5 +16,10 @@ export type TExtendedInOperatorConfigs = never;
 // ----------------------------- RANGE Operator -----------------------------
 export type TExtendedRangeOperatorConfigs = never;
 
+// ----------------------------- ISNULL Operator -----------------------------
+export type TExtendedIsNullOperatorConfigs = TNoneFilterFieldConfig;
+
 // ----------------------------- Extended Operator Specific Configs -----------------------------
-export type TExtendedOperatorSpecificConfigs = unknown;
+export type TExtendedOperatorSpecificConfigs = {
+  [EXTENDED_COLLECTION_OPERATOR.IS_NULL]: TExtendedIsNullOperatorConfigs;
+};

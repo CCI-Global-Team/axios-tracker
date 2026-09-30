@@ -9,12 +9,16 @@ import type { TExtendedSupportedOperators, TNegatedDateFilterOperator, TNegatedO
 /**
  * Extended operator labels
  */
-export const EXTENDED_OPERATOR_LABELS_MAP: Record<TExtendedSupportedOperators, string> = {} as const;
+export const EXTENDED_OPERATOR_LABELS_MAP: Record<TExtendedSupportedOperators, string> = {
+  isnull: "is empty",
+} as const;
 
 /**
  * Extended date-specific operator labels
  */
-export const EXTENDED_DATE_OPERATOR_LABELS_MAP: Record<TExtendedSupportedOperators, string> = {} as const;
+export const EXTENDED_DATE_OPERATOR_LABELS_MAP: Record<TExtendedSupportedOperators, string> = {
+  isnull: "is empty",
+} as const;
 
 /**
  * Negated operator labels for all operators
@@ -23,6 +27,7 @@ export const NEGATED_OPERATOR_LABELS_MAP: Record<TNegatedOperator, string> = {
   not_exact: "is not",
   not_in: "is not any of",
   not_range: "is not between",
+  not_isnull: "is not empty",
 } as const;
 
 /**

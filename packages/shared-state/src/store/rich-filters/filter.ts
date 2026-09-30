@@ -31,7 +31,7 @@ import type {
   TLogicalOperator,
   TSupportedOperators,
 } from "@plane/types";
-import { FILTER_NODE_TYPE } from "@plane/types";
+import { FILTER_FIELD_TYPE, FILTER_NODE_TYPE } from "@plane/types";
 // local imports
 import {
   deepCompareFilterExpressions,
@@ -369,9 +369,23 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
    * @param isNegation - Whether the condition should be negated.
    */
   addCondition: IFilterInstance<P, E>["addCondition"] = action((groupOperator, condition, isNegation = false) => {
-    const conditionValue = condition.value;
+    // An operator that takes no value ("is empty") is complete as soon as it is chosen, so it
+    // carries a constant instead of waiting for input that never comes.
+    const operatorConfig = this.configManager
+      .getConfigByProperty(condition.property)
+      ?.getOperatorConfig(condition.operator);
+    // The cast is the one thing the generic cannot say: for this operator the value is always
+    // the literal true, whatever value type the rest of the filter is parameterised with.
+    const resolvedCondition =
+      operatorConfig?.type === FILTER_FIELD_TYPE.NONE ? ({ ...condition, value: true } as typeof condition) : condition;
+    const conditionValue = resolvedCondition.value;
 
-    this.expression = this.helper.addConditionToExpression(this.expression, groupOperator, condition, isNegation);
+    this.expression = this.helper.addConditionToExpression(
+      this.expression,
+      groupOperator,
+      resolvedCondition,
+      isNegation
+    );
 
     if (hasValidValue(conditionValue)) {
       this._notifyExpressionChange();

@@ -9,7 +9,12 @@ import type { TFilterProperty } from "@plane/types";
 import { EQUALITY_OPERATOR, COLLECTION_OPERATOR } from "@plane/types";
 // local imports
 import type { TCreateFilterConfig, TCreateUserFilterParams } from "../../../rich-filters";
-import { createFilterConfig, createOperatorConfigEntry, getMemberMultiSelectConfig } from "../../../rich-filters";
+import {
+  createFilterConfig,
+  createOperatorConfigEntry,
+  getMemberMultiSelectConfig,
+  getNoneConfig,
+} from "../../../rich-filters";
 
 // ------------ Assignee filter ------------
 
@@ -36,6 +41,7 @@ export const getAssigneeFilterConfig =
         createOperatorConfigEntry(COLLECTION_OPERATOR.IN, params, (updatedParams) =>
           getMemberMultiSelectConfig(updatedParams, EQUALITY_OPERATOR.EXACT)
         ),
+        createOperatorConfigEntry(COLLECTION_OPERATOR.IS_NULL, params, (updatedParams) => getNoneConfig(updatedParams)),
       ]),
     });
 

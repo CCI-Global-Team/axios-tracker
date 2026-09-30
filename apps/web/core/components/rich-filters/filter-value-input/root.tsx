@@ -79,6 +79,11 @@ export const FilterValueInput = observer(function FilterValueInput<P extends TFi
     );
   }
 
+  // Operators that take no value, such as "is empty", are the whole condition on their own
+  if (filterFieldConfig?.type === FILTER_FIELD_TYPE.NONE) {
+    return null;
+  }
+
   return <AdditionalFilterValueInput {...props} />;
 });
 

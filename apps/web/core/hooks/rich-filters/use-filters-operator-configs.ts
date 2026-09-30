@@ -5,18 +5,30 @@
  */
 
 import type { TSupportedOperators } from "@plane/types";
-import { CORE_OPERATORS } from "@plane/types";
+import { COLLECTION_OPERATOR, COMPARISON_OPERATOR, EQUALITY_OPERATOR } from "@plane/types";
 
 export type TFiltersOperatorConfigs = {
   allowedOperators: Set<TSupportedOperators>;
-  allowNegative: boolean;
+  allowNegative: true;
 };
 
 export type TUseFiltersOperatorConfigsProps = {
   workspaceSlug: string;
 };
 
+/**
+ * The operators every work item filter may offer.
+ *
+ * Built from the composed operator sets rather than the core ones, so an operator added to the
+ * extended set - "is empty", for instance - is offered without a second edit here.
+ */
+const ALLOWED_OPERATORS = new Set<TSupportedOperators>([
+  ...Object.values(EQUALITY_OPERATOR),
+  ...Object.values(COLLECTION_OPERATOR),
+  ...Object.values(COMPARISON_OPERATOR),
+]);
+
 export const useFiltersOperatorConfigs = (_props: TUseFiltersOperatorConfigsProps): TFiltersOperatorConfigs => ({
-  allowedOperators: new Set(Object.values(CORE_OPERATORS)),
-  allowNegative: false,
+  allowedOperators: ALLOWED_OPERATORS,
+  allowNegative: true,
 });
