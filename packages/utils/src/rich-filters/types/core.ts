@@ -10,6 +10,8 @@ import type {
   TFilterExpression,
   TFilterFieldType,
   TFilterGroupNode,
+  TFilterNotGroupNode,
+  TFilterOrGroupNode,
   TFilterProperty,
   TFilterValue,
 } from "@plane/types";
@@ -42,13 +44,30 @@ export const isAndGroupNode = <P extends TFilterProperty>(
 ): group is TFilterAndGroupNode<P> => group.logicalOperator === LOGICAL_OPERATOR.AND;
 
 /**
+ * Type guard to check if a group node is an OR group.
+ * @param group - The group node to check
+ * @returns True if the group is an OR group
+ */
+export const isOrGroupNode = <P extends TFilterProperty>(group: TFilterGroupNode<P>): group is TFilterOrGroupNode<P> =>
+  group.logicalOperator === LOGICAL_OPERATOR.OR;
+
+/**
+ * Type guard to check if a group node is a NOT group.
+ * @param group - The group node to check
+ * @returns True if the group is a NOT group
+ */
+export const isNotGroupNode = <P extends TFilterProperty>(
+  group: TFilterGroupNode<P>
+): group is TFilterNotGroupNode<P> => group.logicalOperator === LOGICAL_OPERATOR.NOT;
+
+/**
  * Type guard to check if a group node has children property
  * @param group - The group node to check
  * @returns True if the group has children property
  */
 export const hasChildrenProperty = <P extends TFilterProperty>(
   group: TFilterGroupNode<P>
-): group is TFilterAndGroupNode<P> => {
+): group is TFilterAndGroupNode<P> | TFilterOrGroupNode<P> => {
   const groupWithChildren = group as { children?: unknown };
   return "children" in group && Array.isArray(groupWithChildren.children);
 };
@@ -60,6 +79,22 @@ export const hasChildrenProperty = <P extends TFilterProperty>(
  */
 export const getAndGroupChildren = <P extends TFilterProperty>(group: TFilterAndGroupNode<P>): TFilterExpression<P>[] =>
   group.children;
+
+/**
+ * Safely gets the children array from an OR group node.
+ * @param group - The OR group node
+ * @returns The children array
+ */
+export const getOrGroupChildren = <P extends TFilterProperty>(group: TFilterOrGroupNode<P>): TFilterExpression<P>[] =>
+  group.children;
+
+/**
+ * Safely gets the single child from a NOT group node.
+ * @param group - The NOT group node
+ * @returns The negated child expression
+ */
+export const getNotGroupChild = <P extends TFilterProperty>(group: TFilterNotGroupNode<P>): TFilterExpression<P> =>
+  group.child;
 
 /**
  * Type guard to check if a filter type is a date filter type.

@@ -4,7 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import type { TAllAvailableOperatorsForDisplay, TSupportedOperators } from "@plane/types";
+import type { TAllAvailableOperatorsForDisplay, TNegatedOperator, TSupportedOperators } from "@plane/types";
+import { NEGATED_OPERATOR_PREFIX } from "@plane/types";
 
 /**
  * Result type for operator conversion
@@ -15,16 +16,37 @@ export type TOperatorForPayload = {
 };
 
 /**
+ * Checks whether a display operator is a negated one.
+ * @param displayOperator - The operator from the UI
+ * @returns True if the operator is the negated variant of a supported operator
+ */
+export const isNegatedOperator = (
+  displayOperator: TAllAvailableOperatorsForDisplay
+): displayOperator is TNegatedOperator => displayOperator.startsWith(NEGATED_OPERATOR_PREFIX);
+
+/**
+ * Returns the negated variant of a supported operator.
+ * @param operator - The positive operator
+ * @returns The negated operator
+ */
+export const getNegatedOperator = (operator: TSupportedOperators): TNegatedOperator =>
+  `${NEGATED_OPERATOR_PREFIX}${operator}`;
+
+/**
  * Converts a display operator to the format needed for supported by filter expression condition.
  * @param displayOperator - The operator from the UI
  * @returns Object with supported operator and negation flag
  */
 export const getOperatorForPayload = (displayOperator: TAllAvailableOperatorsForDisplay): TOperatorForPayload => {
-  const isNegation = false;
-  const operator = displayOperator;
+  if (isNegatedOperator(displayOperator)) {
+    return {
+      operator: displayOperator.slice(NEGATED_OPERATOR_PREFIX.length) as TSupportedOperators,
+      isNegation: true,
+    };
+  }
 
   return {
-    operator,
-    isNegation,
+    operator: displayOperator,
+    isNegation: false,
   };
 };
