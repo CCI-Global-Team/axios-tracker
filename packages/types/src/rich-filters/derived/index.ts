@@ -17,6 +17,7 @@ import type {
   TExtendedSupportedDateFilterOperators,
   TExtendedSupportedSelectFilterOperators,
 } from "./extended";
+import { NEGATED_OPERATOR_PREFIX } from "../operators";
 
 // -------- COMPOSED SUPPORT TYPES --------
 
@@ -29,7 +30,14 @@ export type TSupportedDateFilterOperators<V extends TFilterValue = TFilterValue>
 
 export type TAllAvailableDateFilterOperatorsForDisplay<V extends TFilterValue = TFilterValue> =
   | TCoreAllAvailableDateFilterOperatorsForDisplay<V>
-  | TExtendedAllAvailableDateFilterOperatorsForDisplay<V>;
+  | TExtendedAllAvailableDateFilterOperatorsForDisplay<V>
+  | TNegatedDateFilterOperator<V>;
+
+/**
+ * The negated counterpart of every supported date operator.
+ */
+export type TNegatedDateFilterOperator<V extends TFilterValue = TFilterValue> =
+  `${typeof NEGATED_OPERATOR_PREFIX}${TSupportedDateFilterOperators<V>}`;
 
 /**
  * All supported select filter operators.

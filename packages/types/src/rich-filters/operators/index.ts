@@ -62,9 +62,23 @@ export type TComparisonOperator = (typeof COMPARISON_OPERATOR)[keyof typeof COMP
 export type TSupportedOperators = TCoreSupportedOperators | TExtendedSupportedOperators;
 
 /**
- * All operators available for use in rich filters UI, including negated versions.
+ * Prefix that turns an operator into its negated counterpart.
  */
-export type TAllAvailableOperatorsForDisplay = TSupportedOperators;
+export const NEGATED_OPERATOR_PREFIX = "not_";
+
+/**
+ * The negated counterpart of every supported operator, derived rather than listed so that any
+ * operator added to the core or extended sets gets its negation for free.
+ */
+export type TNegatedOperator = `${typeof NEGATED_OPERATOR_PREFIX}${TSupportedOperators}`;
+
+/**
+ * All operators available for use in rich filters UI, including negated versions.
+ *
+ * A condition node never stores a negated operator: the UI splits one into a positive operator
+ * plus a negation flag, and the negation becomes a NOT group wrapping the condition.
+ */
+export type TAllAvailableOperatorsForDisplay = TSupportedOperators | TNegatedOperator;
 
 // -------- RE-EXPORTS --------
 

@@ -9,7 +9,12 @@ import type { IIssueLabel, TFilterProperty, TSupportedOperators } from "@plane/t
 import { EQUALITY_OPERATOR, COLLECTION_OPERATOR } from "@plane/types";
 // local imports
 import type { TCreateFilterConfigParams, IFilterIconConfig, TCreateFilterConfig } from "../../../rich-filters";
-import { createFilterConfig, getMultiSelectConfig, createOperatorConfigEntry } from "../../../rich-filters";
+import {
+  createFilterConfig,
+  getMultiSelectConfig,
+  getNoneConfig,
+  createOperatorConfigEntry,
+} from "../../../rich-filters";
 
 /**
  * Label filter specific params
@@ -60,5 +65,6 @@ export const getLabelFilterConfig =
         createOperatorConfigEntry(COLLECTION_OPERATOR.IN, params, (updatedParams) =>
           getLabelMultiSelectConfig(updatedParams, EQUALITY_OPERATOR.EXACT)
         ),
+        createOperatorConfigEntry(COLLECTION_OPERATOR.IS_NULL, params, (updatedParams) => getNoneConfig(updatedParams)),
       ]),
     });

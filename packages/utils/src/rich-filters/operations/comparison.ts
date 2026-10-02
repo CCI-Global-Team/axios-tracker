@@ -83,6 +83,9 @@ export const createGroupComparable = <P extends TFilterProperty>(
 
   return processGroupNode(group, {
     onAndGroup: (andGroup) => createComparableChildren(andGroup.children, baseComparable),
+    onOrGroup: (orGroup) => createComparableChildren(orGroup.children, baseComparable),
+    // A NOT group holds one child, so sorting is a no-op and the shape stays consistent
+    onNotGroup: (notGroup) => createComparableChildren([notGroup.child], baseComparable),
   });
 };
 

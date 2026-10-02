@@ -4,10 +4,30 @@
  * See the LICENSE file for details.
  */
 
-import type { TFilterGroupNode, TFilterProperty } from "@plane/types";
+import type { TFilterGroupNode, TFilterNotGroupNode, TFilterProperty } from "@plane/types";
 import { processGroupNode } from "../../types/shared";
 import type { TTreeTransformFn, TTreeTransformResult } from "./core";
-import { transformGroupWithChildren } from "./core";
+import { transformExpressionTree, transformGroupWithChildren } from "./core";
+
+/**
+ * Transforms a NOT group by transforming its single child.
+ * A NOT whose child transformed away is meaningless, so it is removed with the child.
+ */
+const transformNotGroup = <P extends TFilterProperty>(
+  group: TFilterNotGroupNode<P>,
+  transformFn: TTreeTransformFn<P>
+): TTreeTransformResult<P> => {
+  const childResult = transformExpressionTree(group.child, transformFn);
+
+  if (childResult.expression === null) {
+    return { expression: null, shouldNotify: childResult.shouldNotify };
+  }
+
+  return {
+    expression: { ...group, child: childResult.expression },
+    shouldNotify: childResult.shouldNotify,
+  };
+};
 
 /**
  * Transforms groups by processing children.
@@ -22,4 +42,6 @@ export const transformGroup = <P extends TFilterProperty>(
 ): TTreeTransformResult<P> =>
   processGroupNode(group, {
     onAndGroup: (andGroup) => transformGroupWithChildren(andGroup, transformFn),
+    onOrGroup: (orGroup) => transformGroupWithChildren(orGroup, transformFn),
+    onNotGroup: (notGroup) => transformNotGroup(notGroup, transformFn),
   });

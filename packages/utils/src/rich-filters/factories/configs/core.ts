@@ -63,6 +63,17 @@ export const getSingleSelectConfig = <
   });
 
 /**
+ * Helper to get a config for an operator that takes no value, such as "is empty".
+ * @param config - The base filter configuration
+ * @returns The value-less config
+ */
+export const getNoneConfig = (config: TBaseFilterFieldConfig) =>
+  createFilterFieldConfig<typeof FILTER_FIELD_TYPE.NONE, TFilterValue>({
+    type: FILTER_FIELD_TYPE.NONE,
+    ...config,
+  });
+
+/**
  * Multi-select filter configuration
  */
 export type TMultiSelectConfig<TValue extends TFilterValue = string> = TBaseFilterFieldConfig & {

@@ -13,9 +13,9 @@ import type {
   TFilterValue,
 } from "@plane/types";
 // local imports
-import { createAndGroupNode } from "../../factories/nodes/core";
+import { createAndGroupNode, createOrGroupNode } from "../../factories/nodes/core";
 import { getGroupChildren } from "../../types";
-import { isAndGroupNode, isConditionNode, isGroupNode } from "../../types/core";
+import { isAndGroupNode, isConditionNode, isGroupNode, isOrGroupNode } from "../../types/core";
 import { shouldUnwrapGroup } from "../../validators/shared";
 import { transformExpressionTree } from "../transformation/core";
 
@@ -45,6 +45,38 @@ export const addAndCondition = <P extends TFilterProperty>(
   // if the expression is a group, but not an AND group, create a new AND group and add the new condition to it
   if (isGroupNode(expression) && !isAndGroupNode(expression)) {
     return createAndGroupNode([expression, condition]);
+  }
+  // Throw error for unexpected expression type
+  console.error("Invalid expression type", expression);
+  return expression;
+};
+
+/**
+ * Adds an OR condition to the filter expression.
+ * @param expression - The current filter expression
+ * @param condition - The condition to add
+ * @returns The updated filter expression
+ */
+export const addOrCondition = <P extends TFilterProperty>(
+  expression: TFilterExpression<P> | null,
+  condition: TFilterExpression<P>
+): TFilterExpression<P> => {
+  // if no expression, set the new condition
+  if (!expression) {
+    return condition;
+  }
+  // if the expression is a condition, convert it to an OR group
+  if (isConditionNode(expression)) {
+    return createOrGroupNode([expression, condition]);
+  }
+  // if the expression is already an OR group, add the new condition to it
+  if (isGroupNode(expression) && isOrGroupNode(expression)) {
+    expression.children.push(condition);
+    return expression;
+  }
+  // any other group becomes the first member of a new OR group
+  if (isGroupNode(expression)) {
+    return createOrGroupNode([expression, condition]);
   }
   // Throw error for unexpected expression type
   console.error("Invalid expression type", expression);

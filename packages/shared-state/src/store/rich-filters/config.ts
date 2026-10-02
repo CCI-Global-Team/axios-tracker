@@ -23,6 +23,7 @@ import {
   isDateFilterType,
   getDateOperatorLabel,
   isDateFilterOperator,
+  getNegatedOperator,
   getOperatorForPayload,
 } from "@plane/utils";
 
@@ -40,7 +41,7 @@ export interface IFilterConfig<P extends TFilterProperty> extends TFilterConfig<
     operator: TAllAvailableOperatorsForDisplay
   ) => TOperatorSpecificConfigs[keyof TOperatorSpecificConfigs] | undefined;
   getLabelForOperator: (operator: TAllAvailableOperatorsForDisplay | undefined) => string;
-  getDisplayOperatorByValue: <T extends TSupportedOperators>(operator: T, value: TFilterValue) => T;
+  getDisplayOperatorByValue: <T extends TAllAvailableOperatorsForDisplay>(operator: T, value: TFilterValue) => T;
   getAllDisplayOperatorOptionsByValue: (value: TFilterValue) => TOperatorOptionForDisplay[];
   // actions
   mutate: (updates: Partial<TFilterConfig<P>>) => void;
@@ -140,11 +141,17 @@ export class FilterConfig<P extends TFilterProperty> implements IFilterConfig<P>
    * @returns The operator for the value.
    */
   getDisplayOperatorByValue: IFilterConfig<P>["getDisplayOperatorByValue"] = computedFn((operator, value) => {
-    const operatorConfig = this.getOperatorConfig(operator);
-    if (operatorConfig?.type === FILTER_FIELD_TYPE.MULTI_SELECT && (Array.isArray(value) ? value.length : 0) <= 1) {
-      return operatorConfig.singleValueOperator as typeof operator;
-    }
-    return operator;
+    // A multi-select holding one value reads better as "is" than "is any of", but the negation has
+    // to survive that swap - otherwise "is not any of" silently becomes "is" on the last value.
+    const { operator: positiveOperator, isNegation } = getOperatorForPayload(operator);
+    const operatorConfig = this.getOperatorConfig(positiveOperator);
+
+    const resolvedOperator =
+      operatorConfig?.type === FILTER_FIELD_TYPE.MULTI_SELECT && (Array.isArray(value) ? value.length : 0) <= 1
+        ? operatorConfig.singleValueOperator
+        : positiveOperator;
+
+    return (isNegation ? getNegatedOperator(resolvedOperator) : resolvedOperator) as typeof operator;
   });
 
   /**
@@ -195,8 +202,22 @@ export class FilterConfig<P extends TFilterProperty> implements IFilterConfig<P>
 
   // ------------ private helpers ------------
 
+  /**
+   * Every operator gets a negated twin in the dropdown. The negation is not a different filter -
+   * it wraps the same condition in a NOT group - so there is nothing per-property to opt into.
+   */
   private _getAdditionalOperatorOptions = (
-    _operator: TSupportedOperators,
-    _value: TFilterValue
-  ): TOperatorOptionForDisplay | undefined => undefined;
+    operator: TSupportedOperators,
+    value: TFilterValue
+  ): TOperatorOptionForDisplay | undefined => {
+    const operatorConfig = this.getOperatorConfig(operator);
+    if (!operatorConfig?.allowNegative) return undefined;
+
+    const displayOperator = this.getDisplayOperatorByValue(operator, value);
+
+    return {
+      value: getNegatedOperator(operator),
+      label: operatorConfig.negOperatorLabel ?? this.getLabelForOperator(getNegatedOperator(displayOperator)),
+    };
+  };
 }

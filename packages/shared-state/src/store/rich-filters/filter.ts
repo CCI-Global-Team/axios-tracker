@@ -31,15 +31,21 @@ import type {
   TLogicalOperator,
   TSupportedOperators,
 } from "@plane/types";
-import { FILTER_NODE_TYPE } from "@plane/types";
+import { FILTER_FIELD_TYPE, FILTER_NODE_TYPE, LOGICAL_OPERATOR } from "@plane/types";
 // local imports
 import {
+  createAndGroupNode,
+  createOrGroupNode,
   deepCompareFilterExpressions,
   extractConditions,
   extractConditionsWithDisplayOperators,
   findConditionsByPropertyAndOperator,
   findNodeById,
+  getGroupChildren,
   hasValidValue,
+  isConditionNode,
+  isGroupNode,
+  isNotGroupNode,
   removeNodeFromExpression,
   sanitizeAndStabilizeExpression,
   shouldNotifyChangeForExpression,
@@ -83,6 +89,8 @@ export interface IFilterInstance<P extends TFilterProperty, E extends TExternalF
   isVisible: boolean;
   allConditions: TFilterConditionNode<P, TFilterValue>[];
   allConditionsForDisplay: TFilterConditionNodeForDisplay<P, TFilterValue>[];
+  rootLogicalOperator: TLogicalOperator | undefined;
+  canChangeRootLogicalOperator: boolean;
   // computed option helpers
   clearFilterOptions: TClearFilterOptions | undefined;
   saveViewOptions: TSaveViewOptions<E> | undefined;
@@ -122,6 +130,7 @@ export interface IFilterInstance<P extends TFilterProperty, E extends TExternalF
     forceUpdate?: boolean
   ) => void;
   removeCondition: (conditionId: string) => void;
+  setRootLogicalOperator: (logicalOperator: TLogicalOperator) => void;
   // config actions
   clearFilters: () => Promise<void>;
   saveView: () => Promise<void>;
@@ -181,6 +190,8 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
       isVisible: computed,
       allConditions: computed,
       allConditionsForDisplay: computed,
+      rootLogicalOperator: computed,
+      canChangeRootLogicalOperator: computed,
       // computed option helpers
       clearFilterOptions: computed,
       saveViewOptions: computed,
@@ -197,6 +208,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
       updateConditionOperator: action,
       updateConditionValue: action,
       removeCondition: action,
+      setRootLogicalOperator: action,
       clearFilters: action,
       saveView: action,
       updateView: action,
@@ -363,15 +375,74 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
   );
 
   /**
+   * The logical operator joining the conditions in the bar, or undefined when there is nothing to
+   * join (no filters, or a single condition).
+   */
+  get rootLogicalOperator(): TLogicalOperator | undefined {
+    const expression = this.expression;
+    if (!expression || !isGroupNode(expression) || isNotGroupNode(expression)) return undefined;
+
+    return expression.logicalOperator;
+  }
+
+  /**
+   * Whether the bar may switch between AND and OR.
+   *
+   * Only when the expression is one flat group: with nesting there is more than one operator in
+   * play and a single control would have to pick one to misrepresent. Such an expression still
+   * renders and still round-trips - it just cannot be rewired from the bar.
+   */
+  get canChangeRootLogicalOperator(): boolean {
+    const expression = this.expression;
+    if (!expression || !isGroupNode(expression) || isNotGroupNode(expression)) return false;
+
+    return getGroupChildren(expression).every((child) => {
+      if (isConditionNode(child)) return true;
+      // a negated condition is a NOT group holding one condition, which is still one level deep
+      return isGroupNode(child) && isNotGroupNode(child) && isConditionNode(child.child);
+    });
+  }
+
+  /**
+   * Switches the group joining the bar's conditions between AND and OR.
+   * @param logicalOperator - The logical operator to join the conditions with.
+   */
+  setRootLogicalOperator: IFilterInstance<P, E>["setRootLogicalOperator"] = action((logicalOperator) => {
+    const expression = this.expression;
+    if (!expression || !isGroupNode(expression) || isNotGroupNode(expression)) return;
+    if (expression.logicalOperator === logicalOperator) return;
+
+    const children = getGroupChildren(expression);
+    this.expression =
+      logicalOperator === LOGICAL_OPERATOR.OR ? createOrGroupNode(children) : createAndGroupNode(children);
+
+    this._notifyExpressionChange();
+  });
+
+  /**
    * Adds a condition to the filter expression.
    * @param groupOperator - The logical operator to use for the condition.
    * @param condition - The condition to add.
    * @param isNegation - Whether the condition should be negated.
    */
   addCondition: IFilterInstance<P, E>["addCondition"] = action((groupOperator, condition, isNegation = false) => {
-    const conditionValue = condition.value;
+    // An operator that takes no value ("is empty") is complete as soon as it is chosen, so it
+    // carries a constant instead of waiting for input that never comes.
+    const operatorConfig = this.configManager
+      .getConfigByProperty(condition.property)
+      ?.getOperatorConfig(condition.operator);
+    // The cast is the one thing the generic cannot say: for this operator the value is always
+    // the literal true, whatever value type the rest of the filter is parameterised with.
+    const resolvedCondition =
+      operatorConfig?.type === FILTER_FIELD_TYPE.NONE ? ({ ...condition, value: true } as typeof condition) : condition;
+    const conditionValue = resolvedCondition.value;
 
-    this.expression = this.helper.addConditionToExpression(this.expression, groupOperator, condition, isNegation);
+    this.expression = this.helper.addConditionToExpression(
+      this.expression,
+      groupOperator,
+      resolvedCondition,
+      isNegation
+    );
 
     if (hasValidValue(conditionValue)) {
       this._notifyExpressionChange();
@@ -425,6 +496,7 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
         ?.getOperatorConfig(operator);
       // Reset the value if the operator config types are different
       const shouldResetConditionValue = currentOperatorConfig?.type !== newOperatorConfig?.type;
+      const takesNoValue = newOperatorConfig?.type === FILTER_FIELD_TYPE.NONE;
 
       // Use restructuring logic for operator changes
       const updatedExpression = this.helper.restructureExpressionForOperatorChange(
@@ -437,9 +509,17 @@ export class FilterInstance<P extends TFilterProperty, E extends TExternalFilter
 
       if (updatedExpression) {
         this.expression = updatedExpression;
+
+        // Switching to an operator that takes no value resets the value like any other operator
+        // change, but there is no input to refill it - so hand back the constant. Without this the
+        // condition reads "is empty" in the bar while being dropped from the request for want of
+        // a value, and the filter silently does nothing.
+        if (takesNoValue) {
+          updateNodeInExpression(this.expression, conditionId, { value: true });
+        }
       }
 
-      if (hasValidValue(conditionBeforeUpdate.value)) {
+      if (takesNoValue || hasValidValue(conditionBeforeUpdate.value)) {
         this._notifyExpressionChange();
       }
     }
