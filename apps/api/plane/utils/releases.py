@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 
 # Django imports
 from django.db import transaction
-from django.db.models import Case, IntegerField, Value, When
+from django.db.models import Case, Count, IntegerField, Q, Value, When
 from django.utils import timezone
 
 # Module imports
@@ -382,3 +382,130 @@ def roll_back(release, actor, origin=None):
         release.status = ReleaseStatus.ROLLED_BACK
         release.save(update_fields=["status", "updated_at"])
         return {"release_id": str(release.id), "status": release.status, "restored": restored, "left_alone": left_alone}
+
+
+# Read side, shared by the app and the public API.
+
+
+def _ready_q(project_id, prefix=""):
+    """Items QA can take: completed, or started at or past the project's Ready for Test state."""
+    q = Q(**{f"{prefix}state__group": StateGroup.COMPLETED.value})
+    ready = ready_for_test_state(project_id)
+    if ready is not None:
+        q |= Q(**{f"{prefix}state__group": StateGroup.STARTED.value, f"{prefix}state__sequence__gte": ready.sequence})
+    return q
+
+
+def with_counts(queryset, project_id):
+    live = Q(release_issues__deleted_at__isnull=True, release_issues__issue__deleted_at__isnull=True)
+    return queryset.annotate(
+        total_items=Count("release_issues", filter=live, distinct=True),
+        shipped_items=Count(
+            "release_issues", filter=live & Q(release_issues__shipped_at__isnull=False), distinct=True
+        ),
+        unplanned_items=Count("release_issues", filter=live & Q(release_issues__is_unplanned=True), distinct=True),
+        ready_items=Count("release_issues", filter=live & _ready_q(project_id, "release_issues__issue__"), distinct=True),
+    )
+
+
+def _issue_row(issue):
+    state = issue.state
+    return {
+        "id": str(issue.id),
+        "sequence_id": issue.sequence_id,
+        "project_id": str(issue.project_id),
+        "project_identifier": issue.project.identifier,
+        "name": issue.name,
+        "priority": issue.priority,
+        "state": (
+            {"id": str(state.id), "name": state.name, "group": state.group, "color": state.color} if state else None
+        ),
+        "assignee_ids": [str(a.assignee_id) for a in issue.issue_assignee.all() if a.deleted_at is None],
+        "label_ids": [str(lb.label_id) for lb in issue.label_issue.all() if lb.deleted_at is None],
+    }
+
+
+def _issue_prefetch(prefix=""):
+    return [f"{prefix}issue_assignee", f"{prefix}label_issue"]
+
+
+def release_items(release):
+    links = (
+        ReleaseIssue.objects.filter(release=release, issue__deleted_at__isnull=True)
+        .select_related("issue", "issue__state", "issue__project", "previous_state")
+        .prefetch_related(*_issue_prefetch("issue__"))
+        .order_by("issue__sequence_id")
+    )
+    return [
+        {
+            **_issue_row(link.issue),
+            "release_issue_id": str(link.id),
+            "shipped_at": link.shipped_at,
+            "shipped_via": link.shipped_via,
+            "is_unplanned": link.is_unplanned,
+            "previous_state_name": link.previous_state.name if link.previous_state else None,
+        }
+        for link in links
+    ]
+
+
+def release_candidates(project_id, search=None, limit=50):
+    """Ready-for-Test-and-later items not yet in an open release; with ``search``, any matching item."""
+    issues = Issue.issue_objects.filter(project_id=project_id)
+    if search:
+        term = search.strip()
+        match = Q(name__icontains=term)
+        number = term.rsplit("-", 1)[-1]
+        if number.isdigit():
+            match |= Q(sequence_id=int(number))
+        issues = issues.filter(match)
+    else:
+        ready = ready_for_test_state(project_id)
+        if ready is None:
+            return []
+        in_open_release = ReleaseIssue.objects.filter(
+            project_id=project_id,
+            release__status__in=OPEN_RELEASE_STATUSES,
+            release__deleted_at__isnull=True,
+        ).values("issue_id")
+        issues = issues.filter(state__group=StateGroup.STARTED.value, state__sequence__gte=ready.sequence).exclude(
+            id__in=in_open_release
+        )
+    issues = (
+        issues.select_related("state", "project")
+        .prefetch_related(*_issue_prefetch())
+        .order_by("-sequence_id")
+        .distinct()[:limit]
+    )
+    issues = list(issues)
+    open_links = dict(
+        ReleaseIssue.objects.filter(
+            issue_id__in=[i.id for i in issues],
+            release__status__in=OPEN_RELEASE_STATUSES,
+            release__deleted_at__isnull=True,
+        ).values_list("issue_id", "release_id")
+    )
+    return [
+        {**_issue_row(issue), "open_release_id": str(open_links[issue.id]) if issue.id in open_links else None}
+        for issue in issues
+    ]
+
+
+def current_release_link(issue_id):
+    """The item's open release, else the one it was most recently in."""
+    links = ReleaseIssue.objects.filter(issue_id=issue_id, release__deleted_at__isnull=True).select_related("release")
+    link = links.filter(release__status__in=OPEN_RELEASE_STATUSES).first() or links.order_by("-created_at").first()
+    if link is None:
+        return None
+    release = link.release
+    return {
+        "id": str(release.id),
+        "name": release.name,
+        "version": release.version,
+        "status": release.status,
+        "target_date": release.target_date,
+        "released_at": release.released_at,
+        "shipped_at": link.shipped_at,
+        "shipped_via": link.shipped_via,
+        "is_unplanned": link.is_unplanned,
+    }
