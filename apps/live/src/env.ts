@@ -34,6 +34,11 @@ const envSchema = z.object({
   AXIOS_HOST: z.string().default("https://axios.joincci.org"),
   AXIOS_BOT_TOKEN: z.string().optional(),
   AXIOS_GITHUB_TOKEN: z.string().optional(),
+  // The Axios automation GitHub App, so links are posted by the app rather than by a person.
+  // The key is a PEM, which does not survive an env file intact - base64 it. With either of these
+  // unset the receiver falls back to AXIOS_GITHUB_TOKEN.
+  AXIOS_GITHUB_APP_ID: z.string().optional(),
+  AXIOS_GITHUB_APP_PRIVATE_KEY: z.string().optional(),
 });
 
 const validateEnv = () => {
