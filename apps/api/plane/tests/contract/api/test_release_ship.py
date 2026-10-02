@@ -94,6 +94,24 @@ class TestReleaseShip:
         assert ReleaseIssue.objects.filter(issue=a).count() == 1
 
     @pytest.mark.django_db
+    def test_item_from_a_closed_release_shipped_by_another_repo_is_already(
+        self, api_key_client, workspace, project, states
+    ):
+        # GAM work ships backend first, admin later: the second promotion must not file the item
+        # as unplanned in a fresh release once its own release has closed.
+        a = make_issue(project, states["Ready for Test"], "A")
+        release = plan(project, [a])
+        ship(api_key_client, workspace, [key(a)])
+        release.refresh_from_db()
+        assert release.status == ReleaseStatus.RELEASED
+
+        response = ship(api_key_client, workspace, [key(a)], via="github:CCI-Global-Team/cci-global-admin@def5678")
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert response.data["results"][0]["already"] is True
+        assert response.data["results"][0]["release_id"] == str(release.id)
+        assert Release.objects.filter(project=project).count() == 1
+
+    @pytest.mark.django_db
     def test_unplanned_item_joins_open_release_preferring_frozen(self, api_key_client, workspace, project, states):
         planned = make_issue(project, states["Ready for Test"], "Planned")
         stray = make_issue(project, states["In Testing"], "Stray")

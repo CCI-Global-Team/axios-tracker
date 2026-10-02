@@ -257,8 +257,8 @@ def remove_issue(release, issue_id, actor, origin=None):
 def ship_issues(project, issues, via, actor, now=None, origin=None):
     """Record that ``issues`` reached production through ``via``.
 
-    Idempotent: an item already shipped in its open release, or already shipped through the same
-    ``via`` anywhere, is reported as ``already`` and left untouched.
+    Idempotent: an item already shipped in its open release, through the same ``via`` anywhere, or
+    with a release that has since closed, is reported as ``already`` and left untouched.
     """
     now = now or timezone.now()
     ctx = _Context(actor_id=actor.id, origin=origin)
@@ -275,9 +275,12 @@ def ship_issues(project, issues, via, actor, now=None, origin=None):
                 "unplanned": False,
                 "already": False,
             }
+            # Already shipped: a replay of the same push, or the item went out with a release that
+            # has since closed (GAM ships backend first, then the admin promotion names it again).
             replay = (
-                ReleaseIssue.objects.filter(issue_id=issue.id, shipped_via=via, release__deleted_at__isnull=True)
+                ReleaseIssue.objects.filter(issue_id=issue.id, release__deleted_at__isnull=True)
                 .exclude(shipped_at__isnull=True)
+                .filter(Q(shipped_via=via) | Q(release__status=ReleaseStatus.RELEASED))
                 .first()
             )
             if replay is not None:
