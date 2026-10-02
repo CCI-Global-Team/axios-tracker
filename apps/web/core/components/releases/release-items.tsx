@@ -49,15 +49,15 @@ const ReleaseItemRow = observer(function ReleaseItemRow(props: {
       <div className="flex items-center gap-2 pr-12 sm:contents">
         <Link
           href={browseUrl(workspaceSlug, key)}
-          className="shrink-0 text-body-xs-medium text-accent-primary hover:underline"
+          className="flex min-h-11 shrink-0 items-center text-body-xs-medium text-accent-primary hover:underline sm:min-h-0"
         >
           {key}
         </Link>
         <Link
           href={browseUrl(workspaceSlug, key)}
-          className="min-w-0 flex-1 truncate text-body-xs-regular text-primary hover:underline"
+          className="flex min-h-11 min-w-0 flex-1 items-center text-body-xs-regular text-primary hover:underline sm:min-h-0"
         >
-          {item.name}
+          <span className="truncate">{item.name}</span>
         </Link>
       </div>
       <div className="flex flex-wrap items-center gap-2 sm:contents">

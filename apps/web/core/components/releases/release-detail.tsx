@@ -147,7 +147,8 @@ export const ReleaseDetail = observer(function ReleaseDetail(props: Props) {
             <div className="flex items-start justify-between gap-2">
               <p className="text-body-xs-medium text-primary">
                 {undo.action === "reopen" ? "Reopen" : "Roll back"} left {undo.result.left_alone.length} work item
-                {undo.result.left_alone.length === 1 ? "" : "s"} alone, because they had already moved on from Released:
+                {undo.result.left_alone.length === 1 ? " alone, because it had" : "s alone, because they had"} already
+                moved on from Released:
               </p>
               <button
                 type="button"

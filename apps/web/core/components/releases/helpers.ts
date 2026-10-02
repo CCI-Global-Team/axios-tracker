@@ -17,7 +17,8 @@ export const RELEASE_STATUS_LABEL: Record<TReleaseStatus, string> = {
 
 export const RELEASE_STATUS_CLASSES: Record<TReleaseStatus, string> = {
   planning: "bg-layer-2 text-secondary",
-  frozen: "bg-accent-subtle text-accent-primary",
+  // The brand accent is CCI red, which would read as an error here; frozen borrows the Released state's blue.
+  frozen: "bg-[#0EA5E9]/15 text-[#0369A1] dark:text-[#7DD3FC]",
   released: "bg-success-subtle text-success-primary",
   rolled_back: "bg-danger-subtle text-danger-primary",
   cancelled: "bg-layer-1 text-placeholder",

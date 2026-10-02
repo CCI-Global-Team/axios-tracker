@@ -34,13 +34,13 @@ export const IssueReleaseRow = observer(function IssueReleaseRow(props: Props) {
   const release = getIssueRelease(issueId);
 
   return (
-    <SidebarPropertyListItem icon={Rocket} label="Release">
+    <SidebarPropertyListItem icon={Rocket} label="Release" childrenClassName="min-w-0">
       {release ? (
         <Link
           href={`/${workspaceSlug}/projects/${projectId}/releases/${release.id}`}
-          className="flex h-7.5 min-w-0 items-center gap-2 rounded-sm px-2 text-body-xs-regular text-primary hover:bg-layer-transparent-hover"
+          className="flex h-7.5 w-full min-w-0 items-center gap-2 overflow-hidden rounded-sm px-2 text-body-xs-regular text-primary hover:bg-layer-transparent-hover"
         >
-          <span className="truncate">
+          <span className="min-w-0 truncate">
             {release.name}
             {release.version ? ` ${release.version}` : ""}
           </span>
