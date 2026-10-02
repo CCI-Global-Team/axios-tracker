@@ -41,6 +41,13 @@ DEFAULT_STATES = [
         "sequence": 35000,
         "group": StateGroup.STARTED.value,
     },
+    # CCI: shipped to production, waiting for product/QA to confirm and move it to Done by hand.
+    {
+        "name": "Released",
+        "color": "#0EA5E9",
+        "sequence": 40000,
+        "group": StateGroup.COMPLETED.value,
+    },
     {
         "name": "Done",
         "color": "#46A758",
