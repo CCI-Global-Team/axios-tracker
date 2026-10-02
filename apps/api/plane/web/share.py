@@ -11,6 +11,7 @@ Every value is escaped — work item names are user input.
 """
 
 # Python imports
+import json
 import re
 from urllib.parse import quote
 
@@ -134,8 +135,12 @@ def share_page(request, token):
     target = f"/{quote(issue.workspace.slug)}/browse/{quote(key)}/"
     url = share_url(request, token)
 
+    # A script redirect, not <meta http-equiv="refresh">: link previewers such as Meta's follow a
+    # meta refresh to the work item, which sends them to the sign-in page and its generic card.
+    # Crawlers do not run scripts; people's browsers do. ``target`` is percent-quoted, so the JSON
+    # literal cannot close the script tag.
     head_extra = (
-        f'    <meta http-equiv="refresh" content="0; url={escape(target)}">\n'
+        f"    <script>location.replace({json.dumps(target)})</script>\n"
         f'    <link rel="canonical" href="{escape(url)}">'
     )
     state_line = f"      <p>{escape(issue.state.name)}</p>\n" if issue.state else ""

@@ -80,7 +80,8 @@ class TestPublicLinkPage:
         assert meta(body, "twitter:card") == "summary_large_image"
         assert meta(body, "robots") == "noindex"
         target = f"/{workspace.slug}/browse/{key}/"
-        assert f'<meta http-equiv="refresh" content="0; url={target}">' in body
+        assert f'<script>location.replace("{target}")</script>' in body
+        assert 'http-equiv="refresh"' not in body
         assert f'<a href="{target}">Open in Axios</a>' in body
         # without include_description nothing of the description leaks
         assert "secrets" not in body
@@ -107,7 +108,9 @@ class TestPublicLinkPage:
         link = make_link(issue)
         body = anonymous.get(f"/s/{link.token}").content.decode()
 
-        assert "<script>" not in body
+        # The only script is the page's own redirect; the injected one is escaped.
+        assert "<script>alert(1)" not in body
+        assert body.count("<script>") == 1
         assert "&lt;script&gt;alert(1)&lt;/script&gt;" in body
         assert meta(body, "og:title").endswith('"><script>alert(1)</script><meta property="og:title" content="x')
 
