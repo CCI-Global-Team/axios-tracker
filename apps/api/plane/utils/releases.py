@@ -153,7 +153,11 @@ def _ship_link(link, via, now, released, ctx):
     link.shipped_at = now
     link.shipped_via = via
     moved = False
-    if released is not None and issue.state is not None and issue.state.group not in (StateGroup.COMPLETED.value, StateGroup.CANCELLED.value):
+    if (
+        released is not None
+        and issue.state is not None
+        and issue.state.group not in (StateGroup.COMPLETED.value, StateGroup.CANCELLED.value)
+    ):
         link.previous_state_id = issue.state_id
         moved = _move(issue, released, ctx)
     link.save(update_fields=["shipped_at", "shipped_via", "previous_state", "updated_at"])
@@ -214,7 +218,9 @@ def add_issues(release, issue_ids, actor, origin=None):
         )
         if conflicts:
             raise ReleaseConflict(sorted(conflicts, key=str))
-        existing = set(ReleaseIssue.objects.filter(release=release, issue_id__in=ids).values_list("issue_id", flat=True))
+        existing = set(
+            ReleaseIssue.objects.filter(release=release, issue_id__in=ids).values_list("issue_id", flat=True)
+        )
         new_ids = [i for i in ids if i not in existing]
         ReleaseIssue.objects.bulk_create(
             [
@@ -400,11 +406,11 @@ def with_counts(queryset, project_id):
     live = Q(release_issues__deleted_at__isnull=True, release_issues__issue__deleted_at__isnull=True)
     return queryset.annotate(
         total_items=Count("release_issues", filter=live, distinct=True),
-        shipped_items=Count(
-            "release_issues", filter=live & Q(release_issues__shipped_at__isnull=False), distinct=True
-        ),
+        shipped_items=Count("release_issues", filter=live & Q(release_issues__shipped_at__isnull=False), distinct=True),
         unplanned_items=Count("release_issues", filter=live & Q(release_issues__is_unplanned=True), distinct=True),
-        ready_items=Count("release_issues", filter=live & _ready_q(project_id, "release_issues__issue__"), distinct=True),
+        ready_items=Count(
+            "release_issues", filter=live & _ready_q(project_id, "release_issues__issue__"), distinct=True
+        ),
     )
 
 
