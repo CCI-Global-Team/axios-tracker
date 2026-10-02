@@ -13,6 +13,9 @@
 
 	reverse_proxy /api/* api:8000
 
+	# CCI: public work item share links render server-side for chat previews (GAM-401)
+	reverse_proxy /s/* api:8000
+
 	reverse_proxy /auth/* api:8000
 
 	reverse_proxy /static/* api:8000

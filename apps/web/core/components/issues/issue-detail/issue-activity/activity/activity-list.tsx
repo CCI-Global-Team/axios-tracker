@@ -26,6 +26,7 @@ import {
   IssueCycleActivity,
   IssueModuleActivity,
   IssueReleaseActivity,
+  IssuePublicLinkActivity,
   IssueLabelActivity,
   IssueLinkActivity,
   IssueAttachmentActivity,
@@ -84,6 +85,9 @@ export const IssueActivityItem = observer(function IssueActivityItem(props: TIss
     // CCI: Releases (GAM-400)
     case "release":
       return <IssueReleaseActivity {...componentDefaultProps} />;
+    // CCI: public share links (GAM-401)
+    case "public_link":
+      return <IssuePublicLinkActivity {...componentDefaultProps} />;
     case "labels":
       return <IssueLabelActivity {...componentDefaultProps} showIssue={false} />;
     case "link":

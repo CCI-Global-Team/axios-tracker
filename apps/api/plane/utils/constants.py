@@ -68,4 +68,7 @@ RESTRICTED_WORKSPACE_SLUGS = [
     "licenses",
     "instances",
     "instance",
+    # CCI: /s/<token> share links and /og/ preview images are served at the root (GAM-401)
+    "s",
+    "og",
 ]

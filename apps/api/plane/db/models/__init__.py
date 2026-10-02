@@ -55,6 +55,7 @@ from .release import (
     RELEASED_STATE_NAME,
     DEFAULT_RELEASE_CHECKLIST,
 )
+from .public_link import WorkItemPublicLink
 from .notification import EmailNotificationLog, Notification, UserNotificationPreference
 from .page import Page, PageLabel, PageLog, ProjectPage, PageVersion
 from .project import (
