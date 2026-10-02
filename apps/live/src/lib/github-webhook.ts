@@ -17,10 +17,20 @@ export function verifySignature(secret: string, rawBody: Buffer, header: string 
 }
 
 /** The serialization key, mirroring the Actions concurrency group
- *  `axios-<repo>-<pull_request.number || ref>`: one lane per PR, one per pushed ref. */
-export function eventKey(event: { pull_request?: { number?: number }; ref?: string }, repo: string): string {
+ *  `axios-<repo>-<pull_request.number || ref>`: one lane per PR, one per pushed ref.
+ *
+ *  CCI: GAM-400. A push to a branch that already exists (only release branches get this far) gets a
+ *  lane of its own, keyed by its head commit. Replacing a queued event is safe only when the survivor
+ *  re-reads current state; a release push carries its own commits, so a replaced one would never ship
+ *  them. Shipping is idempotent on the server, so running such pushes side by side is harmless. */
+export function eventKey(
+  event: { pull_request?: { number?: number }; ref?: string; created?: boolean; after?: string },
+  repo: string
+): string {
   const prNumber = event.pull_request?.number;
-  return prNumber ? `${repo}#${prNumber}` : `${repo}@${event.ref ?? ""}`;
+  if (prNumber) return `${repo}#${prNumber}`;
+  if (!event.created && event.after) return `${repo}@${event.ref ?? ""}@${event.after}`;
+  return `${repo}@${event.ref ?? ""}`;
 }
 
 export type EnqueueResult = "started" | "queued" | "replaced";

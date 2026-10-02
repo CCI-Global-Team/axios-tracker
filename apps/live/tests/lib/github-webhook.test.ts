@@ -47,6 +47,15 @@ describe("eventKey", () => {
     expect(eventKey({ pull_request: { number: 7 }, ref: "refs/pull/7/merge" }, "o/r")).toBe("o/r#7");
     expect(eventKey({ ref: "refs/heads/feat/GAM-1" }, "o/r")).toBe("o/r@refs/heads/feat/GAM-1");
   });
+
+  it("gives each push to an existing branch its own lane, so a release push is never replaced", () => {
+    expect(eventKey({ ref: "refs/heads/feat/GAM-1", created: true, after: "abc" }, "o/r")).toBe(
+      "o/r@refs/heads/feat/GAM-1"
+    );
+    expect(eventKey({ ref: "refs/heads/production", created: false, after: "abc" }, "o/r")).toBe(
+      "o/r@refs/heads/production@abc"
+    );
+  });
 });
 
 describe("KeyedQueue", () => {

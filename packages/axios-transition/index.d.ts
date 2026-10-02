@@ -11,6 +11,9 @@ export interface TransitionConfig {
   token?: string | undefined;
   /** GitHub token. Default: GITHUB_TOKEN. Present-but-undefined means no token. */
   githubToken?: string | undefined;
+  /** Branches whose pushes ship work items (GAM-400). Comma list or array. Default:
+   *  AXIOS_RELEASE_BRANCHES, else "production". */
+  releaseBranches?: string | string[];
   /** Where decisions are logged. Default: console.log. */
   log?: Logger;
 }
@@ -49,6 +52,6 @@ export function outstandingChangeRequests(reviews: Review[], requestedReviewers?
 
 export function reviewTarget(pr: PullRequestLike, reviews: Review[]): "In Progress" | "Ready for Review";
 
-export function shouldHandle(name: string, event: GitHubEvent): boolean;
+export function shouldHandle(name: string, event: GitHubEvent, options?: TransitionConfig): boolean;
 
 export function handleEvent(name: string, event: GitHubEvent, repo: string, options?: TransitionConfig): Promise<void>;

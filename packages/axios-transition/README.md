@@ -18,6 +18,7 @@ the PR.
 | A reviewer **requests changes**                                                            | In Progress        |
 | You **re-request review** from that reviewer (or they approve, or the review is dismissed) | Ready for Review   |
 | The PR is merged into the default branch                                                   | Ready for Test     |
+| The work reaches a **release branch** (`production`), by merge, squash or push             | Released           |
 
 So: open a draft while you are still working, and mark it ready when you want eyes on it. Once
 changes are requested, push your fixes and click the re-request button next to the reviewer's name;
@@ -25,9 +26,27 @@ that is what moves the ticket back to Ready for Review.
 
 The PR is also added to the work item's **Links**, and a comment on the PR links back to the ticket.
 
+### Releases: how a ticket reaches Released
+
+When code is pushed to a release branch (`production` unless `AXIOS_RELEASE_BRANCHES` says
+otherwise), every key found in the push is sent to Axios in one call (`POST /releases/ship/`).
+Keys are collected from:
+
+- every commit message in the push (when the push has 20 or more commits, the full list is read
+  from GitHub's compare API, because the payload stops at 20);
+- the **title and branch** of each PR a commit names, as GitHub's `Merge pull request #459 from ...`
+  or a squash subject ending `(#27)`. Promotion merges often carry no key themselves; the PR does.
+  At most 50 PRs are read per push.
+
+Axios decides the rest: the item is marked shipped in its release (or, if it was in none, attached
+to the project's open release and flagged **unplanned**), moves to Released unless it is already
+Done or Cancelled, and the release closes itself once every item in it has shipped. Shipping twice
+is a no-op, so a redelivered or repeated push changes nothing. Released -> Done is a Product/QA
+step, done by hand. Deleting the release branch does nothing.
+
 ### Things that look like bugs but are not
 
-- **Nothing pulls a ticket back once it reaches Ready for Test**, In Testing, UAT or Done. A QA bounce
+- **Nothing pulls a ticket back once it reaches Ready for Test**, In Testing, UAT, Released or Done. A QA bounce
   is moved by hand; opening a fix PR does not drag the ticket back.
 - **Cancelled is never touched.** Reviving a cancelled ticket is a human decision.
 - **One ticket, several PRs:** the ticket stays In Progress while any other open PR for it (in the
@@ -37,6 +56,8 @@ The PR is also added to the work item's **Links**, and a comment on the PR links
 - **Re-requesting a whole team** does not clear one person's changes request; re-request the person.
 - **A project without a Ready for Review state** (WordPress today) gets In Progress instead.
 - **A PR with no key** is ignored. That is normal and never fails anything.
+- **A key mentioned in passing in a commit message on `production`** ("follow-up to GAM-12") ships
+  that ticket. Reopen or roll back the release, or move the ticket by hand.
 
 ## For maintainers
 
@@ -52,6 +73,11 @@ The PR is also added to the work item's **Links**, and a comment on the PR links
   switching off and rolling back the webhook are in the ops repo, `deploy/RUNBOOK.md` section 10.
 
 `shouldHandle` mirrors the workflow's job-level `if:` and the callers' event types. Change them together.
+The one exception is release-branch pushes: they ship only through the webhook. The Actions fallback
+still refuses pushes to existing branches, so a repo running the fallback gets no Released moves.
+
+The receiver runs one event at a time per PR or ref, and a newer event replaces a queued one. Release
+pushes are keyed by their head commit instead, so none is ever replaced: each carries its own commits.
 
 ### Why the target comes from the PR, not the event
 
@@ -74,12 +100,13 @@ one to the rank, is a code change here.
 
 ### Configuration
 
-| Variable                | Where                                                | What                                                                                   |
-| ----------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `GITHUB_WEBHOOK_SECRET` | live container (`deploy/.env`)                       | HMAC secret shared with the repo webhooks. Empty = endpoint answers 503.               |
-| `AXIOS_BOT_TOKEN`       | live container; `AXIOS_BOT_TOKEN` secret for Actions | The "Axios automation" bot's `pr-automation` API token.                                |
-| `AXIOS_GITHUB_TOKEN`    | live container                                       | Fine-grained token, Pull requests read/write on the product repos. Expires 2027-09-24. |
-| `AXIOS_HOST`            | live container                                       | Defaults to `https://axios.joincci.org`.                                               |
+| Variable                 | Where                                                | What                                                                                   |
+| ------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `GITHUB_WEBHOOK_SECRET`  | live container (`deploy/.env`)                       | HMAC secret shared with the repo webhooks. Empty = endpoint answers 503.               |
+| `AXIOS_BOT_TOKEN`        | live container; `AXIOS_BOT_TOKEN` secret for Actions | The "Axios automation" bot's `pr-automation` API token.                                |
+| `AXIOS_GITHUB_TOKEN`     | live container                                       | Fine-grained token, Pull requests read/write on the product repos. Expires 2027-09-24. |
+| `AXIOS_HOST`             | live container                                       | Defaults to `https://axios.joincci.org`.                                               |
+| `AXIOS_RELEASE_BRANCHES` | live container                                       | Comma list of branches whose pushes ship work items. Defaults to `production`.         |
 
 Logs: `docker logs axios-tracker-live-1 | grep GITHUB_WEBHOOK`. GitHub keeps each delivery and its
 response under the repo's Settings → Webhooks → Recent deliveries, with a Redeliver button.
