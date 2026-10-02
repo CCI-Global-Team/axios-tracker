@@ -132,7 +132,8 @@ def share_page(request, token):
         excerpt = _excerpt(issue.description_stripped)
         if excerpt:
             description = f"{description} — {excerpt}"
-    target = f"/{quote(issue.workspace.slug)}/browse/{quote(key)}/"
+    # Absolute, on the app origin: the API serving this page is not always on the same host as the app.
+    target = f"{origin}/{quote(issue.workspace.slug)}/browse/{quote(key)}/"
     url = share_url(request, token)
 
     # A script redirect, not <meta http-equiv="refresh">: link previewers such as Meta's follow a

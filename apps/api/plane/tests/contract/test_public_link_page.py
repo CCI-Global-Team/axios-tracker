@@ -80,9 +80,9 @@ class TestPublicLinkPage:
         assert meta(body, "twitter:card") == "summary_large_image"
         assert meta(body, "robots") == "noindex"
         target = f"/{workspace.slug}/browse/{key}/"
-        assert f'<script>location.replace("{target}")</script>' in body
+        assert re.search(r'<script>location\.replace\("https?://[^"]+' + re.escape(target) + r'"\)</script>', body)
         assert 'http-equiv="refresh"' not in body
-        assert f'<a href="{target}">Open in Axios</a>' in body
+        assert re.search(r'<a href="https?://[^"]+' + re.escape(target) + r'">Open in Axios</a>', body)
         # without include_description nothing of the description leaks
         assert "secrets" not in body
 
