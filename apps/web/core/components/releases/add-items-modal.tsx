@@ -99,7 +99,7 @@ export const AddReleaseItemsModal = observer(function AddReleaseItemsModal(props
           .map((candidate) => `${releaseIssueKey(candidate)} ${candidate.name}`);
         setError(
           names.length > 0
-            ? `Already in another open release: ${names.join("; ")}. Remove them there first, or untick them here.`
+            ? `Already in another open release: ${names.join("; ")}. ${names.length === 1 ? "Remove it there first, or untick it here." : "Remove them there first, or untick them here."}`
             : typeof body.error === "string"
               ? body.error
               : "Some of these items are already in another open release."
