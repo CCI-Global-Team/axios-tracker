@@ -229,6 +229,8 @@
   "views_description": "Сохраните пользовательские сортировки, фильтры и параметры отображения или поделитесь ими с командой.",
   "pages_description": "Создавайте и редактируйте свободный контент: заметки, документы, что угодно.",
   "intake_description": "Позвольте участникам вне команды сообщать об ошибках, оставлять отзывы и предложения, не нарушая ваш рабочий процесс.",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "Записывайте время, потраченное на рабочие элементы и проекты.",
   "work_management_description": "Управление рабочими элементами и проектами",
   "documentation": "Документация",

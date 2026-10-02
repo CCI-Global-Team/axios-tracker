@@ -229,6 +229,8 @@
   "views_description": "Özel sıralamaları, filtreleri ve görüntüleme seçeneklerini kaydedin veya ekibinizle paylaşın.",
   "pages_description": "Serbest biçimli içerikler oluşturun ve düzenleyin; notlar, belgeler, her şey.",
   "intake_description": "Üye olmayanların hata, geri bildirim ve öneri paylaşmasına izin verin; iş akışınızı bozmadan.",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "İş öğeleri ve projelerde harcanan zamanı kaydedin.",
   "work_management_description": "İşlerinizi ve projelerinizi kolayca yönetin.",
   "documentation": "Dokümantasyon",

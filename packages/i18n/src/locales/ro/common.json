@@ -229,6 +229,8 @@
   "views_description": "Salvează sortările, filtrele și opțiunile de afișare personalizate sau distribuie-le echipei tale.",
   "pages_description": "Creează și editează conținut liber: note, documente, orice.",
   "intake_description": "Permite utilizatorilor care nu sunt membri să trimită erori, feedback și sugestii fără a perturba fluxul de lucru.",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "Înregistrează timpul petrecut pe activități și proiecte.",
   "work_management_description": "Gestionează-ți munca și proiectele cu ușurință.",
   "documentation": "Documentație",

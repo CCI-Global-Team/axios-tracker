@@ -229,6 +229,8 @@
   "views_description": "Simpan pengurutan, filter, dan opsi tampilan khusus atau bagikan dengan tim Anda.",
   "pages_description": "Buat dan edit konten bebas bentuk: catatan, dokumen, apa saja.",
   "intake_description": "Izinkan non-anggota membagikan bug, masukan, dan saran tanpa mengganggu alur kerja Anda.",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "Catat waktu yang dihabiskan untuk item kerja dan proyek.",
   "work_management_description": "Kelola pekerjaan dan proyek Anda dengan mudah.",
   "documentation": "Dokumentasi",
