@@ -31,6 +31,7 @@ from plane.app.views import (
     WorkItemDescriptionVersionEndpoint,
     IssueMetaEndpoint,
     IssueDetailIdentifierEndpoint,
+    WorkItemPublicLinkEndpoint,
 )
 
 urlpatterns = [
@@ -122,6 +123,17 @@ urlpatterns = [
             }
         ),
         name="project-issue-links",
+    ),
+    # CCI: public share links (GAM-401)
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/public-links/",
+        WorkItemPublicLinkEndpoint.as_view(http_method_names=["get", "post"]),
+        name="project-issue-public-links",
+    ),
+    path(
+        "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/public-links/<uuid:link_id>/",
+        WorkItemPublicLinkEndpoint.as_view(http_method_names=["delete"]),
+        name="project-issue-public-link-detail",
     ),
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/issues/<uuid:issue_id>/issue-attachments/",

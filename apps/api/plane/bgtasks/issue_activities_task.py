@@ -997,6 +997,64 @@ def delete_release_issue_activity(
     )
 
 
+# CCI: public share links (GAM-401). The token is never written to the history: guests can read
+# activity but must not be able to pick up a live share link from it.
+def create_public_link_activity(
+    requested_data,
+    current_instance,
+    issue_id,
+    project_id,
+    workspace_id,
+    actor_id,
+    issue_activities,
+    epoch,
+):
+    requested_data = json.loads(requested_data) if requested_data is not None else {}
+    issue_activities.append(
+        IssueActivity(
+            issue_id=issue_id,
+            actor_id=actor_id,
+            verb="created",
+            old_value="",
+            new_value="with description" if requested_data.get("include_description") else "",
+            field="public_link",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            comment="created a public link",
+            new_identifier=requested_data.get("id"),
+            epoch=epoch,
+        )
+    )
+
+
+def delete_public_link_activity(
+    requested_data,
+    current_instance,
+    issue_id,
+    project_id,
+    workspace_id,
+    actor_id,
+    issue_activities,
+    epoch,
+):
+    requested_data = json.loads(requested_data) if requested_data is not None else {}
+    issue_activities.append(
+        IssueActivity(
+            issue_id=issue_id,
+            actor_id=actor_id,
+            verb="deleted",
+            old_value="",
+            new_value="",
+            field="public_link",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            comment="revoked a public link",
+            old_identifier=requested_data.get("id"),
+            epoch=epoch,
+        )
+    )
+
+
 def create_link_activity(
     requested_data,
     current_instance,
@@ -1623,6 +1681,9 @@ def issue_activity(
             # CCI: releases (GAM-400)
             "release.activity.created": create_release_issue_activity,
             "release.activity.deleted": delete_release_issue_activity,
+            # CCI: public share links (GAM-401)
+            "public_link.activity.created": create_public_link_activity,
+            "public_link.activity.deleted": delete_public_link_activity,
             "link.activity.created": create_link_activity,
             "link.activity.updated": update_link_activity,
             "link.activity.deleted": delete_link_activity,

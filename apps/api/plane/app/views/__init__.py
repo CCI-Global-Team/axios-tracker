@@ -146,6 +146,7 @@ from .issue.comment import IssueCommentViewSet, CommentReactionViewSet
 from .issue.label import LabelViewSet, BulkCreateIssueLabelsEndpoint
 
 from .issue.link import IssueLinkViewSet
+from .issue.public_link import WorkItemPublicLinkEndpoint
 
 from .issue.relation import IssueRelationViewSet
 
