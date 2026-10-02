@@ -59,6 +59,9 @@ import { ProjectPageStore } from "./pages/project-page.store";
 import type { IProjectRootStore } from "./project";
 import { ProjectRootStore } from "./project";
 import type { IProjectViewStore } from "./project-view.store";
+// CCI: releases (GAM-400)
+import type { IReleaseStore } from "./release.store";
+import { ReleaseStore } from "./release.store";
 import { ProjectViewStore } from "./project-view.store";
 import type { IRouterStore } from "./router.store";
 import { RouterStore } from "./router.store";
@@ -80,6 +83,8 @@ export class CoreRootStore {
   cycleFilter: ICycleFilterStore;
   module: IModuleStore;
   moduleFilter: IModuleFilterStore;
+  // CCI: releases (GAM-400)
+  release: IReleaseStore;
   projectView: IProjectViewStore;
   globalView: IGlobalViewStore;
   issue: IIssueRootStore;
@@ -117,6 +122,7 @@ export class CoreRootStore {
     this.cycleFilter = new CycleFilterStore(this);
     this.module = new ModulesStore(this);
     this.moduleFilter = new ModuleFilterStore(this);
+    this.release = new ReleaseStore(this);
     this.projectView = new ProjectViewStore(this);
     this.globalView = new GlobalViewStore(this);
     this.issue = new IssueRootStore(this);
@@ -152,6 +158,7 @@ export class CoreRootStore {
     this.cycleFilter = new CycleFilterStore(this);
     this.module = new ModulesStore(this);
     this.moduleFilter = new ModuleFilterStore(this);
+    this.release = new ReleaseStore(this);
     this.projectView = new ProjectViewStore(this);
     this.globalView = new GlobalViewStore(this);
     this.issue = new IssueRootStore(this);
