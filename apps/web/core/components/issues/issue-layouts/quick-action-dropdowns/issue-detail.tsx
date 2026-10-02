@@ -8,11 +8,12 @@ import { useState } from "react";
 import { omit } from "lodash-es";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
-import { Ellipsis } from "lucide-react";
+import { Ellipsis, Globe } from "lucide-react";
 // plane imports
 import { ARCHIVABLE_STATE_GROUPS, EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import type { TIssue } from "@plane/types";
 import { EIssuesStoreType } from "@plane/types";
+import type { TContextMenuItem } from "@plane/ui";
 import { ContextMenu, CustomMenu } from "@plane/ui";
 import { cn } from "@plane/utils";
 // hooks
@@ -23,6 +24,7 @@ import { useUserPermissions } from "@/hooks/store/user";
 // helper
 import { ArchiveIssueModal } from "../../archive-issue-modal";
 import { DeleteIssueModal } from "../../delete-issue-modal";
+import { WorkItemPublicLinkModal } from "../../issue-detail/public-link-modal";
 import { CreateUpdateIssueModal } from "../../issue-modal/modal";
 import type { IQuickActionProps } from "../list/list-view-types";
 import type { MenuItemFactoryProps } from "./helper";
@@ -64,6 +66,8 @@ export const WorkItemDetailQuickActions = observer(function WorkItemDetailQuickA
   const [deleteIssueModal, setDeleteIssueModal] = useState(false);
   const [archiveIssueModal, setArchiveIssueModal] = useState(false);
   const [_, setDuplicateWorkItemModal] = useState(false);
+  // CCI: public share links (GAM-401)
+  const [publicLinkModal, setPublicLinkModal] = useState(false);
   // store hooks
   const { allowPermissions } = useUserPermissions();
   const { issuesFilter } = useIssues(EIssuesStoreType.PROJECT);
@@ -148,8 +152,18 @@ export const WorkItemDetailQuickActions = observer(function WorkItemDetailQuickA
 
   //   const MENU_ITEMS = useWorkItemDetailMenuItems(menuItemProps);
   const baseMenuItems = useWorkItemDetailMenuItems(menuItemProps);
+  // CCI: public share links (GAM-401). Members and admins only — a link exposes the item to anyone
+  // holding it — and not for archived items, whose share page would 404.
+  const publicLinkMenuItem: TContextMenuItem = {
+    key: "copy-public-link",
+    title: "Copy public link",
+    icon: Globe,
+    action: () => setPublicLinkModal(true),
+    shouldRender: isEditingAllowed && !issue.archived_at,
+  };
 
-  const MENU_ITEMS = baseMenuItems
+  // after "Make a copy", next to the other copy actions
+  const MENU_ITEMS = [...baseMenuItems.slice(0, 1), publicLinkMenuItem, ...baseMenuItems.slice(1)]
     // oxlint-disable-next-line oxc/no-map-spread
     .map((item) => {
       // Customize edit action for work item
@@ -223,6 +237,16 @@ export const WorkItemDetailQuickActions = observer(function WorkItemDetailQuickA
         storeType={EIssuesStoreType.PROJECT}
         fetchIssueDetails={false}
       />
+
+      {workspaceSlug && issue.project_id && (
+        <WorkItemPublicLinkModal
+          isOpen={publicLinkModal}
+          onClose={() => setPublicLinkModal(false)}
+          workspaceSlug={workspaceSlug.toString()}
+          projectId={issue.project_id}
+          issueId={issue.id}
+        />
+      )}
 
       <ContextMenu parentRef={parentRef} items={CONTEXT_MENU_ITEMS} />
       <CustomMenu
