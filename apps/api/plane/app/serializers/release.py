@@ -13,7 +13,7 @@ from rest_framework import serializers
 
 # Module imports
 from .base import BaseSerializer
-from plane.db.models import Release, ReleaseStatus, User, WorkspaceMember
+from plane.db.models import OPEN_RELEASE_STATUSES, Release, ReleaseStatus, User, WorkspaceMember
 
 # Statuses a person may set directly. Released and Rolled back are reached only through the
 # ship / mark released / reopen / roll back actions, which also move the items.
@@ -92,6 +92,19 @@ class ReleaseSerializer(BaseSerializer):
             raise serializers.ValidationError("Use the release actions to mark released, reopen or roll back")
         if self.instance and self.instance.status not in EDITABLE_STATUSES and value != self.instance.status:
             raise serializers.ValidationError("Reopen this release before changing its status")
+        # Imported here: plane.utils.releases pulls in the activity task, which imports serializers.
+        from plane.utils.releases import open_conflicts
+
+        if (
+            self.instance
+            and self.instance.status == ReleaseStatus.CANCELLED.value
+            and value in OPEN_RELEASE_STATUSES
+            and open_conflicts(self.instance)
+        ):
+            # A cancelled release's items were free to join another release meanwhile.
+            raise serializers.ValidationError(
+                "Some of its work items are now in another open release; remove them there first"
+            )
         return value
 
     def validate_owned_by(self, value):

@@ -10,6 +10,8 @@ RELEASED_COLOR = "#0EA5E9"
 RELEASED_SEQUENCE = 40000
 # Used when a project already has a state at 40000; still between UAT-style states and Done (45000).
 FALLBACK_SEQUENCE = 44000
+# Marks the states this migration creates, so reversing it never deletes a Released state a team made.
+MARKER = "cci:0130_released_state"
 
 
 def add_released_state(apps, schema_editor):
@@ -30,6 +32,7 @@ def add_released_state(apps, schema_editor):
                 color=RELEASED_COLOR,
                 sequence=FALLBACK_SEQUENCE if taken else RELEASED_SEQUENCE,
                 group="completed",
+                external_source=MARKER,
                 project_id=project.id,
                 workspace_id=project.workspace_id,
             )
@@ -41,8 +44,8 @@ def remove_unused_released_states(apps, schema_editor):
     State = apps.get_model("db", "State")
     Issue = apps.get_model("db", "Issue")
 
-    used = Issue.objects.filter(state__name=RELEASED).values_list("state_id", flat=True)
-    State.objects.filter(name=RELEASED, group="completed").exclude(id__in=used).delete()
+    used = Issue.objects.filter(state__external_source=MARKER).values_list("state_id", flat=True)
+    State.objects.filter(external_source=MARKER).exclude(id__in=used).delete()
 
 
 class Migration(migrations.Migration):

@@ -125,7 +125,7 @@ class ReleaseActionEndpoint(BaseAPIView):
         release = _releases(slug, project_id).get(pk=release_id)
         try:
             result = handler(release, request.user, origin=base_host(request=request, is_app=True))
-        except release_service.ReleaseError as exc:
+        except (release_service.ReleaseError, release_service.ReleaseConflict) as exc:
             return _error(exc)
         release = release_service.with_counts(_releases(slug, project_id), project_id).get(pk=release_id)
         return Response({**result, "release": ReleaseSerializer(release).data}, status=status.HTTP_200_OK)

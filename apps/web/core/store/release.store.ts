@@ -60,6 +60,8 @@ export class ReleaseStore implements IReleaseStore {
   releaseIssuesMap: Record<string, TReleaseIssue[]> = {};
   fetchedMap: Record<string, boolean> = {};
   issueReleaseMap: Record<string, TIssueRelease | null> = {};
+  // newest updateRelease call per release (not observable)
+  private updateSeq: Record<string, number> = {};
   // root store
   rootStore;
   // services
@@ -135,15 +137,20 @@ export class ReleaseStore implements IReleaseStore {
 
   updateRelease = async (workspaceSlug: string, projectId: string, releaseId: string, data: TReleaseUpdatePayload) => {
     const previous = this.releaseMap[releaseId];
+    // Saves overlap (quick checklist ticks, notes autosave). Only the newest one may write its
+    // response or its rollback back, or a slower earlier reply would undo a later edit.
+    const seq = (this.updateSeq[releaseId] ?? 0) + 1;
+    this.updateSeq[releaseId] = seq;
+    const isLatest = () => this.updateSeq[releaseId] === seq;
     // optimistic, so checklist ticks and notes feel instant
     if (previous) runInAction(() => set(this.releaseMap, [releaseId], { ...previous, ...data }));
     try {
       const release = await this.releaseService.updateRelease(workspaceSlug, projectId, releaseId, data);
       // keep the counts the list endpoint annotated if the PATCH response does not carry them
-      runInAction(() => this.setRelease({ ...previous, ...release }, projectId));
+      if (isLatest()) runInAction(() => this.setRelease({ ...this.releaseMap[releaseId], ...release }, projectId));
       return release;
     } catch (error) {
-      if (previous) runInAction(() => set(this.releaseMap, [releaseId], previous));
+      if (previous && isLatest()) runInAction(() => set(this.releaseMap, [releaseId], previous));
       throw error;
     }
   };

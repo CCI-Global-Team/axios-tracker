@@ -10,7 +10,7 @@ import pytest
 from django.utils import timezone
 from rest_framework import status
 
-from plane.db.models import Release, ReleaseIssue, ReleaseStatus, User
+from plane.db.models import Issue, Release, ReleaseIssue, ReleaseStatus, User
 from plane.tests.contract.release_helpers import build_project, make_issue
 
 VIA = "github:CCI-Global-Team/cci-backend@abc1234"
@@ -110,6 +110,23 @@ class TestReleaseShip:
         assert response.data["results"][0]["already"] is True
         assert response.data["results"][0]["release_id"] == str(release.id)
         assert Release.objects.filter(project=project).count() == 1
+
+    @pytest.mark.django_db
+    def test_follow_up_planned_into_a_new_release_ships_there(self, api_key_client, workspace, project, states):
+        a = make_issue(project, states["Ready for Test"], "A")
+        october = plan(project, [a], name="October")
+        ship(api_key_client, workspace, [key(a)])
+        october.refresh_from_db()
+        assert october.status == ReleaseStatus.RELEASED
+
+        # QA reopens the work for a follow-up, which is planned into November.
+        Issue.objects.filter(pk=a.pk).update(state=states["In Progress"])
+        november = plan(project, [a], name="November")
+        response = ship(api_key_client, workspace, [key(a)], via="github:CCI-Global-Team/cci-backend@fff9999")
+        result = response.data["results"][0]
+        assert result["release_id"] == str(november.id) and result["already"] is False and result["moved"] is True
+        november.refresh_from_db()
+        assert november.status == ReleaseStatus.RELEASED
 
     @pytest.mark.django_db
     def test_unplanned_item_joins_open_release_preferring_frozen(self, api_key_client, workspace, project, states):

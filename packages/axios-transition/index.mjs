@@ -599,20 +599,17 @@ async function pullRequestKeys(cfg, repo, numbers, identifiers) {
   if (numbers.length > PR_LOOKUP_CAP) {
     cfg.log(`  ${numbers.length} referenced PRs — reading the first ${PR_LOOKUP_CAP}`);
   }
-  const keys = [];
-  for (const n of numbers.slice(0, PR_LOOKUP_CAP)) {
-    // Sequential, like the transitions: a promotion can name dozens of PRs.
-    // eslint-disable-next-line no-await-in-loop
+  const fetchKeys = async (n) => {
     const res = await github(cfg, `/repos/${repo}/pulls/${n}`);
     if (!res.ok) {
       cfg.log(`  could not read PR #${n} (HTTP ${res.status})`);
-      continue;
+      return [];
     }
-    // eslint-disable-next-line no-await-in-loop
     const pr = await res.json();
-    keys.push(...extractKeys(pr.title, identifiers), ...extractKeys(pr.head?.ref, identifiers));
-  }
-  return keys;
+    return [...extractKeys(pr.title, identifiers), ...extractKeys(pr.head?.ref, identifiers)];
+  };
+  // Fetched in parallel (at most PR_LOOKUP_CAP): one promotion can name dozens of PRs.
+  return (await Promise.all(numbers.slice(0, PR_LOOKUP_CAP).map(fetchKeys))).flat();
 }
 
 /** A push to a release branch: tell Axios which work items just reached it. */

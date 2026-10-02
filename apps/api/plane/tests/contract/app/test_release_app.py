@@ -8,6 +8,7 @@ import importlib
 from uuid import uuid4
 
 import pytest
+from django.utils import timezone
 from django.apps import apps
 from rest_framework import status
 
@@ -111,6 +112,45 @@ class TestReleaseApp:
         response = session_client.delete(f"{base(workspace, project)}/releases/{release['id']}/issues/{a.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert not ReleaseIssue.objects.filter(release_id=release["id"]).exists()
+
+    @pytest.mark.django_db
+    def test_removing_the_last_unshipped_item_closes_the_release(self, session_client, workspace, project, states):
+        shipped = make_issue(project, states["Ready for Test"], "Shipped")
+        dropped = make_issue(project, states["In Progress"], "Dropped")
+        release = create_release(session_client, workspace, project)
+        add(session_client, workspace, project, release["id"], [shipped, dropped])
+        ReleaseIssue.objects.filter(release_id=release["id"], issue=shipped).update(shipped_at=timezone.now())
+
+        session_client.delete(f"{base(workspace, project)}/releases/{release['id']}/issues/{dropped.id}/")
+        assert Release.objects.get(pk=release["id"]).status == "released"
+
+    @pytest.mark.django_db
+    def test_reopen_refuses_items_now_in_another_open_release(self, session_client, workspace, project, states):
+        item = make_issue(project, states["Ready for Test"])
+        first = create_release(session_client, workspace, project, name="First")
+        add(session_client, workspace, project, first["id"], [item])
+        session_client.post(f"{base(workspace, project)}/releases/{first['id']}/mark-released/")
+        second = create_release(session_client, workspace, project, name="Second")
+        assert add(session_client, workspace, project, second["id"], [item]).status_code == status.HTTP_201_CREATED
+
+        response = session_client.post(f"{base(workspace, project)}/releases/{first['id']}/reopen/")
+        assert response.status_code == status.HTTP_409_CONFLICT, response.data
+        assert response.data["issue_ids"] == [str(item.id)]
+        assert Release.objects.get(pk=first["id"]).status == "released"
+
+    @pytest.mark.django_db
+    def test_uncancel_refuses_items_now_in_another_open_release(self, session_client, workspace, project, states):
+        item = make_issue(project, states["Ready for Test"])
+        first = create_release(session_client, workspace, project, name="First")
+        add(session_client, workspace, project, first["id"], [item])
+        url = f"{base(workspace, project)}/releases/{first['id']}/"
+        assert session_client.patch(url, {"status": "cancelled"}, format="json").status_code == status.HTTP_200_OK
+        second = create_release(session_client, workspace, project, name="Second")
+        add(session_client, workspace, project, second["id"], [item])
+
+        response = session_client.patch(url, {"status": "planning"}, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.data
+        assert Release.objects.get(pk=first["id"]).status == "cancelled"
 
     @pytest.mark.django_db
     def test_mark_released_moves_items_and_leaves_done_alone(self, session_client, workspace, project, states):

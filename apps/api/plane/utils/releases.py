@@ -26,6 +26,7 @@ from plane.db.models import (
     OPEN_RELEASE_STATUSES,
     RELEASED_STATE_NAME,
     Issue,
+    Project,
     Release,
     ReleaseIssue,
     ReleaseStatus,
@@ -137,6 +138,13 @@ def _lock(release):
     return Release.objects.select_for_update().get(pk=release.pk)
 
 
+def _lock_project(project_id):
+    """Serialize release membership changes per project: shipping and planning both decide which
+    open release an item belongs to, and two of them racing could put an item in two releases or
+    create the same 'Shipped <date>' release twice."""
+    Project.objects.select_for_update().filter(pk=project_id).first()
+
+
 def _close_if_all_shipped(release, now):
     links = ReleaseIssue.objects.filter(release=release)
     if links.exists() and not links.filter(shipped_at__isnull=True).exists() and release.is_open:
@@ -197,10 +205,29 @@ def _project_open_release(project, actor, now):
     )
 
 
+def open_conflicts(release):
+    """Items of ``release`` that already sit in another open release — what reopening or un-cancelling
+    it would put in two open releases at once."""
+    ids = ReleaseIssue.objects.filter(release=release).values_list("issue_id", flat=True)
+    return sorted(
+        set(
+            ReleaseIssue.objects.filter(
+                issue_id__in=ids,
+                release__status__in=OPEN_RELEASE_STATUSES,
+                release__deleted_at__isnull=True,
+            )
+            .exclude(release_id=release.id)
+            .values_list("issue_id", flat=True)
+        ),
+        key=str,
+    )
+
+
 def add_issues(release, issue_ids, actor, origin=None):
     """Plan items into an open release. Raises ReleaseConflict if any is in another open release."""
     ctx = _Context(actor_id=actor.id, origin=origin)
     with transaction.atomic():
+        _lock_project(release.project_id)
         release = _lock(release)
         if not release.is_open:
             raise ReleaseError("Items can only be added to a planning or frozen release")
@@ -251,20 +278,24 @@ def remove_issue(release, issue_id, actor, origin=None):
             return False
         links.delete()
         _log_link(ctx, release, issue_id, created=False)
+        # Dropping the last unshipped item can leave a release whose every item has shipped.
+        _close_if_all_shipped(release, timezone.now())
         return True
 
 
 def ship_issues(project, issues, via, actor, now=None, origin=None):
     """Record that ``issues`` reached production through ``via``.
 
-    Idempotent: an item already shipped in its open release, through the same ``via`` anywhere, or
-    with a release that has since closed, is reported as ``already`` and left untouched.
+    Idempotent: an item already shipped in its open release, or (when it is in no open release) one
+    shipped through the same ``via`` or with a release that has since closed, is reported as
+    ``already`` and left untouched.
     """
     now = now or timezone.now()
     ctx = _Context(actor_id=actor.id, origin=origin)
     released = released_state(project)
     results = []
     with transaction.atomic():
+        _lock_project(project.id)
         touched = {}
         for issue in issues:
             summary = {
@@ -275,21 +306,23 @@ def ship_issues(project, issues, via, actor, now=None, origin=None):
                 "unplanned": False,
                 "already": False,
             }
-            # Already shipped: a replay of the same push, or the item went out with a release that
-            # has since closed (GAM ships backend first, then the admin promotion names it again).
-            replay = (
-                ReleaseIssue.objects.filter(issue_id=issue.id, release__deleted_at__isnull=True)
-                .exclude(shipped_at__isnull=True)
-                .filter(Q(shipped_via=via) | Q(release__status=ReleaseStatus.RELEASED))
-                .first()
-            )
-            if replay is not None:
-                summary.update(release_id=str(replay.release_id), unplanned=replay.is_unplanned, already=True)
-                results.append(summary)
-                continue
-
             link = open_release_for(issue)
             if link is None:
+                # Already shipped: a replay of the same push, or the item went out with a release that
+                # has since closed (GAM ships backend first, then the admin promotion names it again).
+                # Checked only when the item is in no open release, so a follow-up planned into a new
+                # release still ships there.
+                replay = (
+                    ReleaseIssue.objects.filter(issue_id=issue.id, release__deleted_at__isnull=True)
+                    .exclude(shipped_at__isnull=True)
+                    .filter(Q(shipped_via=via) | Q(release__status=ReleaseStatus.RELEASED))
+                    .order_by("-shipped_at")
+                    .first()
+                )
+                if replay is not None:
+                    summary.update(release_id=str(replay.release_id), unplanned=replay.is_unplanned, already=True)
+                    results.append(summary)
+                    continue
                 target = _project_open_release(project, actor, now)
                 target = touched.get(target.id) or _lock(target)
                 link = ReleaseIssue.objects.create(
@@ -371,9 +404,13 @@ def _undo_shipping(release, ctx, prefer_ready_for_test):
 def reopen(release, actor, origin=None):
     ctx = _Context(actor_id=actor.id, origin=origin)
     with transaction.atomic():
+        _lock_project(release.project_id)
         release = _lock(release)
         if release.status not in (ReleaseStatus.RELEASED, ReleaseStatus.ROLLED_BACK):
             raise ReleaseError("Only a released or rolled back release can be reopened")
+        conflicts = open_conflicts(release)
+        if conflicts:
+            raise ReleaseConflict(conflicts)
         restored, left_alone = _undo_shipping(release, ctx, prefer_ready_for_test=False)
         release.status = ReleaseStatus.FROZEN
         release.released_at = None
