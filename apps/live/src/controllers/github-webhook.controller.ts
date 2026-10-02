@@ -21,6 +21,7 @@ import type { GitHubEvent } from "@plane/axios-transition";
 import { Controller, Post } from "@plane/decorators";
 import { logger } from "@plane/logger";
 import { env } from "@/env";
+import { getAppInstallationToken } from "@/lib/github-app";
 import { eventKey, KeyedQueue, verifySignature } from "@/lib/github-webhook";
 
 /** Under LIVE_BASE_PATH. server.ts reads the body raw on this path, for the signature. */
@@ -80,11 +81,14 @@ export class GithubWebhookController {
       const key = eventKey(event, repo);
       const log = (...args: unknown[]) =>
         logger.info(`GITHUB_WEBHOOK: [${delivery} ${name} ${key}] ${args.map(String).join(" ")}`);
-      const result = queue.enqueue(key, () =>
+      const result = queue.enqueue(key, async () =>
         handleEvent(name, event, repo, {
           host: env.AXIOS_HOST,
           token: env.AXIOS_BOT_TOKEN,
-          githubToken: env.AXIOS_GITHUB_TOKEN,
+          // Act as the app when it is configured, so the link on the pull request comes from
+          // axios-automation[bot]. Falls back to the token when it is not, which is also what
+          // happens if minting fails - better a link from the wrong author than no link.
+          githubToken: (await getAppInstallationToken(repo)) ?? env.AXIOS_GITHUB_TOKEN,
           log,
         })
       );
