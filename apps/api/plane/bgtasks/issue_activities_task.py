@@ -29,6 +29,7 @@ from plane.db.models import (
     Label,
     Module,
     Project,
+    Release,
     State,
     User,
     EstimatePoint,
@@ -936,6 +937,66 @@ def delete_module_issue_activity(
     )
 
 
+# CCI: release membership, modelled on the module handlers above (GAM-400).
+def create_release_issue_activity(
+    requested_data,
+    current_instance,
+    issue_id,
+    project_id,
+    workspace_id,
+    actor_id,
+    issue_activities,
+    epoch,
+):
+    requested_data = json.loads(requested_data) if requested_data is not None else None
+    release = Release.objects.filter(pk=requested_data.get("release_id")).first()
+    issue_activities.append(
+        IssueActivity(
+            issue_id=issue_id,
+            actor_id=actor_id,
+            verb="created",
+            old_value="",
+            new_value=release.name if release else "",
+            field="release",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            comment=f"added this issue to release {release.name if release else ''}",
+            new_identifier=requested_data.get("release_id"),
+            epoch=epoch,
+        )
+    )
+
+
+def delete_release_issue_activity(
+    requested_data,
+    current_instance,
+    issue_id,
+    project_id,
+    workspace_id,
+    actor_id,
+    issue_activities,
+    epoch,
+):
+    requested_data = json.loads(requested_data) if requested_data is not None else None
+    current_instance = json.loads(current_instance) if current_instance is not None else {}
+    release_name = current_instance.get("release_name")
+    issue_activities.append(
+        IssueActivity(
+            issue_id=issue_id,
+            actor_id=actor_id,
+            verb="deleted",
+            old_value=release_name,
+            new_value="",
+            field="release",
+            project_id=project_id,
+            workspace_id=workspace_id,
+            comment=f"removed this issue from release {release_name}",
+            old_identifier=requested_data.get("release_id"),
+            epoch=epoch,
+        )
+    )
+
+
 def create_link_activity(
     requested_data,
     current_instance,
@@ -1559,6 +1620,9 @@ def issue_activity(
             "cycle.activity.deleted": delete_cycle_issue_activity,
             "module.activity.created": create_module_issue_activity,
             "module.activity.deleted": delete_module_issue_activity,
+            # CCI: releases (GAM-400)
+            "release.activity.created": create_release_issue_activity,
+            "release.activity.deleted": delete_release_issue_activity,
             "link.activity.created": create_link_activity,
             "link.activity.updated": update_link_activity,
             "link.activity.deleted": delete_link_activity,

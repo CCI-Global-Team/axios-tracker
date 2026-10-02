@@ -11,6 +11,8 @@ import { setPromiseToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
 import type { IProject } from "@plane/types";
 import { CycleIcon, IntakeIcon, ModuleIcon, PageIcon, ViewsIcon } from "@plane/propel/icons";
+// CCI: Releases icon
+import { Rocket } from "lucide-react";
 // components
 import { SettingsBoxedControlItem } from "@/components/settings/boxed-control-item";
 import { SettingsHeading } from "@/components/settings/heading";
@@ -43,6 +45,16 @@ const PROJECT_FEATURES_LIST = {
     title: "Modules",
     description: "Group work into sub-project-like set-ups with their own leads and assignees.",
     icon: <ModuleIcon width={20} height={20} className="flex-shrink-0 text-tertiary" />,
+    isPro: false,
+    isEnabled: true,
+  },
+  // CCI: Releases (GAM-400)
+  releases: {
+    key: "releases",
+    property: "release_view",
+    title: "Releases",
+    description: "Group work that goes to production together and track it until it ships.",
+    icon: <Rocket className="h-5 w-5 flex-shrink-0 text-tertiary" />,
     isPro: false,
     isEnabled: true,
   },

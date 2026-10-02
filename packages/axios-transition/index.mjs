@@ -6,6 +6,7 @@
  *   PR open and out of draft                                   ->  Ready for Review
  *   a reviewer requested changes, and has not been re-asked    ->  In Progress
  *   PR merged into the default branch                          ->  Ready for Test
+ *   push to a release branch (default `production`)           ->  Released, by the Axios server
  *
  * The PR rows are derived from the pull request as it stands when the job runs, not from the event
  * that fired it. Runs for one PR share a concurrency group, so a burst of events (open + three
@@ -61,6 +62,14 @@
  * GAM-248), so a branch still carrying an old Jira key will resolve to the wrong item or to
  * none. Open PRs written before the cutover need their keys rewritten to Axios numbers.
  *
+ * RELEASED IS DECIDED BY AXIOS, NOT HERE. A push to a release branch collects every key it can see
+ * (commit messages, plus the title and branch of each PR a merge or squash commit names) and hands
+ * the lot to POST /releases/ship/ in one call. The server owns the rest: which release the item
+ * belongs to, whether it moves, the unplanned flag, auto-closing the release. Shipping is idempotent
+ * there, so a redelivered push or an overlapping one costs nothing. Released ranks between UAT and
+ * Done, so a later merge to main cannot drag a shipped item back to Ready for Test, and nothing
+ * here ever targets Done: Product/QA move Released -> Done by hand.
+ *
  * NEVER FAILS THE BUILD. A PR with no ticket key is normal, not an error. Anything short of a
  * broken token logs what it decided and exits 0 — a red X on every keyless PR would train people
  * to ignore the check, and then it is worth nothing when it matters.
@@ -71,6 +80,7 @@ const ENV_DEFAULTS = {
   workspace: () => process.env.AXIOS_WORKSPACE || "cci",
   token: () => process.env.AXIOS_BOT_TOKEN,
   githubToken: () => process.env.GITHUB_TOKEN,
+  releaseBranches: () => process.env.AXIOS_RELEASE_BRANCHES || "production",
   log: () => console.log,
 };
 
@@ -98,8 +108,23 @@ function resolveConfig(options = {}) {
     workspace: value("workspace"),
     token: token("token"),
     githubToken: token("githubToken"),
+    releaseBranches: branchSet(value("releaseBranches")),
     log: (...a) => log(...a),
   };
+}
+
+/** "production, release" or ["production"] -> Set of branch names. */
+function branchSet(value) {
+  const list = Array.isArray(value) ? value : String(value).split(",");
+  return new Set(list.map((b) => String(b).trim()).filter(Boolean));
+}
+
+const branchOf = (ref) => (typeof ref === "string" && ref.startsWith("refs/heads/") ? ref.slice(11) : null);
+
+/** A push that delivers code to a release branch. Deleting the branch delivers nothing. */
+function isReleasePush(event, releaseBranches) {
+  const branch = branchOf(event?.ref);
+  return Boolean(branch) && !event.deleted && releaseBranches.has(branch);
 }
 
 // Rank, not a list: the comparison is what enforces advance-only. Cancelled is deliberately
@@ -112,7 +137,9 @@ const RANK = {
   "Ready for Test": 5,
   "In Testing": 6,
   UAT: 7,
-  Done: 8,
+  // CCI: GAM-400. Shipped to production, awaiting Product/QA sign-off.
+  Released: 8,
+  Done: 9,
 };
 const TERMINAL = new Set(["Cancelled"]);
 // The states a PR's review can move a ticket between, in either direction.
@@ -420,9 +447,9 @@ const eq = (a, b) => typeof a === "string" && a.toLowerCase() === b;
  *  exit on at once or leave untouched, so skipping it saves a run (Actions) or an Axios round trip
  *  (webhook) and changes nothing. GitHub expressions compare strings case-insensitively; so does
  *  this. */
-export function shouldHandle(name, event) {
+export function shouldHandle(name, event, options = {}) {
   const action = event?.action;
-  if (name === "push") return Boolean(event?.created);
+  if (name === "push") return Boolean(event?.created) || isReleasePush(event, resolveConfig(options).releaseBranches);
   if (name === "pull_request") {
     if (!CALLER_ACTIONS.pull_request.has(String(action).toLowerCase())) return false;
     if (eq(action, "edited") && event.changes?.title == null) return false;
@@ -482,6 +509,7 @@ export async function handleEvent(name, event, repo, options = {}) {
       review = true;
     }
   } else if (name === "push") {
+    if (isReleasePush(event, cfg.releaseBranches)) return shipRelease(cfg, event, repo, identifiers);
     // Only when the branch is first pushed. Acting on every push would call the API on each
     // commit to say nothing changed, and the very first push is what "work started" means.
     if (!event.created) return cfg.log("not a new branch — nothing to do");
@@ -521,4 +549,103 @@ async function linkOnly(cfg, key, pr) {
   const issue = await res.json();
   await linkPullRequest(cfg, issue, pr);
   return issue;
+}
+
+// A push payload lists at most 20 commits; at that size assume it was cut short and ask GitHub.
+const PAYLOAD_COMMIT_LIMIT = 20;
+// Each lookup is one GitHub request; a promotion naming more PRs than this is read in part.
+const PR_LOOKUP_CAP = 50;
+const COMPARE_PAGE_CAP = 10;
+const NULL_SHA = /^0+$/;
+
+/** PR numbers a commit names: GitHub's merge commit subject, or a squash subject ending "(#27)". */
+function referencedPullRequests(message) {
+  const subject = String(message || "").split("\n", 1)[0];
+  const numbers = [];
+  const merge = subject.match(/^Merge pull request #(\d+)/);
+  if (merge) numbers.push(Number(merge[1]));
+  const squash = subject.match(/\(#(\d+)\)\s*$/);
+  if (squash) numbers.push(Number(squash[1]));
+  return numbers;
+}
+
+/** Every commit message between before and after, from the compare API. */
+async function compareMessages(cfg, repo, before, after) {
+  if (!cfg.githubToken || !before || NULL_SHA.test(before) || !after) return [];
+  const messages = [];
+  for (let page = 1; page <= COMPARE_PAGE_CAP; page++) {
+    // eslint-disable-next-line no-await-in-loop
+    const res = await github(cfg, `/repos/${repo}/compare/${before}...${after}?per_page=100&page=${page}`);
+    if (!res.ok) {
+      cfg.log(`  could not read the full commit list (HTTP ${res.status}) — using the push payload only`);
+      break;
+    }
+    // eslint-disable-next-line no-await-in-loop
+    const batch = (await res.json()).commits || [];
+    messages.push(...batch.map((c) => c.commit?.message || ""));
+    if (batch.length < 100) break;
+  }
+  return messages;
+}
+
+/** Keys in the title and branch of each referenced PR. Merge commits on a release branch often
+ *  carry no key themselves ("Merge pull request #459 from .../hotfix"); the PR they name does. */
+async function pullRequestKeys(cfg, repo, numbers, identifiers) {
+  if (!numbers.length) return [];
+  if (!cfg.githubToken) {
+    cfg.log(`  no GitHub token — not reading ${numbers.length} referenced PR(s)`);
+    return [];
+  }
+  if (numbers.length > PR_LOOKUP_CAP) {
+    cfg.log(`  ${numbers.length} referenced PRs — reading the first ${PR_LOOKUP_CAP}`);
+  }
+  const fetchKeys = async (n) => {
+    const res = await github(cfg, `/repos/${repo}/pulls/${n}`);
+    if (!res.ok) {
+      cfg.log(`  could not read PR #${n} (HTTP ${res.status})`);
+      return [];
+    }
+    const pr = await res.json();
+    return [...extractKeys(pr.title, identifiers), ...extractKeys(pr.head?.ref, identifiers)];
+  };
+  // Fetched in parallel (at most PR_LOOKUP_CAP): one promotion can name dozens of PRs.
+  return (await Promise.all(numbers.slice(0, PR_LOOKUP_CAP).map(fetchKeys))).flat();
+}
+
+/** A push to a release branch: tell Axios which work items just reached it. */
+async function shipRelease(cfg, event, repo, identifiers) {
+  const branch = branchOf(event.ref);
+  const commits = event.commits || [];
+  const messages = commits.map((c) => c.message || "");
+  if (commits.length >= PAYLOAD_COMMIT_LIMIT) {
+    messages.push(...(await compareMessages(cfg, repo, event.before, event.after)));
+  }
+
+  const keys = new Set(messages.flatMap((m) => extractKeys(m, identifiers)));
+  const prNumbers = [...new Set(messages.flatMap(referencedPullRequests))];
+  for (const key of await pullRequestKeys(cfg, repo, prNumbers, identifiers)) keys.add(key);
+
+  if (!keys.size) return cfg.log(`push to ${branch}: no work item key found — nothing to ship`);
+  const via = `github:${repo}@${String(event.after || "").slice(0, 7)}`;
+  cfg.log(`push to ${branch}: shipping ${keys.size} key(s): ${[...keys].join(", ")} (${via})`);
+
+  const res = await axios(cfg, "/releases/ship/", {
+    method: "POST",
+    body: JSON.stringify({ keys: [...keys], via }),
+  });
+  if (!res.ok) {
+    return cfg.log(`  ship failed (HTTP ${res.status}) ${(await res.text()).slice(0, 200)}`);
+  }
+  const { results = [], unknown = [] } = await res.json();
+  for (const r of results) {
+    const what = r.already ? "already shipped" : r.moved ? "-> Released" : "shipped, state left alone";
+    cfg.log(`  ${r.key}: ${what}${r.unplanned ? " (unplanned)" : ""}`);
+  }
+  if (unknown.length) cfg.log(`  no such work item: ${unknown.join(", ")}`);
+  const count = (f) => results.filter(f).length;
+  cfg.log(
+    `shipped ${count((r) => !r.already)}, moved ${count((r) => r.moved)}, ` +
+      `unplanned ${count((r) => r.unplanned && !r.already)}, already ${count((r) => r.already)}, ` +
+      `unknown ${unknown.length}`
+  );
 }

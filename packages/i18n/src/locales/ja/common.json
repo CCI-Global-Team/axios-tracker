@@ -229,6 +229,8 @@
   "views_description": "カスタムの並び替え、フィルター、表示オプションを保存するか、チームと共有します。",
   "pages_description": "自由形式のコンテンツを作成・編集できます。メモ、ドキュメント、何でもOKです。",
   "intake_description": "非メンバーがバグ、フィードバック、提案を共有できるようにし、ワークフローを妨げないようにします。",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "作業項目やプロジェクトに費やした時間を記録します。",
   "work_management_description": "作業とプロジェクトを簡単に管理します。",
   "documentation": "ドキュメント",

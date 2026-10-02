@@ -41,6 +41,8 @@ export * from "./pragmatic";
 export * from "./project";
 export * from "./publish";
 export * from "./reaction";
+// CCI: releases (GAM-400)
+export * from "./release";
 export * from "./intake";
 export * from "./rich-filters";
 export * from "./search";

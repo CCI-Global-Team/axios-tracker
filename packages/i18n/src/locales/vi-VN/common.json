@@ -229,6 +229,8 @@
   "views_description": "Lưu các tùy chọn sắp xếp, lọc và hiển thị tùy chỉnh hoặc chia sẻ chúng với nhóm của bạn.",
   "pages_description": "Tạo và chỉnh sửa nội dung tự do: ghi chú, tài liệu, bất cứ thứ gì.",
   "intake_description": "Cho phép người không phải thành viên chia sẻ lỗi, phản hồi và đề xuất mà không làm gián đoạn quy trình làm việc của bạn.",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "Ghi lại thời gian dành cho các mục công việc và dự án.",
   "work_management_description": "Quản lý công việc và dự án của bạn một cách dễ dàng.",
   "documentation": "Tài liệu",

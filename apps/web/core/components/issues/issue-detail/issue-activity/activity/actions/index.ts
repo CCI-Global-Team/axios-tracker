@@ -17,6 +17,7 @@ export * from "./start_date";
 export * from "./target_date";
 export * from "./cycle";
 export * from "./module";
+export * from "./release";
 export * from "./label";
 export * from "./link";
 export * from "./attachment";

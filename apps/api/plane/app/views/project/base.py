@@ -187,6 +187,8 @@ class ProjectViewSet(BaseViewSet):
             "module_view",
             "page_view",
             "inbox_view",
+            # CCI: Releases tab toggle
+            "release_view",
             "guest_view_all_features",
             "project_lead",
             "network",

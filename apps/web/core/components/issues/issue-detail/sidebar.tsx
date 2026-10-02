@@ -38,6 +38,8 @@ import { useProjectState } from "@/hooks/store/use-project-state";
 // components
 import { IssueParentSelectRoot } from "@/components/issues/parent-select-root";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
+// CCI: releases (GAM-400)
+import { IssueReleaseRow } from "@/components/releases/issue-release-row";
 import { IssueCycleSelect } from "./cycle-select";
 import { IssueLabel } from "./label";
 import { IssueModuleSelect } from "./module-select";
@@ -227,6 +229,11 @@ export const IssueDetailsSidebar = observer(function IssueDetailsSidebar(props: 
                   disabled={!isEditable}
                 />
               </SidebarPropertyListItem>
+            )}
+
+            {/* CCI: the release this item ships in (GAM-400) */}
+            {projectDetails?.release_view && (
+              <IssueReleaseRow workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} />
             )}
 
             <SidebarPropertyListItem icon={ParentPropertyIcon} label={t("common.parent")}>

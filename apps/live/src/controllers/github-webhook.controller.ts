@@ -65,7 +65,7 @@ export class GithubWebhookController {
         return;
       }
 
-      if (!shouldHandle(name, event)) {
+      if (!shouldHandle(name, event, { releaseBranches: env.AXIOS_RELEASE_BRANCHES })) {
         res.status(202).json({ skipped: true });
         return;
       }
@@ -89,6 +89,7 @@ export class GithubWebhookController {
           // axios-automation[bot]. Falls back to the token when it is not, which is also what
           // happens if minting fails - better a link from the wrong author than no link.
           githubToken: (await getAppInstallationToken(repo)) ?? env.AXIOS_GITHUB_TOKEN,
+          releaseBranches: env.AXIOS_RELEASE_BRANCHES,
           log,
         })
       );

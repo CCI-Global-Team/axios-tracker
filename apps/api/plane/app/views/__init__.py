@@ -168,6 +168,14 @@ from .module.issue import ModuleIssueViewSet
 
 from .module.archive import ModuleArchiveUnarchiveEndpoint
 
+from .release.base import (
+    IssueReleaseEndpoint,
+    ReleaseActionEndpoint,
+    ReleaseCandidateEndpoint,
+    ReleaseEndpoint,
+    ReleaseIssueEndpoint,
+)
+
 from .api import ApiTokenEndpoint
 
 from .page.base import (

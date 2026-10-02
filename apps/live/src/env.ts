@@ -39,6 +39,8 @@ const envSchema = z.object({
   // unset the receiver falls back to AXIOS_GITHUB_TOKEN.
   AXIOS_GITHUB_APP_ID: z.string().optional(),
   AXIOS_GITHUB_APP_PRIVATE_KEY: z.string().optional(),
+  // CCI: GAM-400. Comma list of branches whose pushes ship work items; unset means "production".
+  AXIOS_RELEASE_BRANCHES: z.string().optional(),
 });
 
 const validateEnv = () => {

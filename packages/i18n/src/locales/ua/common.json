@@ -229,6 +229,8 @@
   "views_description": "Зберігайте власні сортування, фільтри та варіанти відображення або діліться ними з командою.",
   "pages_description": "Створюйте та редагуйте довільний вміст: нотатки, документи, що завгодно.",
   "intake_description": "Дозвольте неучасникам ділитися помилками, відгуками й пропозиціями без порушення робочого процесу.",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "Фіксуйте час, витрачений на робочі одиниці та проєкти.",
   "work_management_description": "Зручно керуйте своєю роботою та проєктами.",
   "documentation": "Документація",

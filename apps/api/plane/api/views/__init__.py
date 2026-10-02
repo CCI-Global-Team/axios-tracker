@@ -52,6 +52,14 @@ from .module import (
     ModuleArchiveUnarchiveAPIEndpoint,
 )
 
+from .release import (
+    ReleaseListCreateAPIEndpoint,
+    ReleaseDetailAPIEndpoint,
+    ReleaseIssueListCreateAPIEndpoint,
+    ReleaseIssueDetailAPIEndpoint,
+    ReleaseShipAPIEndpoint,
+)
+
 from .member import (
     ProjectMemberListCreateAPIEndpoint,
     ProjectMemberDetailAPIEndpoint,

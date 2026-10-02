@@ -229,6 +229,8 @@
   "views_description": "Uložte vlastní řazení, filtry a možnosti zobrazení nebo je sdílejte se svým týmem.",
   "pages_description": "Vytvářejte a upravujte volně strukturovaný obsah – poznámky, dokumenty, cokoli.",
   "intake_description": "Umožněte nečlenům sdílet chyby, zpětnou vazbu a návrhy, aniž by narušili váš pracovní postup.",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "Zaznamenávejte čas strávený na pracovních položkách a projektech.",
   "work_management_description": "Spravujte svou práci a projekty snadno.",
   "documentation": "Dokumentace",

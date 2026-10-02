@@ -229,6 +229,8 @@
   "views_description": "Salve classificações, filtros e opções de exibição personalizadas ou compartilhe com sua equipe.",
   "pages_description": "Crie e edite conteúdo livre – anotações, documentos, qualquer coisa.",
   "intake_description": "Permita que não membros compartilhem bugs, feedbacks e sugestões sem interromper seu fluxo de trabalho.",
+  "releases": "Releases",
+  "releases_description": "Group work that goes to production together and track it until it ships.",
   "time_tracking_description": "Registre o tempo gasto em itens de trabalho e projetos.",
   "work_management_description": "Gerencie seu trabalho e projetos com facilidade.",
   "documentation": "Documentação",

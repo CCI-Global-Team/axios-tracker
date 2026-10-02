@@ -30,6 +30,8 @@ import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 import { PriorityDropdown } from "@/components/dropdowns/priority";
 import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { SidebarPropertyListItem } from "@/components/common/layout/sidebar/property-list-item";
+// CCI: releases (GAM-400)
+import { IssueReleaseRow } from "@/components/releases/issue-release-row";
 // helpers
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
@@ -227,6 +229,11 @@ export const PeekOverviewProperties = observer(function PeekOverviewProperties(p
               disabled={disabled}
             />
           </SidebarPropertyListItem>
+        )}
+
+        {/* CCI: the release this item ships in (GAM-400) */}
+        {projectDetails?.release_view && (
+          <IssueReleaseRow workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} />
         )}
 
         <SidebarPropertyListItem icon={ParentPropertyIcon} label={t("common.parent")}>
