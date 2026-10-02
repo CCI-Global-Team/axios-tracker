@@ -6,6 +6,7 @@
 
 // CCI: Releases (GAM-400)
 export * from "./create-release-modal";
+export * from "./issue-release-row";
 export * from "./release-detail";
 export * from "./releases-list";
 export * from "./status-chip";

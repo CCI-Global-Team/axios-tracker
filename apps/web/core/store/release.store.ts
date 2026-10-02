@@ -168,10 +168,6 @@ export class ReleaseStore implements IReleaseStore {
       this.fetchReleaseDetails(workspaceSlug, projectId, releaseId),
       this.fetchReleaseIssues(workspaceSlug, projectId, releaseId),
     ]);
-    // a work item's sidebar row may now point somewhere else
-    runInAction(() => {
-      this.issueReleaseMap = {};
-    });
   };
 
   addReleaseIssues = async (workspaceSlug: string, projectId: string, releaseId: string, issueIds: string[]) => {
