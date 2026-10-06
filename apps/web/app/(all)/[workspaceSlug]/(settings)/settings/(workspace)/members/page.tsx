@@ -67,11 +67,20 @@ const WorkspaceMembersSettingsPage = observer(function WorkspaceMembersSettingsP
         message: t("workspace_settings.settings.members.invitations_sent_successfully"),
       });
     } catch (error: unknown) {
-      let message = undefined;
-      if (error instanceof Error) {
-        const err = error as Error & { error?: string };
-        message = err.error;
-      }
+      // CCI: the service rejects with the response body, a plain object rather than an Error, so
+      // the API's message was never read and every failure said "Something went wrong" (GAM-457).
+      const body = (error ?? {}) as {
+        error?: string;
+        workspace_users?: { member?: { first_name?: string; last_name?: string; display_name?: string } }[];
+      };
+      const existing = (body.workspace_users ?? [])
+        .map(({ member }) => [member?.first_name, member?.last_name].filter(Boolean).join(" ") || member?.display_name)
+        .filter(Boolean);
+      const message = existing.length
+        ? `Already in this workspace: ${existing.join(", ")}`
+        : typeof body.error === "string"
+          ? body.error
+          : undefined;
       setToast({
         type: TOAST_TYPE.ERROR,
         title: "Error!",
