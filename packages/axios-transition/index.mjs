@@ -110,6 +110,7 @@ function resolveConfig(options = {}) {
     githubToken: token("githubToken"),
     releaseBranches: branchSet(value("releaseBranches")),
     log: (...a) => log(...a),
+    sleep: merged.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms))),
   };
 }
 
@@ -191,12 +192,30 @@ async function github(cfg, path, init = {}) {
   });
 }
 
-async function axios(cfg, path, init = {}) {
+/** How often a rate-limited Axios call is retried, and the longest single wait. A burst of PR
+ *  events can spend the API key's per-minute allowance in seconds. Before this, a 429 dropped the
+ *  update for good and the ticket silently fell behind GitHub. Waiting it out costs at most a
+ *  couple of minutes, well inside the receiver's per-event timeout. */
+const RATE_LIMIT_RETRIES = 5;
+const RATE_LIMIT_MAX_WAIT_MS = 60_000;
+
+/** Seconds from Retry-After (DRF sends it with every 429), else exponential backoff from 2s. */
+function retryDelayMs(res, attempt) {
+  const header = Number(res.headers?.get?.("retry-after"));
+  const ms = Number.isFinite(header) && header > 0 ? header * 1000 : 2000 * 2 ** attempt;
+  return Math.min(ms, RATE_LIMIT_MAX_WAIT_MS);
+}
+
+async function axios(cfg, path, init = {}, attempt = 0) {
   const res = await fetch(`${cfg.host}/api/v1/workspaces/${cfg.workspace}${path}`, {
     ...init,
     headers: { "X-Api-Key": cfg.token, "Content-Type": "application/json", ...init.headers },
   });
-  return res;
+  if (res.status !== 429 || attempt >= RATE_LIMIT_RETRIES) return res;
+  const wait = retryDelayMs(res, attempt);
+  cfg.log(`  Axios rate limit hit on ${init.method || "GET"} ${path} - retrying in ${Math.round(wait / 1000)}s`);
+  await cfg.sleep(wait);
+  return axios(cfg, path, init, attempt + 1);
 }
 
 /** Ticket keys look like GAM-142. Only keys whose prefix is a real project count, so a branch
