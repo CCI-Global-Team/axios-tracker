@@ -4,10 +4,12 @@
 
 # Python imports
 import json
+from datetime import timezone as dt_timezone
 
 # Django imports
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.db.models import Q, Value, UUIDField
 from django.db.models.functions import Coalesce
 from django.contrib.postgres.aggregates import ArrayAgg
@@ -170,6 +172,43 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
         ]:
             return Response({"error": "Invalid priority"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # CCI: GAM-572 - optional external ids make the create idempotent for integrations
+        # (the support-form receiver); optional created_at backdates imported items.
+        external_source = request.data.get("issue", {}).get("external_source") or None
+        external_id = request.data.get("issue", {}).get("external_id") or None
+        if external_source and external_id:
+            existing_issue = Issue.objects.filter(
+                project_id=project_id,
+                external_source=external_source,
+                external_id=str(external_id),
+            ).first()
+            if existing_issue is not None:
+                existing_intake_issue = IntakeIssue.objects.filter(issue_id=existing_issue.id).first()
+                return Response(
+                    {
+                        "error": "Intake work item with this external id already exists",
+                        "id": str(existing_intake_issue.id) if existing_intake_issue else None,
+                        "issue_id": str(existing_issue.id),
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
+
+        # CCI: GAM-572
+        backdated_at = None
+        raw_created_at = request.data.get("issue", {}).get("created_at")
+        if raw_created_at:
+            try:
+                backdated_at = parse_datetime(str(raw_created_at))
+            except ValueError:
+                backdated_at = None
+            if backdated_at is None:
+                return Response(
+                    {"error": "created_at must be an ISO 8601 date-time"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if timezone.is_naive(backdated_at):
+                backdated_at = timezone.make_aware(backdated_at, dt_timezone.utc)
+
         # get the triage state
         triage_state = State.triage_objects.filter(project_id=project_id, workspace__slug=slug).first()
 
@@ -199,6 +238,8 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
             priority=issue_data.get("priority", "none"),
             project_id=project_id,
             state_id=triage_state.id,
+            external_source=external_source,  # CCI: GAM-572
+            external_id=str(external_id) if external_id else None,  # CCI: GAM-572
         )
 
         # create an intake issue
@@ -208,6 +249,11 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
             issue=issue,
             source=SourceType.IN_APP,
         )
+        # CCI: GAM-572 - auto_now_add ignores a value on insert, so backdate after create
+        if backdated_at is not None:
+            Issue.objects.filter(pk=issue.pk).update(created_at=backdated_at)
+            IntakeIssue.objects.filter(pk=intake_issue.pk).update(created_at=backdated_at)
+            intake_issue.refresh_from_db()
         # Create an Issue Activity
         issue_activity.delay(
             type="issue.activity.created",
