@@ -391,3 +391,50 @@ test("a merge to main leaves a Released ticket where it is", async (t) => {
   assert.ok(!calls.some((c) => c.method === "PATCH"), "no state PATCH");
   assert.ok(lines.includes("  GAM-12: already Released — not moving back to Ready for Test"));
 });
+
+// Rate limits: a 429 from Axios is waited out and retried instead of dropping the update.
+
+test("a rate-limited Axios call is retried after Retry-After, then succeeds", async (t) => {
+  let projectCalls = 0;
+  const waits = [];
+  stubFetch(t, {
+    "/projects/": () => {
+      projectCalls++;
+      return projectCalls < 3
+        ? new Response("{}", { status: 429, headers: { "Retry-After": "7" } })
+        : json({ results: [{ identifier: "GAM" }] });
+    },
+  });
+  const lines = [];
+  await handleEvent(
+    "push",
+    { created: true, ref: "refs/heads/chore/no-key", repository: { default_branch: "main" } },
+    "o/r",
+    {
+      ...opts(lines),
+      sleep: async (ms) => waits.push(ms),
+    }
+  );
+  assert.equal(projectCalls, 3);
+  assert.deepEqual(waits, [7000, 7000]);
+  assert.ok(lines.includes("no work item key found — nothing to do"));
+});
+
+test("without Retry-After the wait backs off, and gives up after the retry budget", async (t) => {
+  let calls = 0;
+  const waits = [];
+  stubFetch(t, { "/projects/": () => (calls++, new Response("{}", { status: 429 })) });
+  await assert.rejects(
+    handleEvent(
+      "push",
+      { created: true, ref: "refs/heads/feat/GAM-1-x", repository: { default_branch: "main" } },
+      "o/r",
+      {
+        ...opts([]),
+        sleep: async (ms) => waits.push(ms),
+      }
+    )
+  );
+  assert.equal(calls, 6);
+  assert.deepEqual(waits, [2000, 4000, 8000, 16000, 32000]);
+});
