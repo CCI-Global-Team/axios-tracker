@@ -9,6 +9,7 @@ import { DocumentController } from "./document.controller";
 import { GithubWebhookController } from "./github-webhook.controller";
 import { HealthController } from "./health.controller";
 import { PdfExportController } from "./pdf-export.controller";
+import { SupportFormController } from "./support-form.controller";
 
 export const CONTROLLERS = [
   CollaborationController,
@@ -16,4 +17,5 @@ export const CONTROLLERS = [
   GithubWebhookController,
   HealthController,
   PdfExportController,
+  SupportFormController,
 ];

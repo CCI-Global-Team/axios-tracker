@@ -41,6 +41,14 @@ const envSchema = z.object({
   AXIOS_GITHUB_APP_PRIVATE_KEY: z.string().optional(),
   // CCI: GAM-400. Comma list of branches whose pushes ship work items; unset means "production".
   AXIOS_RELEASE_BRANCHES: z.string().optional(),
+  // CCI: GAM-572. Gravity Forms support form (form 48) -> MOB Intake, at POST /hooks/support-form.
+  // Gravity Forms cannot sign bodies, so callers send this value in X-Axios-Hook-Secret. Without
+  // it the endpoint answers 503 and does nothing; without the project id it answers 503 too.
+  SUPPORT_FORM_SECRET: z.string().optional(),
+  // The MOB project's UUID; its Intake receives the items. Posted as AXIOS_BOT_TOKEN.
+  SUPPORT_FORM_PROJECT_ID: z.string().optional(),
+  // Workspace slug for Axios API calls.
+  AXIOS_WORKSPACE: z.string().default("cci"),
 });
 
 const validateEnv = () => {
