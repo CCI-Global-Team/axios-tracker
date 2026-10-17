@@ -47,7 +47,14 @@ export const IssueLabelSelect = observer(function IssueLabelSelect(props: IIssue
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   const canCreateLabel =
-    projectId && allowPermissions([EUserProjectRoles.ADMIN], EUserPermissionsLevel.PROJECT, workspaceSlug, projectId);
+    // CCI: members can create labels too (matches the API).
+    projectId &&
+    allowPermissions(
+      [EUserProjectRoles.ADMIN, EUserProjectRoles.MEMBER],
+      EUserPermissionsLevel.PROJECT,
+      workspaceSlug,
+      projectId
+    );
 
   const projectLabels = getProjectLabels(projectId);
 
@@ -59,18 +66,18 @@ export const IssueLabelSelect = observer(function IssueLabelSelect(props: IIssue
       fetchProjectLabels(workspaceSlug, projectId).then(() => setIsLoading(false));
   };
 
-  const options = (projectLabels ?? []).map((label) => ({
-    value: label.id,
-    query: label.name,
+  const options = (projectLabels ?? []).map((projectLabel) => ({
+    value: projectLabel.id,
+    query: projectLabel.name,
     content: (
       <div className="flex items-center justify-start gap-2 overflow-hidden">
         <span
           className="h-2.5 w-2.5 flex-shrink-0 rounded-full"
           style={{
-            backgroundColor: label.color,
+            backgroundColor: projectLabel.color,
           }}
         />
-        <div className="line-clamp-1 inline-block truncate">{label.name}</div>
+        <div className="line-clamp-1 inline-block truncate">{projectLabel.name}</div>
       </div>
     ),
   }));
@@ -109,8 +116,8 @@ export const IssueLabelSelect = observer(function IssueLabelSelect(props: IIssue
 
   const handleAddLabel = async (labelName: string) => {
     setSubmitting(true);
-    const label = await onAddLabel(workspaceSlug, projectId, { name: labelName, color: getRandomLabelColor() });
-    onSelect([...values, label.id]);
+    const created = await onAddLabel(workspaceSlug, projectId, { name: labelName, color: getRandomLabelColor() });
+    onSelect([...values, created.id]);
     setQuery("");
     setSubmitting(false);
   };
