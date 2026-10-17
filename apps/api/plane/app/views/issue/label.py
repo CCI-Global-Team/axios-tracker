@@ -40,7 +40,8 @@ class LabelViewSet(BaseViewSet):
         )
 
     @invalidate_cache(path="/api/workspaces/:slug/labels/", url_params=True, user=False, multiple=True)
-    @allow_permission([ROLE.ADMIN])
+    # CCI: project members can create labels while tagging work; renaming and deleting stay admin-only.
+    @allow_permission([ROLE.ADMIN, ROLE.MEMBER])
     def create(self, request, slug, project_id):
         try:
             serializer = LabelSerializer(data=request.data, context={"project_id": project_id})
