@@ -27,6 +27,7 @@ const FIELD = {
   firstName: "1.3",
   lastName: "1.6",
   email: "3",
+  campus: "17",
 } as const;
 const NAME_MESSAGE_CHARS = 70;
 const RATE_LIMIT_RETRIES = 5;
@@ -162,6 +163,7 @@ export function buildSupportIntake(entry: SupportFormEntry, { wpBase = DEFAULT_W
   const entryId = field(entry, "id");
   const subject = subjectOf(entry);
   const device = field(entry, FIELD.device);
+  const campus = field(entry, FIELD.campus);
   const message = typeof entry[FIELD.message] === "string" ? (entry[FIELD.message] as string) : "";
   const uploads = parseUploads(entry[FIELD.uploads]);
   const submitted = parseEntryDate(entry.date_created);
@@ -170,6 +172,7 @@ export function buildSupportIntake(entry: SupportFormEntry, { wpBase = DEFAULT_W
   if (submitted) html.push(`<p><strong>Submitted</strong> ${escapeHtml(formatSubmitted(submitted))}</p>`);
   const from = reporterHtml(entry);
   if (from) html.push(from);
+  if (campus) html.push(`<p><strong>Campus</strong> ${escapeHtml(campus)}</p>`);
   html.push(`<p><strong>Subject</strong> ${escapeHtml(subject)}</p>`);
   if (device) html.push(`<p><strong>Device</strong> ${escapeHtml(deviceLabel(device))}</p>`);
   html.push(messageHtml(message) || "<p><em>No message.</em></p>");
