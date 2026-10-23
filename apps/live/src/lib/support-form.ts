@@ -8,9 +8,8 @@
  * CCI: GAM-572. Mobile-app support form (Gravity Forms form 48 on forms.joincci.org) -> a Pending
  * item in the MOB project's Intake.
  *
- * The entry carries the reporter's name (1.x), email (3) and phone (4). None of those fields is ever
- * read here: the Intake item links back to the form entry instead, so contact details stay in
- * WordPress behind its own login.
+ * The item shows who wrote in, by name (1.3/1.6) and email (3), so whoever triages can reply. The
+ * phone number (4) is never read; it stays in WordPress, behind the form entry link.
  */
 
 import { timingSafeEqual } from "node:crypto";
@@ -19,7 +18,16 @@ export const SUPPORT_FORM_ID = "48";
 export const EXTERNAL_SOURCE = "gravity-forms";
 export const DEFAULT_WP_BASE = "https://forms.joincci.org";
 
-const FIELD = { subject: "13", otherSubject: "12", device: "14", uploads: "15", message: "16" } as const;
+const FIELD = {
+  subject: "13",
+  otherSubject: "12",
+  device: "14",
+  uploads: "15",
+  message: "16",
+  firstName: "1.3",
+  lastName: "1.6",
+  email: "3",
+} as const;
 const NAME_MESSAGE_CHARS = 70;
 const RATE_LIMIT_RETRIES = 5;
 const RATE_LIMIT_MAX_WAIT_MS = 60_000;
@@ -53,6 +61,20 @@ export function subjectOf(entry: SupportFormEntry): string {
   const other = field(entry, FIELD.otherSubject);
   if (subject.toLowerCase() === "others" && other) return other;
   return subject || "Support request";
+}
+
+/** Who wrote in: name and email only. The phone number is deliberately not read. */
+export function reporterOf(entry: SupportFormEntry): { name: string; email: string } {
+  const name = [field(entry, FIELD.firstName), field(entry, FIELD.lastName)].filter(Boolean).join(" ");
+  const email = field(entry, FIELD.email);
+  return { name, email: /^[^\s@<>"]+@[^\s@<>"]+\.[^\s@<>"]+$/.test(email) ? email : "" };
+}
+
+function reporterHtml(entry: SupportFormEntry): string {
+  const { name, email } = reporterOf(entry);
+  if (!name && !email) return "";
+  const parts = [name && escapeHtml(name), email && `<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`];
+  return `<p><strong>From</strong> ${parts.filter(Boolean).join(" · ")}</p>`;
 }
 
 /** The form's own spelling is "Andriod"; the value is kept as sent and only displayed correctly. */
@@ -134,7 +156,8 @@ export function entryUrl(wpBase: string, entryId: string): string {
   return `${wpBase.replace(/\/$/, "")}/wp-admin/admin.php?page=gf_entries&view=entry&id=${SUPPORT_FORM_ID}&lid=${encodeURIComponent(entryId)}`;
 }
 
-/** The Intake item for one entry. Pure: reads only the subject, device, uploads, message and date. */
+/** The Intake item for one entry. Pure: reads the reporter's name and email, the subject, device,
+ *  uploads, message and date. Never the phone number. */
 export function buildSupportIntake(entry: SupportFormEntry, { wpBase = DEFAULT_WP_BASE } = {}): SupportIntake {
   const entryId = field(entry, "id");
   const subject = subjectOf(entry);
@@ -145,6 +168,8 @@ export function buildSupportIntake(entry: SupportFormEntry, { wpBase = DEFAULT_W
 
   const html: string[] = [];
   if (submitted) html.push(`<p><strong>Submitted</strong> ${escapeHtml(formatSubmitted(submitted))}</p>`);
+  const from = reporterHtml(entry);
+  if (from) html.push(from);
   html.push(`<p><strong>Subject</strong> ${escapeHtml(subject)}</p>`);
   if (device) html.push(`<p><strong>Device</strong> ${escapeHtml(deviceLabel(device))}</p>`);
   html.push(messageHtml(message) || "<p><em>No message.</em></p>");
@@ -156,8 +181,7 @@ export function buildSupportIntake(entry: SupportFormEntry, { wpBase = DEFAULT_W
         .join("")}</ul>`
     );
   }
-  html.push(`<p><a href="${escapeHtml(entryUrl(wpBase, entryId))}">Open the form entry (contact details)</a></p>`);
-  html.push("<p><em>Reporter contact details are in the form entry, not here.</em></p>");
+  html.push(`<p><a href="${escapeHtml(entryUrl(wpBase, entryId))}">Open the form entry</a></p>`);
 
   return {
     name: itemName(subject, message),
