@@ -16,6 +16,7 @@ const entry = (extra: Record<string, unknown> = {}) => ({
   "1.6": "Lovelace",
   "3": "ada@example.com",
   "4": "+44 7700 900123",
+  "17": "Ikeja",
   "13": "Bug/feedback",
   "12": "",
   "14": "iPhone",
@@ -107,6 +108,16 @@ describe("buildSupportIntake", () => {
     const html = buildSupportIntake(entry({ "1.3": "<b>Bo</b>", "1.6": "", "3": "not-an-email" })).description_html;
     expect(html).toContain("<p><strong>From</strong> &lt;b&gt;Bo&lt;/b&gt;</p>");
     expect(html).not.toContain("mailto:");
+  });
+
+  it("shows the campus under the From line, escaped, and leaves it out when blank", () => {
+    expect(buildSupportIntake(entry()).description_html).toContain(
+      "</a></p><p><strong>Campus</strong> Ikeja</p><p><strong>Subject</strong>"
+    );
+    expect(buildSupportIntake(entry({ "17": "<i>x</i>" })).description_html).toContain(
+      "<strong>Campus</strong> &lt;i&gt;x&lt;/i&gt;"
+    );
+    expect(buildSupportIntake(entry({ "17": " " })).description_html).not.toContain("<strong>Campus</strong>");
   });
 
   it("leaves the From line out when there is no name or email", () => {
