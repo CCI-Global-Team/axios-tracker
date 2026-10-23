@@ -88,16 +88,30 @@ describe("buildSupportIntake", () => {
     expect(html).toContain(
       'href="https://forms.joincci.org/wp-admin/admin.php?page=gf_entries&amp;view=entry&amp;id=48&amp;lid=95489"'
     );
-    expect(html).toContain("Reporter contact details are in the form entry, not here.");
     expect(buildSupportIntake(entry(), { wpBase: "https://wp.test/" }).description_html).toContain(
       'href="https://wp.test/wp-admin/admin.php?'
     );
   });
 
-  it("never copies the reporter's name, email or phone", () => {
+  it("shows who wrote in by name and email, never by phone", () => {
     const item = buildSupportIntake(entry({ "15": "https://a.test/x.png" }));
+    expect(item.description_html).toContain(
+      '<p><strong>From</strong> Ada Lovelace · <a href="mailto:ada@example.com">ada@example.com</a></p>'
+    );
     const out = JSON.stringify(item);
-    for (const secret of ["Ada", "Lovelace", "ada@example.com", "7700", "900123"]) expect(out).not.toContain(secret);
+    for (const phone of ["7700", "900123"]) expect(out).not.toContain(phone);
+    expect(item.name).not.toContain("Ada");
+  });
+
+  it("escapes the reporter and drops an email that is not an address", () => {
+    const html = buildSupportIntake(entry({ "1.3": "<b>Bo</b>", "1.6": "", "3": "not-an-email" })).description_html;
+    expect(html).toContain("<p><strong>From</strong> &lt;b&gt;Bo&lt;/b&gt;</p>");
+    expect(html).not.toContain("mailto:");
+  });
+
+  it("leaves the From line out when there is no name or email", () => {
+    const html = buildSupportIntake(entry({ "1.3": "", "1.6": "", "3": "" })).description_html;
+    expect(html).not.toContain("<strong>From</strong>");
   });
 });
 
@@ -165,7 +179,9 @@ describe("handleSupportForm", () => {
       external_id: "48-95489",
       created_at: "2026-08-02T07:39:28Z",
     });
-    expect(init.body).not.toContain("ada@example.com");
+    expect(init.body).toContain("ada@example.com");
+    expect(init.body).not.toContain("7700 900123");
+    for (const [line] of log.mock.calls) expect(String(line)).not.toMatch(/ada@example\.com|Lovelace/);
     expect(log).toHaveBeenCalledWith("SUPPORT_FORM: entry 95489 -> created intake-1");
   });
 
