@@ -4,8 +4,16 @@
  * See the LICENSE file for details.
  */
 
-import { describe, expect, it, vi } from "vitest";
-import { buildSupportIntake, checkHookSecret, handleSupportForm, parseUploads } from "@/lib/support-form";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  buildSupportIntake,
+  checkHookSecret,
+  handleSupportForm,
+  loadCampusLabels,
+  parseCampusLabels,
+  parseUploads,
+  resetCampusLabelCache,
+} from "@/lib/support-form";
 import type { SupportFormConfig } from "@/lib/support-form";
 
 const entry = (extra: Record<string, unknown> = {}) => ({
@@ -16,7 +24,7 @@ const entry = (extra: Record<string, unknown> = {}) => ({
   "1.6": "Lovelace",
   "3": "ada@example.com",
   "4": "+44 7700 900123",
-  "17": "Ikeja",
+  "17": "",
   "13": "Bug/feedback",
   "12": "",
   "14": "iPhone",
@@ -110,19 +118,58 @@ describe("buildSupportIntake", () => {
     expect(html).not.toContain("mailto:");
   });
 
-  it("shows the campus under the From line, escaped, and leaves it out when blank", () => {
-    expect(buildSupportIntake(entry()).description_html).toContain(
-      "</a></p><p><strong>Campus</strong> Ikeja</p><p><strong>Subject</strong>"
+  it("shows the campus label under the From line, escaped, and leaves it out when blank", () => {
+    const campusLabels = new Map([["ikeja", "Ikeja, Lagos"]]);
+    expect(buildSupportIntake(entry({ "17": "ikeja" }), { campusLabels }).description_html).toContain(
+      "</a></p><p><strong>Campus</strong> Ikeja, Lagos</p><p><strong>Subject</strong>"
+    );
+    expect(buildSupportIntake(entry({ "17": "new-campus" }), { campusLabels }).description_html).toContain(
+      "<strong>Campus</strong> new-campus"
     );
     expect(buildSupportIntake(entry({ "17": "<i>x</i>" })).description_html).toContain(
       "<strong>Campus</strong> &lt;i&gt;x&lt;/i&gt;"
     );
-    expect(buildSupportIntake(entry({ "17": " " })).description_html).not.toContain("<strong>Campus</strong>");
+    expect(buildSupportIntake(entry()).description_html).not.toContain("<strong>Campus</strong>");
   });
 
   it("leaves the From line out when there is no name or email", () => {
     const html = buildSupportIntake(entry({ "1.3": "", "1.6": "", "3": "" })).description_html;
     expect(html).not.toContain("<strong>From</strong>");
+  });
+});
+
+const FORM_PAGE = `<select name='input_14' id='input_48_14'><option value='iPhone'>iPhone</option></select>
+<select name='input_17' id='input_48_17' class='large gfield_select'><option value='' >Select your campus</option><option value='ikeja' selected='selected'>Ikeja, Lagos</option><option value='montreal' >Montr&#233;al &amp; Laval, Canada</option></select>`;
+
+describe("campus labels", () => {
+  beforeEach(() => resetCampusLabelCache());
+
+  it("reads the Campus dropdown's alias -> label pairs and skips the placeholder", () => {
+    const labels = parseCampusLabels(FORM_PAGE);
+    expect([...labels.keys()]).toEqual(["ikeja", "montreal"]);
+    expect(labels.get("ikeja")).toBe("Ikeja, Lagos");
+    expect(labels.get("montreal")).toBe("Montréal & Laval, Canada");
+    expect(parseCampusLabels("<html></html>").size).toBe(0);
+  });
+
+  it("fetches the public form once an hour and keeps the last good copy when a fetch fails", async () => {
+    let now = 0;
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(FORM_PAGE)));
+    const deps = { fetch: fetchImpl as unknown as typeof fetch, now: () => now };
+    expect((await loadCampusLabels("https://wp.test/", deps)).get("ikeja")).toBe("Ikeja, Lagos");
+    expect((fetchImpl.mock.calls[0] as unknown as [string])[0]).toBe("https://wp.test/gfembed/?f=48");
+    now = 30 * 60 * 1000;
+    await loadCampusLabels("https://wp.test/", deps);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    now = 61 * 60 * 1000;
+    fetchImpl.mockImplementationOnce(() => Promise.reject(new Error("timeout")));
+    expect((await loadCampusLabels("https://wp.test/", deps)).get("ikeja")).toBe("Ikeja, Lagos");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns an empty map when the form can't be read", async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response("nope", { status: 503 })));
+    expect((await loadCampusLabels("https://wp.test", { fetch: fetchImpl as unknown as typeof fetch })).size).toBe(0);
   });
 });
 
@@ -194,6 +241,19 @@ describe("handleSupportForm", () => {
     expect(init.body).not.toContain("7700 900123");
     for (const [line] of log.mock.calls) expect(String(line)).not.toMatch(/ada@example\.com|Lovelace/);
     expect(log).toHaveBeenCalledWith("SUPPORT_FORM: entry 95489 -> created intake-1");
+  });
+
+  it("shows the campus label from the public form on the item", async () => {
+    resetCampusLabelCache();
+    const fetchImpl = vi.fn((url: string) =>
+      Promise.resolve(url.includes("/gfembed/") ? new Response(FORM_PAGE) : json(201, { id: "intake-9" }))
+    );
+    const res = await handleSupportForm({ secretHeader: "s3cret", body: entry({ "17": "ikeja" }) }, cfg, {
+      fetch: fetchImpl as unknown as typeof fetch,
+    });
+    expect(res.status).toBe(201);
+    const [, init] = fetchImpl.mock.calls[1] as unknown as [string, RequestInit];
+    expect(init.body).toContain("<strong>Campus</strong> Ikeja, Lagos");
   });
 
   it("treats 409 from Axios as already there", async () => {

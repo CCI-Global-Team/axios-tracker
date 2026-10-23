@@ -32,6 +32,10 @@ const FIELD = {
 const NAME_MESSAGE_CHARS = 70;
 const RATE_LIMIT_RETRIES = 5;
 const RATE_LIMIT_MAX_WAIT_MS = 60_000;
+const CAMPUS_LABELS_TTL_MS = 60 * 60 * 1000;
+const CAMPUS_LABELS_TIMEOUT_MS = 5_000;
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141 Safari/537.36";
 
 export type SupportFormEntry = Record<string, unknown>;
 
@@ -157,13 +161,65 @@ export function entryUrl(wpBase: string, entryId: string): string {
   return `${wpBase.replace(/\/$/, "")}/wp-admin/admin.php?page=gf_entries&view=entry&id=${SUPPORT_FORM_ID}&lid=${encodeURIComponent(entryId)}`;
 }
 
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
+const decodeEntities = (text: string) =>
+  text
+    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code: string) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&(amp|lt|gt|quot|apos);/g, (_, name: string) => ENTITIES[name] ?? "");
+
+/** The Campus dropdown's alias -> label pairs, read from the public form page. Gravity Forms sends
+ *  the option value (the campus alias, e.g. "ikeja"); people should read the label ("Ikeja, Lagos"). */
+export function parseCampusLabels(html: string): Map<string, string> {
+  const select = html.match(
+    new RegExp(`<select[^>]*id=['"]input_${SUPPORT_FORM_ID}_${FIELD.campus}['"][^>]*>([\\s\\S]*?)</select>`)
+  );
+  const labels = new Map<string, string>();
+  if (!select) return labels;
+  for (const [, value, text] of select[1].matchAll(/<option[^>]*value=['"]([^'"]*)['"][^>]*>([^<]*)/g)) {
+    if (value) labels.set(decodeEntities(value), decodeEntities(text).trim());
+  }
+  return labels;
+}
+
+let campusLabelCache: { at: number; labels: Map<string, string> } | undefined;
+
+/** Cached for an hour. A failed fetch keeps the last good copy, else an empty map: the item then
+ *  shows the alias, which is still readable. */
+export async function loadCampusLabels(
+  wpBase: string,
+  deps: { fetch: typeof fetch; now?: () => number }
+): Promise<Map<string, string>> {
+  const now = (deps.now ?? Date.now)();
+  if (campusLabelCache && now - campusLabelCache.at < CAMPUS_LABELS_TTL_MS) return campusLabelCache.labels;
+  try {
+    const res = await deps.fetch(`${wpBase.replace(/\/$/, "")}/gfembed/?f=${SUPPORT_FORM_ID}`, {
+      headers: { "User-Agent": BROWSER_UA },
+      signal: AbortSignal.timeout(CAMPUS_LABELS_TIMEOUT_MS),
+    });
+    const labels = res.ok ? parseCampusLabels(await res.text()) : new Map<string, string>();
+    if (labels.size) campusLabelCache = { at: now, labels };
+    return labels.size ? labels : (campusLabelCache?.labels ?? labels);
+  } catch {
+    return campusLabelCache?.labels ?? new Map();
+  }
+}
+
+export function resetCampusLabelCache(): void {
+  campusLabelCache = undefined;
+}
+
 /** The Intake item for one entry. Pure: reads the reporter's name and email, the subject, device,
  *  uploads, message and date. Never the phone number. */
-export function buildSupportIntake(entry: SupportFormEntry, { wpBase = DEFAULT_WP_BASE } = {}): SupportIntake {
+export function buildSupportIntake(
+  entry: SupportFormEntry,
+  { wpBase = DEFAULT_WP_BASE, campusLabels = new Map<string, string>() } = {}
+): SupportIntake {
   const entryId = field(entry, "id");
   const subject = subjectOf(entry);
   const device = field(entry, FIELD.device);
-  const campus = field(entry, FIELD.campus);
+  const campusValue = field(entry, FIELD.campus);
+  const campus = campusLabels.get(campusValue) ?? campusValue;
   const message = typeof entry[FIELD.message] === "string" ? (entry[FIELD.message] as string) : "";
   const uploads = parseUploads(entry[FIELD.uploads]);
   const submitted = parseEntryDate(entry.date_created);
@@ -291,7 +347,10 @@ export async function handleSupportForm(
   }
   inFlight.add(entryId);
   try {
-    const item = buildSupportIntake(fields, { wpBase: cfg.wpBase });
+    const campusLabels = field(fields, FIELD.campus)
+      ? await loadCampusLabels(cfg.wpBase ?? DEFAULT_WP_BASE, d)
+      : undefined;
+    const item = buildSupportIntake(fields, { wpBase: cfg.wpBase, campusLabels });
     const url = `${cfg.host.replace(/\/$/, "")}/api/v1/workspaces/${cfg.workspace}/projects/${cfg.projectId}/intake-issues/`;
     const res = await postWithRetry(
       url,
