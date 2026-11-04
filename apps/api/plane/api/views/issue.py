@@ -528,6 +528,7 @@ class IssueDetailAPIEndpoint(BaseAPIView):
     model = Issue
     webhook_event = "issue"
     permission_classes = [ProjectEntityPermission]
+    block_api_key_delete = True
     serializer_class = IssueSerializer
     use_read_replica = True
 
@@ -1007,6 +1008,7 @@ class LabelDetailAPIEndpoint(LabelListCreateAPIEndpoint):
     serializer_class = LabelSerializer
     model = Label
     permission_classes = [ProjectMemberPermission]
+    block_api_key_delete = True
     use_read_replica = True
 
     @label_docs(
