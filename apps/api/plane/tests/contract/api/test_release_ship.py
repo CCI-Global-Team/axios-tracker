@@ -7,7 +7,6 @@
 from uuid import uuid4
 
 import pytest
-from django.utils import timezone
 from rest_framework import status
 
 from plane.db.models import Issue, Release, ReleaseIssue, ReleaseStatus, User
@@ -73,7 +72,12 @@ class TestReleaseShip:
         release.refresh_from_db()
         assert release.status == ReleaseStatus.PLANNING
 
-        ship(api_key_client, workspace, [key(b).lower()])
+        response = ship(api_key_client, workspace, [key(b).lower()])
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert response.data["results"][0]["release_id"] == str(release.id)
+        assert response.data["results"][0]["moved"] is True
+        b.refresh_from_db()
+        assert b.state_id == states["Released"].id
         release.refresh_from_db()
         assert release.status == ReleaseStatus.RELEASED
         assert release.released_at is not None
@@ -81,24 +85,86 @@ class TestReleaseShip:
         assert link.shipped_via == VIA and link.previous_state_id == states["In Testing"].id
 
     @pytest.mark.django_db
-    def test_second_ship_is_idempotent(self, api_key_client, workspace, project, states):
+    def test_second_unplanned_ship_is_idempotent(
+        self, api_key_client, workspace, project, states, mocker, django_capture_on_commit_callbacks
+    ):
+        dispatch = mocker.patch("plane.utils.releases.issue_activity.delay")
         a = make_issue(project, states["Ready for Test"])
+        with django_capture_on_commit_callbacks(execute=True):
+            ship(api_key_client, workspace, [key(a)])
+        dispatch.assert_called_once()
+        assert dispatch.call_args.kwargs["type"] == "issue.activity.updated"
+        a.refresh_from_db()
+        updated_at, completed_at = a.updated_at, a.completed_at
+        dispatch.reset_mock()
+
+        with django_capture_on_commit_callbacks(execute=True):
+            response = ship(api_key_client, workspace, [key(a)])
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["results"] == [
+            {
+                "key": key(a),
+                "issue_id": str(a.id),
+                "release_id": None,
+                "moved": False,
+                "unplanned": True,
+                "already": True,
+            }
+        ]
+        a.refresh_from_db()
+        assert (a.updated_at, a.completed_at) == (updated_at, completed_at)
+        assert not Release.objects.filter(project=project).exists()
+        assert not ReleaseIssue.objects.filter(project=project).exists()
+        dispatch.assert_not_called()
+
+    @pytest.mark.django_db
+    def test_planned_ship_replay_preserves_the_link(self, api_key_client, workspace, project, states):
+        a = make_issue(project, states["Ready for Test"], "A")
+        b = make_issue(project, states["In Testing"], "B")
+        release = plan(project, [a, b])
         ship(api_key_client, workspace, [key(a)])
-        releases_before = Release.objects.count()
+        link = ReleaseIssue.objects.get(issue=a)
+        shipped_at = link.shipped_at
 
         response = ship(api_key_client, workspace, [key(a)])
-        assert response.status_code == status.HTTP_200_OK
-        assert response.data["results"][0]["already"] is True
-        assert response.data["results"][0]["moved"] is False
-        assert Release.objects.count() == releases_before
-        assert ReleaseIssue.objects.filter(issue=a).count() == 1
+        assert response.status_code == status.HTTP_200_OK, response.data
+        result = response.data["results"][0]
+        assert result["release_id"] == str(release.id)
+        assert result["already"] is True and result["moved"] is False
+        link.refresh_from_db()
+        assert link.shipped_at == shipped_at
+        release.refresh_from_db()
+        assert release.status == ReleaseStatus.PLANNING
+        assert Release.objects.filter(project=project).count() == 1
+        assert ReleaseIssue.objects.filter(project=project).count() == 2
+
+    @pytest.mark.django_db
+    def test_same_via_replay_without_an_open_release_keeps_the_shipped_link(
+        self, api_key_client, workspace, project, states
+    ):
+        a = make_issue(project, states["In Testing"])
+        release = plan(project, [a])
+        ship(api_key_client, workspace, [key(a)])
+        # Preserve the legacy replay check even for a shipped link in a non-Released release.
+        Release.objects.filter(pk=release.pk).update(status=ReleaseStatus.ROLLED_BACK)
+        Issue.objects.filter(pk=a.pk).update(state=states["In Testing"])
+
+        response = ship(api_key_client, workspace, [key(a)])
+        assert response.status_code == status.HTTP_200_OK, response.data
+        result = response.data["results"][0]
+        assert result["release_id"] == str(release.id)
+        assert result["already"] is True and result["moved"] is False
+        a.refresh_from_db()
+        assert a.state_id == states["In Testing"].id
+        assert Release.objects.filter(project=project).count() == 1
+        assert ReleaseIssue.objects.filter(project=project).count() == 1
 
     @pytest.mark.django_db
     def test_item_from_a_closed_release_shipped_by_another_repo_is_already(
         self, api_key_client, workspace, project, states
     ):
-        # GAM work ships backend first, admin later: the second promotion must not file the item
-        # as unplanned in a fresh release once its own release has closed.
+        # GAM work ships backend first, admin later: the second promotion must still report
+        # the original shipped release once it has closed.
         a = make_issue(project, states["Ready for Test"], "A")
         release = plan(project, [a])
         ship(api_key_client, workspace, [key(a)])
@@ -129,31 +195,80 @@ class TestReleaseShip:
         assert november.status == ReleaseStatus.RELEASED
 
     @pytest.mark.django_db
-    def test_unplanned_item_joins_open_release_preferring_frozen(self, api_key_client, workspace, project, states):
-        planned = make_issue(project, states["Ready for Test"], "Planned")
+    @pytest.mark.parametrize("open_status", [None, ReleaseStatus.PLANNING, ReleaseStatus.FROZEN])
+    def test_unplanned_item_moves_without_a_release(
+        self, api_key_client, workspace, project, states, open_status, mocker, django_capture_on_commit_callbacks
+    ):
+        if open_status is not None:
+            planned = make_issue(project, states["Ready for Test"], "Planned")
+            release = plan(project, [planned], status_value=open_status)
         stray = make_issue(project, states["In Testing"], "Stray")
-        plan(project, [planned], name="Planning one")
-        frozen = plan(project, [], name="Frozen one", status_value=ReleaseStatus.FROZEN)
+        releases_before = Release.objects.filter(project=project).count()
+        links_before = ReleaseIssue.objects.filter(project=project).count()
+        dispatch = mocker.patch("plane.utils.releases.issue_activity.delay")
 
-        result = ship(api_key_client, workspace, [key(stray)]).data["results"][0]
-        assert result["unplanned"] is True
-        assert result["release_id"] == str(frozen.id)
-        assert ReleaseIssue.objects.get(issue=stray).is_unplanned is True
+        with django_capture_on_commit_callbacks(execute=True):
+            response = ship(api_key_client, workspace, [key(stray)])
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert response.data["results"] == [
+            {
+                "key": key(stray),
+                "issue_id": str(stray.id),
+                "release_id": None,
+                "moved": True,
+                "unplanned": True,
+                "already": False,
+            }
+        ]
         stray.refresh_from_db()
         assert stray.state_id == states["Released"].id
+        assert stray.completed_at is not None
+        assert Release.objects.filter(project=project).count() == releases_before
+        assert ReleaseIssue.objects.filter(project=project).count() == links_before
+        assert not ReleaseIssue.objects.filter(issue=stray).exists()
+        dispatch.assert_called_once()
+        assert dispatch.call_args.kwargs["type"] == "issue.activity.updated"
+        if open_status is not None:
+            release.refresh_from_db()
+            assert release.status == open_status
+            assert ReleaseIssue.objects.get(issue=planned).shipped_at is None
 
     @pytest.mark.django_db
-    def test_unplanned_item_creates_a_release_when_none_open(
-        self, api_key_client, workspace, project, states, create_user
+    @pytest.mark.parametrize("state_name, already", [("Done", True), ("Released", True), ("Cancelled", False)])
+    def test_unplanned_completed_or_cancelled_item_is_left_alone(
+        self,
+        api_key_client,
+        workspace,
+        project,
+        states,
+        state_name,
+        already,
+        mocker,
+        django_capture_on_commit_callbacks,
     ):
-        stray = make_issue(project, states["In Testing"])
+        item = make_issue(project, states[state_name])
+        dispatch = mocker.patch("plane.utils.releases.issue_activity.delay")
+        updated_at, completed_at = item.updated_at, item.completed_at
 
-        result = ship(api_key_client, workspace, [key(stray)]).data["results"][0]
-        release = Release.objects.get(pk=result["release_id"])
-        assert release.name == f"Shipped {timezone.now().date().isoformat()}"
-        assert release.owned_by_id == create_user.id
-        # Its only item has shipped, so it closes straight away.
-        assert release.status == ReleaseStatus.RELEASED
+        with django_capture_on_commit_callbacks(execute=True):
+            response = ship(api_key_client, workspace, [key(item)])
+        assert response.status_code == status.HTTP_200_OK, response.data
+        assert response.data["results"] == [
+            {
+                "key": key(item),
+                "issue_id": str(item.id),
+                "release_id": None,
+                "moved": False,
+                "unplanned": True,
+                "already": already,
+            }
+        ]
+        item.refresh_from_db()
+        assert item.state_id == states[state_name].id
+        assert (item.updated_at, item.completed_at) == (updated_at, completed_at)
+        assert not Release.objects.filter(project=project).exists()
+        assert not ReleaseIssue.objects.filter(project=project).exists()
+        dispatch.assert_not_called()
 
     @pytest.mark.django_db
     def test_done_item_is_recorded_but_not_moved(self, api_key_client, workspace, project, states):

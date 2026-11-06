@@ -38,9 +38,10 @@ Keys are collected from:
   or a squash subject ending `(#27)`. Promotion merges often carry no key themselves; the PR does.
   At most 50 PRs are read per push.
 
-Axios decides the rest: the item is marked shipped in its release (or, if it was in none, attached
-to the project's open release and flagged **unplanned**), moves to Released unless it is already
-Done or Cancelled, and the release closes itself once every item in it has shipped. Shipping twice
+Axios decides the rest: an item planned into an open release is marked shipped there, and the
+release closes itself once every item in it has shipped. An item without an open release is flagged
+**unplanned** and returns a null `release_id`, without creating a release or membership. Items move
+to Released unless they are already in a completed or cancelled state. Shipping twice
 is a no-op, so a redelivered or repeated push changes nothing. Released -> Done is a Product/QA
 step, done by hand. Deleting the release branch does nothing.
 

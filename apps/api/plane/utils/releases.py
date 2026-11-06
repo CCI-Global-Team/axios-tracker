@@ -6,7 +6,8 @@
 
 Every state change here goes through ``Issue.save()`` so ``completed_at`` stays in step, and is logged
 as an ordinary state update so the work item's activity reads the same as a hand move. Automation only
-ever moves an item into Released or back out of it; Done belongs to people.
+ever moves an item into Released or back out of it; Done belongs to people. Shipping an unplanned
+item only updates its state; it does not create a release or release membership.
 """
 
 # Python imports
@@ -16,7 +17,7 @@ from dataclasses import dataclass, field
 
 # Django imports
 from django.db import transaction
-from django.db.models import Case, Count, IntegerField, Q, Value, When
+from django.db.models import Count, Q
 from django.utils import timezone
 
 # Module imports
@@ -140,8 +141,7 @@ def _lock(release):
 
 def _lock_project(project_id):
     """Serialize release membership changes per project: shipping and planning both decide which
-    open release an item belongs to, and two of them racing could put an item in two releases or
-    create the same 'Shipped <date>' release twice."""
+    open release an item belongs to, and two of them racing could put an item in two releases."""
     Project.objects.select_for_update().filter(pk=project_id).first()
 
 
@@ -170,39 +170,6 @@ def _ship_link(link, via, now, released, ctx):
         moved = _move(issue, released, ctx)
     link.save(update_fields=["shipped_at", "shipped_via", "previous_state", "updated_at"])
     return moved
-
-
-def _project_open_release(project, actor, now):
-    """The release unplanned shipments land in: frozen before planning, newest first, else a new one."""
-    release = (
-        Release.objects.filter(project_id=project.id, status__in=OPEN_RELEASE_STATUSES)
-        .annotate(
-            _rank=Case(
-                When(status=ReleaseStatus.FROZEN, then=Value(0)),
-                default=Value(1),
-                output_field=IntegerField(),
-            )
-        )
-        .order_by("_rank", "-created_at")
-        .first()
-    )
-    if release is not None:
-        return release
-    base = f"Shipped {now.date().isoformat()}"
-    name, n = base, 1
-    while Release.objects.filter(project_id=project.id, name=name).exists():
-        n += 1
-        name = f"{base} ({n})"
-    return Release.objects.create(
-        name=name,
-        project_id=project.id,
-        workspace_id=project.workspace_id,
-        status=ReleaseStatus.FROZEN,
-        owned_by=actor,
-        checklist=default_checklist(),
-        created_by=actor,
-        updated_by=actor,
-    )
 
 
 def open_conflicts(release):
@@ -286,9 +253,13 @@ def remove_issue(release, issue_id, actor, origin=None):
 def ship_issues(project, issues, via, actor, now=None, origin=None):
     """Record that ``issues`` reached production through ``via``.
 
+    Items in an open release ship there; items without one only move to Released, with a null
+    release_id and unplanned=True. Completed or cancelled items keep their state.
+
     Idempotent: an item already shipped in its open release, or (when it is in no open release) one
     shipped through the same ``via`` or with a release that has since closed, is reported as
-    ``already`` and left untouched.
+    ``already`` and left untouched. Unplanned items already in a completed state also report
+    ``already`` without creating release membership.
     """
     now = now or timezone.now()
     ctx = _Context(actor_id=actor.id, origin=origin)
@@ -323,20 +294,14 @@ def ship_issues(project, issues, via, actor, now=None, origin=None):
                     summary.update(release_id=str(replay.release_id), unplanned=replay.is_unplanned, already=True)
                     results.append(summary)
                     continue
-                target = _project_open_release(project, actor, now)
-                target = touched.get(target.id) or _lock(target)
-                link = ReleaseIssue.objects.create(
-                    release=target,
-                    issue=issue,
-                    project_id=project.id,
-                    workspace_id=project.workspace_id,
-                    is_unplanned=True,
-                    created_by=actor,
-                    updated_by=actor,
-                )
-                _log_link(ctx, target, issue.id, created=True)
-            else:
-                link.release = touched.get(link.release_id) or _lock(link.release)
+                summary["unplanned"] = True
+                if issue.state is not None:
+                    summary["already"] = issue.state.group == StateGroup.COMPLETED.value
+                    if issue.state.group not in (StateGroup.COMPLETED.value, StateGroup.CANCELLED.value):
+                        summary["moved"] = _move(issue, released, ctx)
+                results.append(summary)
+                continue
+            link.release = touched.get(link.release_id) or _lock(link.release)
             touched[link.release_id] = link.release
             summary.update(release_id=str(link.release_id), unplanned=link.is_unplanned)
 

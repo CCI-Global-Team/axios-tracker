@@ -115,7 +115,8 @@ class ReleaseShipAPIEndpoint(BaseAPIView):
 
     Body: ``{"keys": ["GAM-12", ...], "via": "github:<owner/repo>@<sha7>"}``. Keys in projects the caller
     cannot write to are reported as unknown, the same as keys that do not exist, so the response does
-    not reveal other projects' work items. Safe to repeat.
+    not reveal other projects' work items. Items without an open release only move to Released
+    and return release_id=None; shipping does not create a release or membership. Safe to repeat.
     """
 
     permission_classes = [WorkspaceEntityPermission]
