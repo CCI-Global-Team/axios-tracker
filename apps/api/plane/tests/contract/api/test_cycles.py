@@ -349,14 +349,14 @@ class TestCycleDetailAPIEndpoint:
         assert "same external id" in response.data["error"]
 
     @pytest.mark.django_db
-    def test_delete_cycle_success(self, api_key_client, workspace, project, create_cycle):
-        """Test successful cycle deletion"""
+    def test_delete_cycle_is_blocked_for_api_keys(self, api_key_client, workspace, project, create_cycle):
+        """CCI: GAM-736 - API keys can't delete cycles"""
         url = self.get_cycle_detail_url(workspace.slug, project.id, create_cycle.id)
 
         response = api_key_client.delete(url)
 
-        assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Cycle.objects.filter(id=create_cycle.id).exists()
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Cycle.objects.filter(id=create_cycle.id).exists()
 
     @pytest.mark.django_db
     def test_cycle_metrics_annotation(self, api_key_client, workspace, project, create_cycle):

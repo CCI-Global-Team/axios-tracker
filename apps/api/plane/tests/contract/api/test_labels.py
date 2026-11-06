@@ -207,11 +207,11 @@ class TestLabelDetailAPIEndpoint:
         assert response.status_code in [status.HTTP_400_BAD_REQUEST, status.HTTP_200_OK]
 
     @pytest.mark.django_db
-    def test_delete_label_success(self, api_key_client, workspace, project, create_label):
-        """Test successful label deletion"""
+    def test_delete_label_is_blocked_for_api_keys(self, api_key_client, workspace, project, create_label):
+        """CCI: GAM-736 - API keys can't delete labels"""
         url = self.get_label_detail_url(workspace.slug, project.id, create_label.id)
 
         response = api_key_client.delete(url)
 
-        assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Label.objects.filter(id=create_label.id).exists()
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Label.objects.filter(id=create_label.id).exists()

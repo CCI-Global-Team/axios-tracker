@@ -435,6 +435,7 @@ class ProjectDetailAPIEndpoint(BaseAPIView):
     webhook_event = "project"
 
     permission_classes = [ProjectBasePermission]
+    block_api_key_delete = True
     use_read_replica = True
 
     def get_queryset(self):
