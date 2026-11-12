@@ -330,6 +330,14 @@ class IssueListCreateAPIEndpoint(BaseAPIView):
         external_source = request.GET.get("external_source")
 
         if external_id and external_source:
+            if pql_tree is not None or project_id is None:
+                return Response(
+                    {
+                        "error": "external_id and external_source look up one work item in a project. "
+                        "They can't be combined with pql or used on the workspace-wide list."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             issue = Issue.objects.get(
                 external_id=external_id,
                 external_source=external_source,

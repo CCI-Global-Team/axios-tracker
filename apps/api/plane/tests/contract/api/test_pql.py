@@ -64,10 +64,33 @@ class TestParser:
         assert parse('startDate BETWEEN ("2026-11-01", "2026-11-07")') == {"start_date__range": "2026-11-01,2026-11-07"}
         assert parse('dueDate = "2026-11-01"') == {"target_date": "2026-11-01"}
 
+    def test_open_ended_dates_at_the_edges(self):
+        assert parse('dueDate >= "0001-01-01"') == {"target_date__range": "0001-01-01,9999-12-31"}
+        assert parse('dueDate <= "9999-12-31"') == {"target_date__range": "0001-01-01,9999-12-31"}
+        for pql in ('dueDate < "0001-01-01"', 'dueDate > "9999-12-31"'):
+            with pytest.raises(PQLError) as exc:
+                parse(pql)
+            assert "out of range" in exc.value.detail["pql"]
+
+    @pytest.mark.parametrize("opening", ["(", "NOT "])
+    def test_deep_nesting_is_a_pql_error_not_a_crash(self, opening):
+        closing = ")" if opening == "(" else ""
+        with pytest.raises(PQLError) as exc:
+            parse(opening * 400 + 'priority = "high"' + closing * 400)
+        assert "more than 10 deep" in exc.value.detail["pql"]
+        assert parse(opening * 10 + 'priority = "high"' + closing * 10)
+
+    @pytest.mark.parametrize("pql", [f'assignee = currentUser("{uuid4()}")', "assignee = currentUser(isOverdue())"])
+    def test_function_arguments_are_refused(self, pql):
+        with pytest.raises(PQLError) as exc:
+            parse(pql)
+        assert "takes no arguments" in exc.value.detail["pql"]
+
     @pytest.mark.parametrize(
         "pql,named",
         [
             ("isOverdue()", "isOverdue()"),
+            ("dueDate > daysAgo(7)", "daysAgo()"),
             ('title ~ "x"', "'title'"),
             ('priority ~ "high"', "~ (contains)"),
             ("dueDate < today()", "today()"),
@@ -201,6 +224,14 @@ class TestProjectList:
     def test_filters_parameter_is_still_rejected(self, api_key_client, workspace, board):
         response = api_key_client.get(project_url(workspace, board["alpha"]), {"filters": '{"priority": "high"}'})
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.django_db
+    def test_external_id_lookup_refuses_pql_and_the_workspace_route(self, api_key_client, workspace, board):
+        lookup = {"external_id": "48-95489", "external_source": "gravity-forms"}
+        with_pql = api_key_client.get(project_url(workspace, board["alpha"]), {**lookup, "pql": 'priority = "high"'})
+        assert with_pql.status_code == status.HTTP_400_BAD_REQUEST
+        assert "can't be combined with pql" in with_pql.data["error"]
+        assert api_key_client.get(workspace_url(workspace), lookup).status_code == status.HTTP_400_BAD_REQUEST
 
 
 @pytest.mark.contract

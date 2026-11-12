@@ -49,6 +49,7 @@ STATE_GROUP_FUNCTIONS = {
 }
 KEYWORDS = {"and", "or", "not", "in", "is", "null", "empty", "between"}
 EARLIEST, LATEST = date(1, 1, 1), date(9999, 12, 31)
+MAX_NESTING = 10
 
 SUPPORTED = (
     "Axios supports these PQL fields: assignee, state, stateGroup, priority, label, cycle, module, project, "
@@ -105,6 +106,7 @@ class Parser:
     def __init__(self, text, user_id, project_ids):
         self.tokens = tokenize(text)
         self.i = 0
+        self.depth = 0
         self.user_id = user_id
         self.project_ids = project_ids
 
@@ -159,15 +161,18 @@ class Parser:
         return parts[0] if len(parts) == 1 else {"and": parts}
 
     def parse_not(self):
-        if self.is_keyword("not"):
-            self.next()
-            return {"not": self.parse_not()}
-        if self.is_op("("):
-            self.next()
+        if not (self.is_keyword("not") or self.is_op("(")):
+            return self.parse_condition()
+        self.depth += 1
+        if self.depth > MAX_NESTING:
+            raise PQLError(f"The PQL nests NOT or parentheses more than {MAX_NESTING} deep. Flatten it and retry.")
+        if self.next()[1] == "(":
             node = self.parse_or()
             self.expect_op(")")
-            return node
-        return self.parse_condition()
+        else:
+            node = {"not": self.parse_not()}
+        self.depth -= 1
+        return node
 
     def parse_condition(self):
         kind, word, pos = self.next()
@@ -225,12 +230,10 @@ class Parser:
                 leaf = {FIELDS[field][0]: day.isoformat()}
                 return {"not": leaf} if op == "!=" else leaf
             try:
-                low, high = {
-                    "<": (EARLIEST, day - timedelta(days=1)),
-                    "<=": (EARLIEST, day),
-                    ">": (day + timedelta(days=1), LATEST),
-                    ">=": (day, LATEST),
-                }[op]
+                if op in ("<", "<="):
+                    low, high = EARLIEST, day - timedelta(days=1) if op == "<" else day
+                else:
+                    low, high = day + timedelta(days=1) if op == ">" else day, LATEST
             except OverflowError:
                 raise PQLError(f"The date {day.isoformat()} is out of range for {word} {op}.")
             return self.date_range(field, word, low, high)
@@ -260,13 +263,12 @@ class Parser:
             return ("string", value)
         if kind == "word" and self.is_op("("):
             self.next()
-            args = []
-            while not self.is_op(")"):
-                args.append(self.value())
-                if not self.is_op(")"):
-                    self.expect_op(",")
+            if value.lower() not in ("currentuser", "activecycle", *STATE_GROUP_FUNCTIONS):
+                raise unsupported(f"{value}()")
+            if not self.is_op(")"):
+                raise PQLError(f"{value}() takes no arguments on Axios. Write it as {value}() and retry.")
             self.next()
-            return ("function", value, args)
+            return ("function", value)
         raise PQLError(f"Expected a quoted value or a function at character {pos + 1}, found {value!r}. {SUPPORTED}")
 
     def resolve(self, field, word, value):
