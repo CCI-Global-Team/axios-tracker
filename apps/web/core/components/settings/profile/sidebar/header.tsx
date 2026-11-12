@@ -16,7 +16,7 @@ export const ProfileSettingsSidebarHeader = observer(function ProfileSettingsSid
   const { data: currentUser } = useUser();
 
   return (
-    <div className="flex shrink-0 items-center gap-2">
+    <div className="flex shrink-0 items-center gap-2 max-md:hidden">
       <div className="shrink-0">
         <Avatar
           src={getFileURL(currentUser?.avatar_url ?? "")}

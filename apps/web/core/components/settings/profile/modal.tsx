@@ -42,13 +42,16 @@ export const ProfileSettingsModal = observer(function ProfileSettingsModal() {
       className="h-175"
     >
       <div className="@container relative size-full">
-        <div className="flex size-full">
+        <div className="flex size-full flex-col md:flex-row">
           <ProfileSettingsSidebarRoot
             activeTab={activeTab}
-            className="w-[250px] rounded-l-xl"
+            className="w-full rounded-t-xl md:w-[250px] md:rounded-l-xl md:rounded-tr-none"
             updateActiveTab={(tab) => toggleProfileSettingsModal({ activeTab: tab })}
           />
-          <ProfileSettingsContent activeTab={activeTab} className="flex-1 rounded-r-xl" />
+          <ProfileSettingsContent
+            activeTab={activeTab}
+            className="min-h-0 flex-1 rounded-b-xl md:rounded-r-xl md:rounded-bl-none"
+          />
         </div>
         <div className="absolute top-3.5 right-3.5">
           <IconButton size="base" variant="tertiary" icon={X} onClick={handleClose} />

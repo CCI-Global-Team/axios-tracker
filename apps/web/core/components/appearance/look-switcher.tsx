@@ -36,7 +36,7 @@ export const LookSwitcher = observer(function LookSwitcher() {
         <h4 className="text-body-sm-medium text-primary">Look</h4>
         <p className="text-caption-md-regular text-secondary">Colours and shapes for light and dark mode.</p>
       </div>
-      <div role="radiogroup" aria-label="Look" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div role="radiogroup" aria-label="Look" className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         {LOOKS.map((look) => {
           const selected = look.value === current;
           return (
@@ -47,7 +47,7 @@ export const LookSwitcher = observer(function LookSwitcher() {
               aria-checked={selected}
               onClick={() => handleChange(look.value)}
               className={cn(
-                "group flex items-center gap-3 rounded-lg border bg-surface-1 p-2 text-left transition-colors duration-150 sm:flex-col sm:items-stretch",
+                "group flex items-center gap-3 rounded-lg border bg-surface-1 p-2 text-left transition-colors duration-150 lg:flex-col lg:items-stretch",
                 selected
                   ? "border-accent-strong shadow-[0_0_0_1px_var(--border-color-accent-strong)]"
                   : "border-subtle-1 hover:border-strong"
@@ -58,7 +58,7 @@ export const LookSwitcher = observer(function LookSwitcher() {
                 rounded={look.value === "campus"}
                 darkSidebar={look.value === "navy"}
               />
-              <div className="flex min-w-0 flex-1 items-start gap-2 sm:px-1 sm:pb-1">
+              <div className="flex min-w-0 flex-1 items-start gap-2 lg:px-1 lg:pb-1">
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="text-body-sm-medium text-primary">{look.label}</span>
                   <span className="text-caption-md-regular text-tertiary">{look.description}</span>
@@ -87,7 +87,7 @@ function LookPreview(props: { preview: (typeof LOOKS)[number]["preview"]; rounde
   return (
     <div
       aria-hidden
-      className={cn("flex h-14 w-24 shrink-0 overflow-hidden border border-subtle sm:h-20 sm:w-full", radius)}
+      className={cn("flex h-14 w-24 shrink-0 overflow-hidden border border-subtle lg:h-20 lg:w-full", radius)}
       style={{ background: preview.surface }}
     >
       <div className="flex w-1/4 flex-col gap-1 p-1.5" style={{ background: preview.sidebar }}>
