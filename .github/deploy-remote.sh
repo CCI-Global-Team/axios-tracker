@@ -34,5 +34,17 @@ fi
 # table, invisible everywhere.
 "${COMPOSE[@]}" up -d
 
+# Every release pulls six images and nothing removed the old ones: by cci-52 they had filled
+# 72 GB of the 77 GB disk. Keep this release and the two before it, so a rollback is still a
+# local switch, and remove the rest. A failed cleanup must not fail a deploy that succeeded.
+echo "--- pruning old release images"
+KEEP=$(docker images --filter 'reference=ghcr.io/cci-global-team/plane-*' --format '{{.Tag}}' | grep -E -- '-cci-[0-9]+$' |
+  sort -uV | tail -3)
+docker images --filter 'reference=ghcr.io/cci-global-team/plane-*' --format '{{.Repository}}:{{.Tag}}' |
+  grep -E -- '-cci-[0-9]+$' | { grep -vE -f <(printf '%s\n' "$KEEP" "$RELEASE" | sed 's/.*/:&$/') || true; } |
+  xargs -r docker rmi || echo "image prune failed; continuing" >&2
+docker image prune -f >/dev/null || true
+df -h / | tail -1
+
 echo "--- containers"
 "${COMPOSE[@]}" ps --format '{{.Service}} {{.Image}}'
