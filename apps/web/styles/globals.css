@@ -218,3 +218,16 @@
 button:not(:hover):not(:focus-visible) .date-clear {
   visibility: hidden;
 }
+
+/* On one-line desktop rows, state sits last in a fixed-width column, so states line up down the
+ * list however many other properties a row has. */
+@media (min-width: 1024px) {
+  .list-row-properties {
+    flex-wrap: nowrap;
+  }
+  .list-row-properties > [data-prop="state"] {
+    order: 99;
+    width: 8.5rem;
+    flex-shrink: 0;
+  }
+}

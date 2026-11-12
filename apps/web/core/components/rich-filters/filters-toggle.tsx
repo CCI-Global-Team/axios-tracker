@@ -68,7 +68,7 @@ export const FiltersToggle = observer(function FiltersToggle<P extends TFilterPr
       <AddFilterButton
         filter={filter}
         buttonConfig={{
-          variant: "secondary",
+          variant: "ghost",
           className: COMMON_CLASSNAME,
           label: null,
         }}
@@ -80,7 +80,8 @@ export const FiltersToggle = observer(function FiltersToggle<P extends TFilterPr
   return (
     <IconButton
       size="lg"
-      variant="secondary"
+      variant="ghost"
+      aria-label="Filters"
       icon={showFilterRowChangesPill ? FilterAppliedIcon : FilterIcon}
       onClick={handleToggleFilter}
       className={buttonClassName}

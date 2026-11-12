@@ -200,7 +200,7 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
       {/* state */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="state">
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-        <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+        <div className="h-5" data-prop="state" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
           <StateDropdown
             buttonContainerClassName="truncate max-w-40"
             value={issue.state_id}

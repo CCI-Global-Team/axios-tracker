@@ -72,6 +72,7 @@ export const ProjectIssuesMobileHeader = observer(function ProjectIssuesMobileHe
         <MobileLayoutSelection
           layouts={[EIssueLayoutTypes.LIST, EIssueLayoutTypes.KANBAN, EIssueLayoutTypes.CALENDAR]}
           onChange={handleLayoutChange}
+          activeLayout={activeLayout}
         />
         <div className="flex flex-grow items-center justify-center border-l border-subtle text-13 text-secondary">
           <FiltersDropdown

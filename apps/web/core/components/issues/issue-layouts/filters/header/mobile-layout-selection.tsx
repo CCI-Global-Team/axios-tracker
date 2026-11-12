@@ -29,9 +29,14 @@ export function MobileLayoutSelection({
       className="flex flex-grow justify-center text-13 text-secondary"
       placement="bottom-start"
       customButton={
-        <Button variant="secondary" className="relative px-2">
+        <Button variant="ghost" className="relative gap-1.5 px-2">
           {activeLayout && (
-            <IssueLayoutIcon layout={activeLayout} size={14} strokeWidth={2} className={`h-3.5 w-3.5`} />
+            <>
+              <IssueLayoutIcon layout={activeLayout} size={14} strokeWidth={2} className={`h-3.5 w-3.5`} />
+              <span className="text-13 text-secondary">
+                {t(ISSUE_LAYOUTS.find((l) => l.key === activeLayout)?.i18n_label ?? "")}
+              </span>
+            </>
           )}
           <ChevronDownIcon className="my-auto size-3 text-secondary" strokeWidth={2} />
         </Button>
@@ -39,9 +44,9 @@ export function MobileLayoutSelection({
       customButtonClassName="flex flex-grow justify-center text-secondary text-13"
       closeOnSelect
     >
-      {ISSUE_LAYOUTS.filter((l) => layouts.includes(l.key)).map((layout, index) => (
+      {ISSUE_LAYOUTS.filter((l) => layouts.includes(l.key)).map((layout) => (
         <CustomMenu.MenuItem
-          key={index}
+          key={layout.key}
           onClick={() => {
             onChange(layout.key);
           }}
