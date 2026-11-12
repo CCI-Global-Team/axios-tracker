@@ -78,10 +78,14 @@ export const InboxIssueRoot = observer(function InboxIssueRoot(props: TInboxIssu
     <>
       {!inboxIssueId && (
         <div className="flex h-12 w-full items-center border-b border-subtle px-4 lg:hidden">
-          <PanelLeft
+          <button
+            type="button"
+            aria-label="Toggle the intake list"
             onClick={() => setIsMobileSidebar(!isMobileSidebar)}
-            className={cn("h-4 w-4", isMobileSidebar ? "text-accent-primary" : "text-secondary")}
-          />
+            className="-ml-2 grid size-9 place-items-center rounded-sm text-secondary hover:bg-layer-transparent-hover"
+          >
+            <PanelLeft className="size-4" />
+          </button>
         </div>
       )}
       <div className="flex h-full w-full overflow-hidden bg-surface-1">

@@ -66,6 +66,7 @@ export function AvatarGroup(props: Props) {
   return (
     <div className={cn("flex", sizeInfo.spacing)}>
       {avatarsWithUpdatedProps.map((avatar, index) => (
+        // oxlint-disable-next-line react/no-array-index-key -- avatars carry no id, and the list is only re-rendered whole
         <div key={index} className="rounded-full border border-subtle-1">
           {avatar}
         </div>
@@ -74,7 +75,7 @@ export function AvatarGroup(props: Props) {
         <Tooltip tooltipContent={`${totalAvatars} total`} disabled={!showTooltip}>
           <div
             className={cn(
-              "grid place-items-center rounded-full border border-subtle-1 bg-accent-subtle text-9 text-accent-primary",
+              "grid place-items-center rounded-full border border-subtle-1 bg-layer-3 text-9 text-secondary",
               {
                 [sizeInfo.avatarSize]: !isAValidNumber(size),
               }

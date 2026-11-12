@@ -59,7 +59,7 @@ export const ReleasesListHeader = observer(function ReleasesListHeader() {
         {canCreate && workspaceSlug && projectId && (
           <>
             <Button variant="primary" size="lg" onClick={() => setIsCreateOpen(true)}>
-              <div className="block sm:hidden">New</div>
+              <div className="block sm:hidden">Add</div>
               <div className="hidden sm:block">New release</div>
             </Button>
             <CreateUpdateReleaseModal

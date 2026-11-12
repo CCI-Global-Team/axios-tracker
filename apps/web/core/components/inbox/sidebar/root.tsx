@@ -9,7 +9,7 @@ import { observer } from "mobx-react";
 import { useTranslation } from "@plane/i18n";
 import { EmptyStateDetailed } from "@plane/propel/empty-state";
 import type { TInboxIssueCurrentTab } from "@plane/types";
-import { EInboxIssueCurrentTab } from "@plane/types";
+import { EInboxIssueCurrentTab, EInboxIssueStatus } from "@plane/types";
 // plane imports
 import { Header, Loader, EHeaderVariant } from "@plane/ui";
 import { cn } from "@plane/utils";
@@ -62,7 +62,24 @@ export const InboxSidebar = observer(function InboxSidebar(props: IInboxSidebarP
     inboxIssuePaginationInfo,
     fetchInboxPaginationIssues,
     getAppliedFiltersCount,
+    inboxFilters,
   } = useProjectInbox();
+  // The tab's own status filter is not a search: with only that applied, an empty list gets the
+  // intake empty state rather than "No matching results".
+  const defaultStatuses: number[] =
+    currentTab === EInboxIssueCurrentTab.OPEN
+      ? [EInboxIssueStatus.PENDING]
+      : [EInboxIssueStatus.ACCEPTED, EInboxIssueStatus.DECLINED, EInboxIssueStatus.DUPLICATE];
+  const appliedFilters = Object.entries(inboxFilters ?? {}).filter(
+    ([, value]) => Array.isArray(value) && value.length > 0
+  );
+  const onlyDefaultFilters = appliedFilters.every(
+    ([key, value]) =>
+      key === "status" &&
+      Array.isArray(value) &&
+      value.length === defaultStatuses.length &&
+      defaultStatuses.every((status) => (value as number[]).includes(status))
+  );
   // derived values
   const fetchNextPages = useCallback(() => {
     if (!workspaceSlug || !projectId) return;
@@ -83,12 +100,14 @@ export const InboxSidebar = observer(function InboxSidebar(props: IInboxSidebarP
   }, [currentTab, filteredInboxIssueIds, inboxIssueId, projectId, router, workspaceSlug]);
 
   return (
-    <div className="h-full w-full flex-shrink-0 border-r border-strong bg-surface-1">
+    <div className="h-full w-full flex-shrink-0 border-r border-subtle bg-surface-1">
       <div className="relative flex h-full w-full flex-col overflow-hidden">
         <Header variant={EHeaderVariant.SECONDARY}>
           {tabNavigationOptions.map((option) => (
-            <div
+            <button
+              type="button"
               key={option?.key}
+              aria-pressed={currentTab === option?.key}
               className={cn(
                 `relative flex h-full cursor-pointer items-center gap-1 px-3 text-13 font-medium transition-all`,
                 currentTab === option?.key ? `text-accent-primary` : `hover:text-secondary`
@@ -102,7 +121,7 @@ export const InboxSidebar = observer(function InboxSidebar(props: IInboxSidebarP
             >
               <div>{t(option?.i18n_label)}</div>
               {option?.key === "open" && currentTab === option?.key && (
-                <div className="rounded-full bg-accent-primary/20 p-1.5 py-0.5 text-11 font-semibold text-accent-primary">
+                <div className="rounded-full bg-layer-3 p-1.5 py-0.5 text-11 font-semibold text-secondary tabular-nums">
                   {inboxIssuePaginationInfo?.total_results || 0}
                 </div>
               )}
@@ -112,7 +131,7 @@ export const InboxSidebar = observer(function InboxSidebar(props: IInboxSidebarP
                   currentTab === option?.key ? `border-accent-strong` : `border-transparent`
                 )}
               />
-            </div>
+            </button>
           ))}
           <div className="m-auto mr-0">
             <FiltersRoot />
@@ -137,7 +156,7 @@ export const InboxSidebar = observer(function InboxSidebar(props: IInboxSidebarP
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                {getAppliedFiltersCount > 0 ? (
+                {getAppliedFiltersCount > 0 && !onlyDefaultFilters ? (
                   <EmptyStateDetailed
                     assetKey="search"
                     title={t("common_empty_state.search.title")}

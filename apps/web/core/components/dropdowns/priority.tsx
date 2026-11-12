@@ -110,7 +110,7 @@ function BorderButton(props: ButtonProps) {
             >
               <PriorityIcon
                 priority={priority}
-                size={12}
+                size={14}
                 className={cn("flex-shrink-0", {
                   // increase the icon size if text is hidden
                   "h-3.5 w-3.5": hideText,
@@ -201,7 +201,7 @@ function BackgroundButton(props: ButtonProps) {
             >
               <PriorityIcon
                 priority={priority}
-                size={12}
+                size={14}
                 className={cn("flex-shrink-0", {
                   // increase the icon size if text is hidden
                   "h-3.5 w-3.5": hideText,
@@ -285,7 +285,7 @@ function TransparentButton(props: ButtonProps) {
             >
               <PriorityIcon
                 priority={priority}
-                size={12}
+                size={14}
                 className={cn("flex-shrink-0", {
                   // increase the icon size if text is hidden
                   "h-3.5 w-3.5": hideText,
@@ -445,6 +445,7 @@ export function PriorityDropdown(props: Props) {
   );
 
   return (
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- the combobox's own button takes focus and keys
     <ComboDropDown
       as="div"
       ref={dropdownRef}

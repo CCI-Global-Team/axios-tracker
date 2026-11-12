@@ -212,3 +212,9 @@
 .group\/list-block:not(:hover):not(:focus-within) .list-row-properties :is(button, button *) {
   border-color: transparent;
 }
+
+/* A date's clear "x" shows only while its button is hovered or focused, so a list of due dates is not
+ * a column of delete marks. visibility keeps the width, so nothing shifts on hover. */
+button:not(:hover):not(:focus-visible) .date-clear {
+  visibility: hidden;
+}

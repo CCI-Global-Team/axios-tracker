@@ -127,7 +127,7 @@ export const IssuesHeader = observer(function IssuesHeader() {
             }}
             data-ph-element={WORK_ITEM_TRACKER_ELEMENTS.HEADER_ADD_BUTTON.WORK_ITEMS}
           >
-            <div className="block sm:hidden">{t("issue.label", { count: 1 })}</div>
+            <div className="block sm:hidden">{t("add")}</div>
             <div className="hidden sm:block">{t("issue.add.label")}</div>
           </Button>
         )}

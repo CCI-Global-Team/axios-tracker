@@ -29,6 +29,22 @@
     --bg-canvas: oklch(0.2 0.056 262);
   }
 
+  /* Links: with CCI red as the brand, a red underlined link reads as an error. Navy and Campus give
+   * links a CCI blue in plain light and dark; contrast and custom themes keep their own. */
+  :root:not([data-look="ink"])[data-theme="light"] {
+    --txt-link-primary: oklch(0.47 0.14 258);
+    --txt-link-primary-hover: oklch(0.39 0.14 258);
+  }
+  :root:not([data-look="ink"])[data-theme="dark"] {
+    --txt-link-primary: oklch(0.76 0.11 255);
+    --txt-link-primary-hover: oklch(0.84 0.08 255);
+  }
+
+  /* Medium priority's pale yellow nearly vanishes on white; a deeper amber keeps it legible. */
+  :root[data-theme="light"] {
+    --priority-medium: oklch(0.7 0.155 72);
+  }
+
   /* ---------- Quiet Ink: near-monochrome, ink primary actions ---------- */
   :root[data-look="ink"]:not([data-theme*="dark"]) {
     --neutral-100: oklch(0.9851 0.0008 260);

@@ -152,7 +152,7 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
         )}
         {isClearable && !disabled && isDateSelected && (
           <CloseIcon
-            className={cn("h-2.5 w-2.5 flex-shrink-0", clearIconClassName)}
+            className={cn("date-clear h-2.5 w-2.5 flex-shrink-0", clearIconClassName)}
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
@@ -165,6 +165,7 @@ export const DateDropdown = observer(function DateDropdown(props: Props) {
   );
 
   return (
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- the combobox's own button takes focus and keys
     <ComboDropDown
       as="div"
       ref={dropdownRef}

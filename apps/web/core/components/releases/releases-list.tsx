@@ -44,7 +44,7 @@ const ReleaseListRow = observer(function ReleaseListRow(props: {
   return (
     <Link
       href={`/${workspaceSlug}/projects/${projectId}/releases/${release.id}`}
-      className="flex min-h-11 flex-col gap-2 border-b border-subtle px-4 py-3 hover:bg-layer-transparent-hover sm:flex-row sm:items-center sm:gap-4 sm:px-6"
+      className="flex min-h-11 flex-col gap-2 border-b border-subtle px-4 py-3 hover:bg-layer-transparent-hover sm:px-6 lg:flex-row lg:items-center lg:gap-4"
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <Rocket className="size-4 shrink-0 text-tertiary" />
@@ -52,11 +52,15 @@ const ReleaseListRow = observer(function ReleaseListRow(props: {
         {release.version && <span className="shrink-0 text-body-xs-regular text-tertiary">{release.version}</span>}
         <ReleaseStatusChip status={release.status} />
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-6 text-body-xs-regular text-secondary sm:pl-0">
-        <span>
-          Shipped {shipped} / {total}
-        </span>
-        <span>{ready} ready</span>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pl-6 text-body-xs-regular text-secondary tabular-nums lg:pl-0">
+        {total > 0 && shipped === total ? (
+          <span>{shipped} shipped</span>
+        ) : (
+          <span>
+            Shipped {shipped} / {total}
+          </span>
+        )}
+        {ready > 0 && shipped !== total && <span>{ready} ready</span>}
         <span className="flex items-center gap-1">
           <CalendarDays className="size-3.5 text-tertiary" />
           {release.target_date ? renderFormattedDate(release.target_date) : "No target date"}

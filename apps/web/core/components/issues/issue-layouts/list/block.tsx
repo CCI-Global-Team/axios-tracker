@@ -290,7 +290,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
           </div>
           {!issue?.tempId && (
             <div
-              className={cn("block rounded-sm border border-strong", {
+              className={cn("block rounded-sm", {
                 "md:hidden": isSidebarCollapsed,
                 "lg:hidden": !isSidebarCollapsed,
               })}
