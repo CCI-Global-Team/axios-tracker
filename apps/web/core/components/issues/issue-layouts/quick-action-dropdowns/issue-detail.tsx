@@ -252,7 +252,7 @@ export const WorkItemDetailQuickActions = observer(function WorkItemDetailQuickA
       <CustomMenu
         ellipsis
         placement={placements}
-        customButton={<IconButton size="lg" variant="secondary" icon={Ellipsis} />}
+        customButton={<IconButton size="lg" variant="ghost" aria-label="More actions" icon={Ellipsis} />}
         portalElement={portalElement}
         menuItemsClassName="z-[14]"
         maxHeight="lg"
