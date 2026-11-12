@@ -26,6 +26,7 @@ from plane.api.serializers import (
     ModuleCreateSerializer,
     ModuleUpdateSerializer,
 )
+from plane.api.pql import filter_by_pql, parse_pql
 from plane.app.permissions import ProjectEntityPermission
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.db.models import (
@@ -683,6 +684,7 @@ class ModuleIssueListCreateAPIEndpoint(BaseAPIView):
                 .values("count")
             )
         )
+        issues = filter_by_pql(issues, parse_pql(request, [project_id]))
         return self.paginate(
             request=request,
             queryset=(issues),
