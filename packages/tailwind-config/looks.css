@@ -76,15 +76,19 @@
     --brand-100: oklch(0.21 0.004 260);
     --brand-200: oklch(0.25 0.005 260);
     --brand-300: oklch(0.3 0.006 260);
-    --brand-400: oklch(0.36 0.007 260);
-    --brand-500: oklch(0.42 0.008 260);
+    --brand-400: oklch(0.38 0.03 262);
+    --brand-500: oklch(0.5 0.03 262);
     --brand-700: oklch(0.72 0.006 260);
     --brand-800: oklch(0.82 0.005 260);
     --brand-900: oklch(0.9 0.004 260);
     --brand-1000: oklch(0.94 0.003 260);
     --brand-1100: oklch(0.965 0.002 260);
     --brand-1200: oklch(0.985 0.001 260);
-    --brand-default: oklch(0.5 0.012 260);
+    /* A solid ink-blue button that reads as enabled; accent text and borders use the light end. */
+    --brand-default: oklch(0.44 0.03 262);
+    --txt-accent-primary: var(--brand-900);
+    --txt-icon-accent-primary: var(--brand-900);
+    --border-accent-strong: var(--brand-700);
   }
   :root[data-look="ink"] {
     --radius-sm: 0.1875rem;

@@ -7,24 +7,32 @@ export type TLook = "navy" | "ink" | "campus";
 export const DEFAULT_LOOK: TLook = "navy";
 export const LOOK_STORAGE_KEY = "axios-look";
 
-export const LOOKS: { value: TLook; label: string; description: string; swatch: [string, string, string] }[] = [
+type TLookOption = {
+  value: TLook;
+  label: string;
+  description: string;
+  /** Colours for the picker's miniature: sidebar, work area, primary action. */
+  preview: { sidebar: string; surface: string; accent: string };
+};
+
+export const LOOKS: TLookOption[] = [
   {
     value: "navy",
     label: "CCI Navy",
     description: "Navy sidebar and top bar, CCI red on the main action",
-    swatch: ["oklch(0.227 0.063 261)", "#d71920", "#ffffff"],
+    preview: { sidebar: "oklch(0.227 0.063 261)", surface: "#ffffff", accent: "#d71920" },
   },
   {
     value: "ink",
     label: "Quiet Ink",
     description: "Near-monochrome, colour only where it means something",
-    swatch: ["oklch(0.21 0.006 260)", "oklch(0.97 0.001 260)", "#ffffff"],
+    preview: { sidebar: "oklch(0.955 0.0012 260)", surface: "#ffffff", accent: "oklch(0.21 0.006 260)" },
   },
   {
     value: "campus",
     label: "Campus Board",
     description: "Warm and rounder, with a friendlier typeface",
-    swatch: ["#d71920", "oklch(0.97 0.0055 75)", "#ffffff"],
+    preview: { sidebar: "oklch(0.955 0.0072 75)", surface: "#ffffff", accent: "#d71920" },
   },
 ];
 
