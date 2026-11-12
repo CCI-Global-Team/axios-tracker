@@ -24,7 +24,6 @@ import { MultipleSelectEntityAction } from "@/components/core/multiple-select";
 import { IssueProperties } from "@/components/issues/issue-layouts/properties";
 import { IssueIdentifier } from "@/components/issues/issue-detail/issue-identifier";
 // hooks
-import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useProject } from "@/hooks/store/use-project";
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
@@ -77,7 +76,6 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
   const workspaceSlug = routerWorkspaceSlug?.toString();
   const projectId = routerProjectId?.toString();
   // hooks
-  const { sidebarCollapsed: isSidebarCollapsed } = useAppTheme();
   const { getProjectIdentifierById, currentProjectNextSequenceId } = useProject();
   const {
     getIsIssuePeeked,
@@ -181,7 +179,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
       <Row
         ref={issueRef}
         className={cn(
-          "group/list-block relative flex min-h-10 flex-col gap-2 bg-layer-transparent py-2 text-13 transition-colors hover:bg-layer-transparent-hover",
+          "group/list-block relative flex min-h-10 flex-col gap-2 bg-layer-transparent py-2 text-13 transition-colors hover:bg-layer-transparent-hover lg:flex-row lg:items-center",
           {
             // CCI: the row you are reading in the side pane. This used to be a border COLOUR
             // change only, which on the dark theme is indistinguishable from the ordinary row
@@ -194,8 +192,6 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
             "last:border-b-transparent": !isIssuePeeked && !isIssueActive,
             "bg-accent-primary/5 hover:bg-accent-primary/10": isIssueSelected,
             "bg-layer-1": isCurrentBlockDragging,
-            "md:flex-row md:items-center": isSidebarCollapsed,
-            "lg:flex-row lg:items-center": !isSidebarCollapsed,
           }
         )}
         onDragStart={() => {
@@ -210,7 +206,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
           }
         }}
       >
-        <div className="flex w-full gap-2 truncate">
+        <div className="flex w-full gap-2 truncate lg:min-w-64">
           <div className="flex flex-grow items-center gap-0.5 truncate">
             <div className="flex items-center gap-1" style={isSubIssue ? { marginLeft } : {}}>
               {/* select checkbox */}
@@ -289,12 +285,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
             </Tooltip>
           </div>
           {!issue?.tempId && (
-            <div
-              className={cn("block rounded-sm", {
-                "md:hidden": isSidebarCollapsed,
-                "lg:hidden": !isSidebarCollapsed,
-              })}
-            >
+            <div className="block rounded-sm lg:hidden">
               {quickActions({
                 issue,
                 parentRef: issueRef,
@@ -302,11 +293,11 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
             </div>
           )}
         </div>
-        <div className="flex flex-shrink-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2 lg:max-w-[65%] lg:shrink-0">
           {!issue?.tempId ? (
             <>
               <IssueProperties
-                className={`list-row-properties relative flex flex-wrap ${isSidebarCollapsed ? "md:flex-shrink-0 md:flex-grow" : "lg:flex-shrink-0 lg:flex-grow"} items-center gap-2 whitespace-nowrap`}
+                className="list-row-properties relative flex min-w-0 flex-wrap items-center gap-2 whitespace-nowrap lg:flex-grow lg:justify-end"
                 issue={issue}
                 isReadOnly={!canEditIssueProperties}
                 updateIssue={updateIssue}
@@ -316,10 +307,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
               />
               {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
               <div
-                className={cn("hidden", {
-                  "md:flex": isSidebarCollapsed,
-                  "lg:flex": !isSidebarCollapsed,
-                })}
+                className="hidden lg:flex"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();

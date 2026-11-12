@@ -41,8 +41,17 @@ export const SidebarWrapper = observer(function SidebarWrapper(props: TSidebarWr
     }
   });
 
+  // Phones always keep the sidebar closed. On tablets it starts closed, and closes again when the window
+  // narrows from desktop, so the list gets the width; it can still be opened from the toggle.
+  const lastWidth = useRef<number | null>(null);
   useEffect(() => {
-    if (windowSize[0] < 768 && !sidebarCollapsed) toggleSidebar();
+    const width = windowSize[0];
+    if (!width) return;
+    const previous = lastWidth.current;
+    lastWidth.current = width;
+    if (sidebarCollapsed) return;
+    if (width < 768) toggleSidebar(true);
+    else if (width < 1024 && (previous === null || previous >= 1024)) toggleSidebar(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [windowSize]);
 
