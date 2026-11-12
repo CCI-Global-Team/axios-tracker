@@ -318,7 +318,7 @@ test("the ship summary reports already-shipped, unplanned and unknown keys, and 
         : json({
             results: [
               { key: "GAM-1", release_id: "r", moved: false, unplanned: false, already: true },
-              { key: "GAM-2", release_id: "r", moved: true, unplanned: true, already: false },
+              { key: "GAM-2", release_id: null, moved: true, unplanned: true, already: false },
             ],
             unknown: ["GAM-999"],
           }),
