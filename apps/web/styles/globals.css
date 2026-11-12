@@ -206,3 +206,9 @@
 .group\/list-block:not(:hover):not(:focus-within):not(:has([aria-expanded="true"])) [data-empty] {
   display: none;
 }
+
+/* Set properties in a list row read as plain values; their borders return on hover as the cue that
+ * each one is a picker. */
+.group\/list-block:not(:hover):not(:focus-within) .list-row-properties :is(button, button *) {
+  border-color: transparent;
+}

@@ -85,7 +85,7 @@ export const NotificationsSidebarRoot = observer(function NotificationsSidebarRo
               >
                 <div className="font-medium">{t(tab.i18n_label)}</div>
                 {tab.count(unreadNotificationsCount) > 0 && (
-                  <CountChip count={getNumberCount(tab.count(unreadNotificationsCount))} />
+                  <CountChip tone="accent" count={getNumberCount(tab.count(unreadNotificationsCount))} />
                 )}
               </div>
               {currentNotificationTab === tab.value && (
