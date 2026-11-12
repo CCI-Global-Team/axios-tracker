@@ -25,6 +25,8 @@ interface ResizableSidebarProps {
   onWidthChange?: (width: number) => void;
   onCollapsedChange?: (collapsed: boolean) => void;
   className?: string;
+  /** Extra attributes for the sidebar panels, e.g. the navy chrome scope. */
+  panelAttributes?: Record<string, string>;
   children?: ReactElement;
   extendedSidebar?: ReactElement;
   isAnyExtendedSidebarExpanded?: boolean;
@@ -44,6 +46,7 @@ export function ResizableSidebar({
   minWidth = 236,
   maxWidth = 350,
   className = "",
+  panelAttributes,
   children,
   extendedSidebar,
   isAnyExtendedSidebarExpanded = false,
@@ -146,12 +149,14 @@ export function ResizableSidebar({
     if (!isAnySidebarDropdownOpen && isCollapsed && isHoveringTrigger) {
       handlePeekLeave();
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [isAnySidebarDropdownOpen]);
 
   useEffect(() => {
     if (!isAnyExtendedSidebarExpanded && isCollapsed && isHoveringTrigger) {
       handlePeekLeave();
     }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [isAnyExtendedSidebarExpanded]);
 
   // Reset peek when sidebar is expanded
@@ -179,6 +184,7 @@ export function ResizableSidebar({
       {/* Main Sidebar */}
       <div
         id="main-sidebar"
+        {...panelAttributes}
         className={cn(
           "z-20 h-full border-r border-subtle bg-surface-1",
           !isResizing && "transition-all duration-300 ease-in-out",
@@ -232,6 +238,7 @@ export function ResizableSidebar({
         style={{
           width: `${width}px`,
         }}
+        {...panelAttributes}
         onMouseEnter={handlePeekEnter}
         onMouseLeave={handlePeekLeave}
         role="complementary"
@@ -263,7 +270,7 @@ export function ResizableSidebar({
       </div>
 
       {/* Extended Sidebar */}
-      {extendedSidebar && extendedSidebar}
+      {extendedSidebar}
     </>
   );
 }

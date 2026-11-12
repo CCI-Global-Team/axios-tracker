@@ -69,6 +69,7 @@ export type TUserProfile = {
     primary: string | undefined;
     background: string | undefined;
     darkPalette: boolean | undefined;
+    look?: string | undefined;
   };
   onboarding_step: TOnboardingSteps;
   is_onboarded: boolean;
@@ -107,6 +108,7 @@ export interface IUserTheme {
   primary?: string | undefined;
   background?: string | undefined;
   darkPalette?: boolean | undefined;
+  look?: string | undefined; // CCI look: 'navy' (default), 'ink', 'campus'
 }
 
 export interface IUserMemberLite extends IUserLite {

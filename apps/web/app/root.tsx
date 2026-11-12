@@ -32,11 +32,14 @@ import { AppProvider } from "./provider";
 // fonts
 // oxlint-disable-next-line import/no-unassigned-import
 import "@fontsource-variable/inter";
+// oxlint-disable-next-line import/no-unassigned-import
+import "@fontsource-variable/plus-jakarta-sans";
 import interVariableWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 // oxlint-disable-next-line import/no-unassigned-import
 import "@fontsource/material-symbols-rounded";
 // oxlint-disable-next-line import/no-unassigned-import
 import "@fontsource/ibm-plex-mono";
+import { LOOK_BOOT_SCRIPT } from "@/lib/look";
 
 const APP_TITLE = "Axios | CCI's engineering tracker.";
 
@@ -77,6 +80,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta name="mobile-web-app-capable" content="yes" />
         <Meta />
         <Links />
+        <script dangerouslySetInnerHTML={{ __html: LOOK_BOOT_SCRIPT }} />
       </head>
       <body suppressHydrationWarning>
         <div id="context-menu-portal" />

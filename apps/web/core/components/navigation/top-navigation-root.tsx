@@ -18,6 +18,7 @@ import { AppSidebarItem } from "@/components/sidebar/sidebar-item";
 import { InboxIcon } from "@plane/propel/icons";
 import useSWR from "swr";
 import { useWorkspaceNotifications } from "@/hooks/store/notifications";
+import { useChromeAttributes } from "@/lib/use-look";
 // local imports
 
 export const TopNavigationRoot = observer(function TopNavigationRoot() {
@@ -30,6 +31,7 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
   const { preferences } = useAppRailPreferences();
 
   const showLabel = preferences.displayMode === "icon_with_label";
+  const chromeAttributes = useChromeAttributes();
 
   // Fetch notification count
   useSWR(
@@ -45,6 +47,7 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
 
   return (
     <div
+      {...chromeAttributes}
       className={cn("z-[27] flex min-h-10 w-full items-center bg-canvas px-3.5 transition-all duration-300", {
         "px-2": !showLabel,
       })}
