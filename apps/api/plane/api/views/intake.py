@@ -274,6 +274,7 @@ class IntakeIssueDetailAPIEndpoint(BaseAPIView):
     """Intake Issue API Endpoint"""
 
     permission_classes = [ProjectLitePermission]
+    block_api_key_delete = True
 
     serializer_class = IntakeIssueSerializer
     model = IntakeIssue

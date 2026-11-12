@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
-from rest_framework.exceptions import APIException
+from rest_framework.exceptions import APIException, PermissionDenied
 from rest_framework.generics import GenericAPIView
 
 # Module imports
@@ -30,6 +30,11 @@ from plane.utils.core.mixins import ReadReplicaControlMixin
 
 
 logger = logging.getLogger("plane.api")
+
+API_KEY_DELETE_BLOCKED = (
+    "Deleting this with an API key is turned off on Axios, so retrying won't help. "
+    "Delete it in the web app, or set a work item's state to Cancelled instead."
+)
 
 
 class TimezoneMixin:
@@ -52,6 +57,13 @@ class BaseAPIView(TimezoneMixin, GenericAPIView, ReadReplicaControlMixin, BasePa
     permission_classes = [IsAuthenticated]
 
     use_read_replica = False
+
+    block_api_key_delete = False
+
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
+        if self.block_api_key_delete and request.method == "DELETE":
+            raise PermissionDenied(API_KEY_DELETE_BLOCKED)
 
     def filter_queryset(self, queryset):
         for backend in list(self.filter_backends):

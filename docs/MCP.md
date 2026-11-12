@@ -67,8 +67,10 @@ For Claude Desktop or any other client with a JSON config:
 Each tool covers one resource, and reads, writes and deletes share it: `workitem` lists, updates
 and deletes work items. Allowing a tool for reads therefore allows its writes and deletes too. In
 Claude Code, auto mode blocks these writes until you approve them or add allow rules such as
-`mcp__axios__workitem` and `mcp__axios__workitem_comment`. Until GAM-736 ships, an allow rule for
-`workitem` also lets the agent delete work items without asking.
+`mcp__axios__workitem` and `mcp__axios__workitem_comment`. An allow rule for `workitem` can't delete
+work items, though: Axios refuses API-key deletes of work items, projects, states, cycles, labels,
+modules and intake items. Delete those in the web app, or set a work item's state to Cancelled.
+Deleting comments and links, and removing work items from cycles and modules, still work.
 
 ## 3. Check it works
 
@@ -151,6 +153,7 @@ Checked with `plane-mcp-server` 0.3.5 against Axios on 4 November 2026.
 | `work_log` | 404 | |
 | `customer`, `initiative`, `page` | 404 | Axios has no API routes for these. |
 | `workitem list` with `per_page` over 100 | Refused by the server | Page with `cursor`. |
+| `delete` on `workitem`, `project`, `state`, `cycle`, `label`, `module` or `intake` | 403: "Deleting this with an API key is turned off on Axios" | Retrying won't help. Delete in the web app, or set the work item's state to Cancelled. |
 
 Everything else needed for day-to-day work was checked and works: projects, states, labels, members,
 cycles (list, read, add and remove work items), work items (read by `GAM-n`, list per project,

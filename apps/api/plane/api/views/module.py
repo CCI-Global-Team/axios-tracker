@@ -331,6 +331,7 @@ class ModuleDetailAPIEndpoint(BaseAPIView):
 
     model = Module
     permission_classes = [ProjectEntityPermission]
+    block_api_key_delete = True
     serializer_class = ModuleSerializer
     webhook_event = "module"
     use_read_replica = True
