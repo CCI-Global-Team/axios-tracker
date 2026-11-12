@@ -207,10 +207,13 @@
   display: none;
 }
 
-/* Set properties in a list row read as plain values; their borders return on hover as the cue that
- * each one is a picker. */
+/* Set properties in a list row read as plain values; their borders and fills return on hover as the
+ * cue that each one is a picker. */
 .group\/list-block:not(:hover):not(:focus-within) .list-row-properties :is(button, button *) {
   border-color: transparent;
+}
+.group\/list-block:not(:hover):not(:focus-within) .list-row-properties :is(button, button > div) {
+  background-color: transparent;
 }
 
 /* A date's clear "x" shows only while its button is hovered or focused, so a list of due dates is not
