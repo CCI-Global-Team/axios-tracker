@@ -59,10 +59,12 @@ from plane.api.serializers import (
     LabelCreateUpdateSerializer,
     RelatedIssueSerializer,
 )
+from plane.api.pql import filter_by_pql, parse_pql
 from plane.app.permissions import (
     ProjectEntityPermission,
     ProjectLitePermission,
     ProjectMemberPermission,
+    WorkspaceViewerPermission,
 )
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.db.models import (
@@ -264,6 +266,9 @@ class IssueListCreateAPIEndpoint(BaseAPIView):
     serializer_class = IssueSerializer
     use_read_replica = True
 
+    def scope_project_ids(self):
+        return [self.kwargs.get("project_id")]
+
     def get_queryset(self):
         return (
             Issue.issue_objects.annotate(
@@ -272,7 +277,7 @@ class IssueListCreateAPIEndpoint(BaseAPIView):
                 .annotate(count=Func(F("id"), function="Count"))
                 .values("count")
             )
-            .filter(project_id=self.kwargs.get("project_id"))
+            .filter(project_id__in=self.scope_project_ids())
             .filter(workspace__slug=self.kwargs.get("slug"))
             .select_related("project")
             .select_related("workspace")
@@ -314,19 +319,12 @@ class IssueListCreateAPIEndpoint(BaseAPIView):
         Supports filtering, ordering, and field selection through query parameters.
         """
 
-        unsupported_filters = [param for param in ("pql", "filters") if request.GET.get(param)]
-        if unsupported_filters:
+        if request.GET.get("filters"):
             return Response(
-                {
-                    "pql": (
-                        "PQL and structured filters are not supported on this Axios edition. "
-                        "Remove the pql/filters parameter and filter results client-side, or use "
-                        "an Axios edition that supports work item query filtering."
-                    ),
-                    "unsupported_parameters": unsupported_filters,
-                },
+                {"error": "The filters parameter isn't supported on Axios. Use pql instead."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        pql_tree = parse_pql(request, self.scope_project_ids())
 
         external_id = request.GET.get("external_id")
         external_source = request.GET.get("external_source")
@@ -380,7 +378,10 @@ class IssueListCreateAPIEndpoint(BaseAPIView):
             )
         )
 
-        total_issue_queryset = Issue.issue_objects.filter(project_id=project_id, workspace__slug=slug)
+        issue_queryset = filter_by_pql(issue_queryset, pql_tree)
+        total_issue_queryset = filter_by_pql(
+            Issue.issue_objects.filter(project_id__in=self.scope_project_ids(), workspace__slug=slug), pql_tree
+        )
 
         # Priority Ordering
         if order_by_param == "priority" or order_by_param == "-priority":
@@ -520,6 +521,23 @@ class IssueListCreateAPIEndpoint(BaseAPIView):
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class WorkspaceWorkItemListAPIEndpoint(IssueListCreateAPIEndpoint):
+    """CCI: GAM-737 - work items across every project the caller is an active member of."""
+
+    permission_classes = [WorkspaceViewerPermission]
+
+    def scope_project_ids(self):
+        return ProjectMember.objects.filter(
+            workspace__slug=self.kwargs.get("slug"),
+            member=self.request.user,
+            is_active=True,
+            project__archived_at__isnull=True,
+        ).values("project_id")
+
+    def get(self, request, slug):
+        return super().get(request, slug, project_id=None)
 
 
 class IssueDetailAPIEndpoint(BaseAPIView):

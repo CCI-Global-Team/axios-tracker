@@ -126,11 +126,33 @@ calls for an agent that starts with no IDs, measured against Axios:
 | Comment on GAM-n | 2 | `workitem retrieve_by_identifier` → `workitem_comment create` |
 | Show GAM-n with comments | 2–3 | `workitem retrieve_by_identifier` → `workitem_comment list`, then `member list_project` to name authors |
 | What's in a sprint | 3 | `project list` → `cycle list` → `cycle list_workitems` |
-| What's assigned to me | 17+ | `member me` → `project list` → every page of `workitem list` in every project → `state list` |
+| What's assigned to me | 1 | `workitem list` with no `project_id` and `pql` set to `assignee = currentUser() AND stateGroup IN openStates()` |
 
-"What's assigned to me" is the expensive one until PQL is supported (GAM-737). It loads every work
-item in your projects into the agent's context, which was about 150 KB in November 2026. Projects you
-aren't a member of return 403 and are skipped.
+Before limited PQL (GAM-737), "what's assigned to me" took 17 or more calls and loaded every work item
+in your projects into the agent's context, about 150 KB in November 2026. The workspace-wide list
+covers only projects you're an active member of.
+
+## PQL on Axios
+
+Axios supports part of PQL on `workitem list` (with or without `project_id`), `cycle list_workitems`
+and `module list_workitems`:
+
+- **Fields:** `assignee`, `state`, `stateGroup`, `priority`, `label`, `cycle`, `module`, `project`,
+  `createdBy`, `mention`, `subscriber`, `startDate`, `dueDate`, `createdAt`, `updatedAt`.
+- **Operators:**
+  - `=`, `!=`, `IN`, `NOT IN`, `AND`, `OR`, `NOT` and parentheses.
+  - `IS [NOT] NULL` and `IS [NOT] EMPTY` on `assignee`, `label`, `cycle` and `module`.
+  - `<`, `<=`, `>`, `>=` and `BETWEEN` on dates written `"YYYY-MM-DD"`.
+- **Functions:** `currentUser()`, `activeCycle()`, `openStates()`, `closedStates()` and
+  `activeStates()`.
+
+UUID fields take UUIDs, so look names up first (`state list`, `member list_project` and so on).
+Anything else gets a 400 that names the unsupported part. The server adds its full PQL reference and a
+hint to retry, but retrying with that part won't help: leave it out and filter the results yourself.
+
+`activeCycle()` needs a cycle with a start and end date around today. If none has one, Axios returns
+a 400 saying so, rather than an empty list that would read as an empty sprint. Use `cycle list` and
+the cycle's UUID instead.
 
 Two tips for agents:
 
@@ -145,9 +167,7 @@ Checked with `plane-mcp-server` 0.3.5 against Axios on 4 November 2026.
 
 | Call | Result | Notes |
 |---|---|---|
-| `workitem list` with `pql` | Axios returns 400. The server passes it back as a normal result with the full PQL reference and a hint to retry. | Retrying won't help. Leave out `pql` and filter the results yourself. GAM-737 adds limited PQL. |
-| `workitem list` without `project_id` | 404 | The workspace-wide route doesn't exist yet. GAM-737 adds it. |
-| `cycle list_workitems` with `pql` | Ignored without an error: every item in the cycle comes back | The result looks filtered but isn't. Leave out `pql` and filter the results yourself. |
+| `pql` with a field, operator or function outside "PQL on Axios" | 400 naming the unsupported part. The server passes it back as a normal result with the full PQL reference and a hint to retry. | Retrying with that part won't help. Leave it out and filter the results yourself. |
 | `workitem count` | 404 | |
 | `workitem search` with `pql` | Refused by the server: "search does not take: pql" | Plain `search` with `query` works. |
 | `work_log` | 404 | |
