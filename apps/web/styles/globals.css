@@ -198,3 +198,11 @@
     0 0 4px --alpha(var(--background-color-accent-primary) / 40%) !important;
   will-change: transform, opacity;
 }
+
+/*
+ * List rows show only the properties that are set. Empty ones (marked data-empty) come back while
+ * the row is hovered or focused, or while one of its pickers is open, so they stay one click away.
+ */
+.group\/list-block:not(:hover):not(:focus-within):not(:has([aria-expanded="true"])) [data-empty] {
+  display: none;
+}

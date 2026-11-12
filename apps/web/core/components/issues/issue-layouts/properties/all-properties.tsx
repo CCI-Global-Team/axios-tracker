@@ -217,7 +217,12 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
       {/* priority */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="priority">
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-        <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+        <div
+          className="h-5"
+          data-empty={!issue?.priority || issue.priority === "none" || undefined}
+          onFocus={handleEventPropagation}
+          onClick={handleEventPropagation}
+        >
           <PriorityDropdown
             value={issue?.priority}
             onChange={handlePriority}
@@ -236,7 +241,12 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         shouldRenderProperty={() => isDateRangeEnabled}
       >
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-        <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+        <div
+          className="h-5"
+          data-empty={(!issue.start_date && !issue.target_date) || undefined}
+          onFocus={handleEventPropagation}
+          onClick={handleEventPropagation}
+        >
           <DateRangeDropdown
             value={{
               from: getDate(issue.start_date) || undefined,
@@ -272,7 +282,12 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         shouldRenderProperty={() => !isDateRangeEnabled}
       >
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-        <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+        <div
+          className="h-5"
+          data-empty={!issue.start_date || undefined}
+          onFocus={handleEventPropagation}
+          onClick={handleEventPropagation}
+        >
           <DateDropdown
             value={issue.start_date ?? null}
             onChange={handleStartDate}
@@ -296,7 +311,12 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         shouldRenderProperty={() => !isDateRangeEnabled}
       >
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-        <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+        <div
+          className="h-5"
+          data-empty={!issue.target_date || undefined}
+          onFocus={handleEventPropagation}
+          onClick={handleEventPropagation}
+        >
           <DateDropdown
             value={issue?.target_date ?? null}
             onChange={handleTargetDate}
@@ -320,7 +340,12 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
       {/* assignee */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="assignee">
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-        <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+        <div
+          className="h-5"
+          data-empty={!issue.assignee_ids?.length || undefined}
+          onFocus={handleEventPropagation}
+          onClick={handleEventPropagation}
+        >
           <MemberDropdown
             projectId={issue?.project_id}
             value={issue?.assignee_ids}
@@ -345,7 +370,12 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             {projectDetails?.module_view && (
               <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="modules">
                 {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-                <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+                <div
+                  className="h-5"
+                  data-empty={!issue.module_ids?.length || undefined}
+                  onFocus={handleEventPropagation}
+                  onClick={handleEventPropagation}
+                >
                   <ModuleDropdown
                     buttonContainerClassName="truncate max-w-40"
                     projectId={issue?.project_id}
@@ -366,7 +396,12 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             {projectDetails?.cycle_view && (
               <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="cycle">
                 {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-                <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+                <div
+                  className="h-5"
+                  data-empty={!issue.cycle_id || undefined}
+                  onFocus={handleEventPropagation}
+                  onClick={handleEventPropagation}
+                >
                   <CycleDropdown
                     buttonContainerClassName="truncate max-w-40"
                     projectId={issue?.project_id}
@@ -388,7 +423,12 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
       {projectId && areEstimateEnabledByProjectId(projectId?.toString()) && (
         <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="estimate">
           {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
-          <div className="h-5" onFocus={handleEventPropagation} onClick={handleEventPropagation}>
+          <div
+            className="h-5"
+            data-empty={!issue.estimate_point || undefined}
+            onFocus={handleEventPropagation}
+            onClick={handleEventPropagation}
+          >
             <EstimateDropdown
               value={issue.estimate_point ?? undefined}
               onChange={handleEstimate}
@@ -488,16 +528,18 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
 
       {/* label */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="labels">
-        <IssuePropertyLabels
-          projectId={issue?.project_id || null}
-          value={issue?.label_ids || []}
-          defaultOptions={defaultLabelOptions}
-          onChange={handleLabel}
-          disabled={isReadOnly}
-          renderByDefault={isMobile}
-          hideDropdownArrow
-          maxRender={3}
-        />
+        <div className="contents" data-empty={!issue?.label_ids?.length || undefined}>
+          <IssuePropertyLabels
+            projectId={issue?.project_id || null}
+            value={issue?.label_ids || []}
+            defaultOptions={defaultLabelOptions}
+            onChange={handleLabel}
+            disabled={isReadOnly}
+            renderByDefault={isMobile}
+            hideDropdownArrow
+            maxRender={3}
+          />
+        </div>
       </WithDisplayPropertiesHOC>
     </div>
   );
