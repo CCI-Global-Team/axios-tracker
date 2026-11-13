@@ -58,7 +58,7 @@ export const ProjectBreadcrumb = observer(function ProjectBreadcrumb(props: TPro
   // oxlint-disable-next-line unicorn/consistent-function-scoping
   const renderIcon = (projectDetails: TProject) => (
     <span className="grid size-4 flex-shrink-0 place-items-center">
-      <Logo logo={projectDetails.logo_props} size={14} />
+      <Logo logo={projectDetails.logo_props} seed={projectDetails.identifier} size={14} />
     </span>
   );
 

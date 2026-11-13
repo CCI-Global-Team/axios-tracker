@@ -21,8 +21,10 @@ export function EmptyStateDetailed({
   rootClassName,
   assetClassName,
   customButton,
-  align = "start",
+  align: _align,
 }: BaseEmptyStateCommonProps) {
+  // CCI: always centred (the illustration is centred, so left-aligned text under it looked misplaced).
+  const align = "center";
   // Determine which asset to use: assetKey takes precedence, fallback to custom asset
   const resolvedAsset = assetKey ? getDetailedAsset(assetKey as DetailedAssetType, assetClassName) : asset;
 
@@ -37,7 +39,7 @@ export function EmptyStateDetailed({
           className
         )}
       >
-        {resolvedAsset && <div className="flex max-w-40 items-center">{resolvedAsset}</div>}
+        {resolvedAsset && <div className="flex max-w-28 items-center opacity-80">{resolvedAsset}</div>}
 
         <div
           className={cn("flex flex-col gap-4", {
@@ -56,10 +58,16 @@ export function EmptyStateDetailed({
             : actions &&
               actions.length > 0 && (
                 <div className="flex flex-col gap-4 sm:flex-row">
-                  {actions.map((action, index) => {
+                  {actions.map((action) => {
                     const { label, variant, ...rest } = action;
+                    // CCI: the page header owns the one red primary; an empty state's actions are secondary.
                     return (
-                      <Button key={index} variant={variant} size="xl" {...rest}>
+                      <Button
+                        key={String(label)}
+                        variant={variant === "primary" ? "secondary" : variant}
+                        size="lg"
+                        {...rest}
+                      >
                         {label}
                       </Button>
                     );

@@ -1,0 +1,190 @@
+/*
+ * CCI looks. A look is a palette and shape family that sits on top of the light/dark theme:
+ * <html data-look="navy|ink|campus">, with no attribute meaning CCI Navy (the default, defined
+ * in variables.css). Each look sets only the ramps; the semantic tokens re-derive from them.
+ *
+ * Navy chrome: elements marked [data-chrome] (top bar, sidebars) carry data-theme="dark" so they
+ * re-derive the dark token set locally, and use the deeper navy ramp below in both modes.
+ */
+@layer base {
+  :root:not([data-look]) [data-chrome],
+  :root[data-look="navy"] [data-chrome] {
+    --neutral-black: oklch(0.2 0.056 262);
+    --neutral-100: oklch(0.227 0.063 261);
+    --neutral-200: oklch(0.255 0.066 261);
+    --neutral-300: oklch(0.285 0.068 261);
+    --neutral-400: oklch(0.315 0.068 261);
+    --neutral-500: oklch(0.355 0.066 261);
+    --neutral-600: oklch(0.395 0.062 261);
+    --neutral-700: oklch(0.45 0.056 261);
+    --neutral-800: oklch(0.62 0.04 261);
+    --neutral-900: oklch(0.7 0.032 261);
+    --neutral-1000: oklch(0.78 0.024 261);
+    --neutral-1100: oklch(0.87 0.014 261);
+    --neutral-1200: oklch(0.955 0.006 261);
+    --neutral-white: oklch(0.985 0.002 261);
+    /* Text on navy reads near-white; the dark ramp's secondary greys looked dimmed here. */
+    --txt-secondary: oklch(0.93 0.01 261);
+    --txt-tertiary: oklch(0.84 0.018 261);
+    --txt-placeholder: oklch(0.76 0.026 261);
+  }
+  :root:not([data-look]) [data-chrome-canvas],
+  :root[data-look="navy"] [data-chrome-canvas] {
+    --bg-canvas: oklch(0.2 0.056 262);
+  }
+
+  /* Links: with CCI red as the brand, a red underlined link reads as an error. Navy and Campus give
+   * links a CCI blue in plain light and dark; contrast and custom themes keep their own. */
+  :root:not([data-look="ink"])[data-theme="light"] {
+    --txt-link-primary: oklch(0.47 0.14 258);
+    --txt-link-primary-hover: oklch(0.39 0.14 258);
+  }
+  :root:not([data-look="ink"])[data-theme="dark"] {
+    --txt-link-primary: oklch(0.76 0.11 255);
+    --txt-link-primary-hover: oklch(0.84 0.08 255);
+  }
+
+  /* Navy: CCI red is kept for the one primary button per view (bg-accent-primary) and the active tab.
+   * Every other accent (accent text and links, focus and selected borders, the selected-row tint, the
+   * calendar's today, "Load more") takes CCI blue, so red doesn't spread across secondary actions. */
+  :root:not([data-look])[data-theme="light"],
+  :root[data-look="navy"][data-theme="light"] {
+    --txt-accent-primary: oklch(0.47 0.14 258);
+    --txt-accent-secondary: oklch(0.39 0.14 258);
+    --border-accent-strong: oklch(0.55 0.15 258);
+    --border-accent-subtle: oklch(0.85 0.05 255);
+    --bg-accent-subtle: oklch(0.955 0.025 255);
+    --bg-accent-subtle-hover: oklch(0.93 0.035 255);
+    --bg-accent-subtle-active: oklch(0.9 0.045 255);
+  }
+  :root:not([data-look])[data-theme="dark"],
+  :root[data-look="navy"][data-theme="dark"] {
+    --txt-accent-primary: oklch(0.76 0.11 255);
+    --txt-accent-secondary: oklch(0.84 0.08 255);
+    --border-accent-strong: oklch(0.65 0.13 255);
+    --border-accent-subtle: oklch(0.4 0.08 258);
+    --bg-accent-subtle: oklch(0.3 0.06 258);
+    --bg-accent-subtle-hover: oklch(0.34 0.065 258);
+    --bg-accent-subtle-active: oklch(0.38 0.07 258);
+  }
+
+  /* Medium priority's pale yellow nearly vanishes on white; a deeper amber keeps it legible. */
+  :root[data-theme="light"] {
+    --priority-medium: oklch(0.7 0.155 72);
+    /* Muted text one step darker than the base ramp, so metadata reads as text rather than grey. */
+    --txt-tertiary: oklch(0.47 0.029 262);
+    --txt-placeholder: oklch(0.56 0.025 262);
+  }
+
+  /* ---------- Quiet Ink: near-monochrome, ink primary actions ---------- */
+  :root[data-look="ink"]:not([data-theme*="dark"]) {
+    --neutral-100: oklch(0.9851 0.0008 260);
+    --neutral-200: oklch(0.9702 0.001 260);
+    --neutral-300: oklch(0.9551 0.0012 260);
+    --neutral-400: oklch(0.9398 0.0014 260);
+    --neutral-500: oklch(0.9245 0.0016 260);
+    --neutral-600: oklch(0.8935 0.002 260);
+    --neutral-700: oklch(0.8625 0.0024 260);
+    --neutral-800: oklch(0.6685 0.004 260);
+    --neutral-900: oklch(0.6175 0.0045 260);
+    --neutral-1000: oklch(0.5295 0.005 260);
+    --neutral-1100: oklch(0.4385 0.0055 260);
+    --neutral-1200: oklch(0.2105 0.006 260);
+    --neutral-black: oklch(0.1455 0.005 260);
+    --brand-100: oklch(0.975 0.0015 260);
+    --brand-200: oklch(0.955 0.002 260);
+    --brand-300: oklch(0.92 0.003 260);
+    --brand-400: oklch(0.87 0.004 260);
+    --brand-500: oklch(0.74 0.006 260);
+    --brand-600: oklch(0.6 0.008 260);
+    --brand-700: oklch(0.45 0.008 260);
+    --brand-900: oklch(0.3 0.008 260);
+    --brand-1000: oklch(0.25 0.008 260);
+    --brand-1100: oklch(0.2 0.007 260);
+    --brand-1200: oklch(0.16 0.006 260);
+    --brand-default: oklch(0.2105 0.006 260);
+    --bg-canvas: var(--neutral-200);
+  }
+  :root[data-look="ink"][data-theme*="dark"] {
+    --neutral-black: oklch(0.1455 0.002 260);
+    --neutral-100: oklch(0.1735 0.0025 260);
+    --neutral-200: oklch(0.1955 0.003 260);
+    --neutral-300: oklch(0.2165 0.0034 260);
+    --neutral-400: oklch(0.2375 0.0038 260);
+    --neutral-500: oklch(0.2775 0.0042 260);
+    --neutral-600: oklch(0.3175 0.0046 260);
+    --neutral-700: oklch(0.3755 0.005 260);
+    --neutral-800: oklch(0.5815 0.0055 260);
+    --neutral-900: oklch(0.6685 0.005 260);
+    --neutral-1000: oklch(0.7535 0.004 260);
+    --neutral-1100: oklch(0.8355 0.003 260);
+    --neutral-1200: oklch(0.9375 0.002 260);
+    --neutral-white: oklch(0.9705 0.001 260);
+    --brand-100: oklch(0.21 0.004 260);
+    --brand-200: oklch(0.25 0.005 260);
+    --brand-300: oklch(0.3 0.006 260);
+    --brand-400: oklch(0.38 0.03 262);
+    --brand-500: oklch(0.5 0.03 262);
+    --brand-700: oklch(0.72 0.006 260);
+    --brand-800: oklch(0.82 0.005 260);
+    --brand-900: oklch(0.9 0.004 260);
+    --brand-1000: oklch(0.94 0.003 260);
+    --brand-1100: oklch(0.965 0.002 260);
+    --brand-1200: oklch(0.985 0.001 260);
+    /* A solid ink-blue button that reads as enabled; accent text and borders use the light end. */
+    --brand-default: oklch(0.44 0.03 262);
+    --txt-accent-primary: var(--brand-900);
+    --txt-icon-accent-primary: var(--brand-900);
+    --border-accent-strong: var(--brand-700);
+  }
+  :root[data-look="ink"] {
+    --radius-sm: 0.1875rem;
+    --radius-md: 0.3125rem;
+    --radius-lg: 0.4375rem;
+  }
+
+  /* ---------- Campus Board: warm neutrals, CCI red, rounder and friendlier ---------- */
+  :root[data-look="campus"]:not([data-theme*="dark"]) {
+    --neutral-100: oklch(0.9845 0.0035 75);
+    --neutral-200: oklch(0.9705 0.0055 75);
+    --neutral-300: oklch(0.9555 0.0072 75);
+    --neutral-400: oklch(0.9405 0.0088 75);
+    --neutral-500: oklch(0.9255 0.0102 75);
+    --neutral-600: oklch(0.8945 0.0122 75);
+    --neutral-700: oklch(0.8635 0.0138 75);
+    --neutral-800: oklch(0.6695 0.016 70);
+    --neutral-900: oklch(0.6185 0.017 70);
+    --neutral-1000: oklch(0.5305 0.018 65);
+    --neutral-1100: oklch(0.4395 0.02 60);
+    --neutral-1200: oklch(0.2405 0.025 265);
+    --neutral-black: oklch(0.1505 0.02 265);
+  }
+  :root[data-look="campus"][data-theme*="dark"] {
+    --neutral-black: oklch(0.1655 0.008 60);
+    --neutral-100: oklch(0.1955 0.0095 60);
+    --neutral-200: oklch(0.2185 0.0105 60);
+    --neutral-300: oklch(0.2405 0.0112 60);
+    --neutral-400: oklch(0.2625 0.0118 60);
+    --neutral-500: oklch(0.3025 0.0122 60);
+    --neutral-600: oklch(0.3425 0.0124 60);
+    --neutral-700: oklch(0.4005 0.0122 60);
+    --neutral-800: oklch(0.6005 0.0115 65);
+    --neutral-900: oklch(0.6855 0.0095 70);
+    --neutral-1000: oklch(0.7655 0.0075 75);
+    --neutral-1100: oklch(0.8455 0.0055 75);
+    --neutral-1200: oklch(0.9355 0.0045 80);
+    --neutral-white: oklch(0.9705 0.0035 80);
+  }
+  :root[data-look="campus"] {
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    --font-body:
+      "Plus Jakarta Sans Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    --font-heading:
+      "Plus Jakarta Sans Variable", "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  }
+}

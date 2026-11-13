@@ -16,7 +16,12 @@ type SkeletonProps = {
 
 function SkeletonRoot({ children, className = "", ariaLabel = "Loading content" }: SkeletonProps) {
   return (
-    <div data-slot="skeleton" className={cn("animate-pulse", className)} role="status" aria-label={ariaLabel}>
+    <div
+      data-slot="skeleton"
+      className={cn("motion-safe:animate-pulse", className)}
+      role="status"
+      aria-label={ariaLabel}
+    >
       {children}
     </div>
   );

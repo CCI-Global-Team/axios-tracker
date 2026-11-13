@@ -28,7 +28,7 @@ const RenderCustomPopoverComponent = (
       {["option1", "option2", "option3"].map((option) => (
         <div
           key={option}
-          className="text-gray-600 hover:text-gray-700 hover:bg-gray-200 cursor-pointer rounded-xs px-1.5 py-0.5 text-13 capitalize transition-all"
+          className="text-gray-600 hover:text-gray-700 hover:bg-gray-200 cursor-pointer rounded-xs px-1.5 py-0.5 text-13 capitalize transition-colors"
         >
           {option}
         </div>
@@ -50,7 +50,7 @@ export const CustomMenuButton: Story = {
   args: {
     popperPosition: "bottom-start",
     button: (
-      <div className="bg-gray-100 hover:bg-gray-200 rounded-sm p-2 text-13 font-medium transition-all">
+      <div className="bg-gray-100 hover:bg-gray-200 rounded-sm p-2 text-13 font-medium transition-colors">
         Custom Menu Button
       </div>
     ),

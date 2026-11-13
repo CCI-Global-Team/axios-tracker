@@ -69,7 +69,7 @@ export const ProjectsBaseHeader = observer(function ProjectsBaseHeader() {
             className="items-center gap-1"
           >
             <span className="hidden sm:inline-block">{t("workspace_projects.create.label")}</span>
-            <span className="inline-block sm:hidden">{t("workspace_projects.label", { count: 1 })}</span>
+            <span className="inline-block sm:hidden">{t("add")}</span>
           </Button>
         ) : (
           <></>

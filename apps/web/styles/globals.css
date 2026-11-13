@@ -52,6 +52,14 @@
 }
 /* end background colors */
 
+/* CCI: the Axios brand red for the chain and the A's crossbar; lighter on dark grounds so it keeps its contrast. */
+:root {
+  --axios-brand: #d2181d;
+}
+[data-theme*="dark"] {
+  --axios-brand: #ff4b4b;
+}
+
 .shadow-custom {
   box-shadow: 2px 2px 8px 2px rgba(234, 231, 250, 0.3); /* Convert #EAE7FA4D to rgba */
 }
@@ -197,4 +205,63 @@
     0 0 8px --alpha(var(--background-color-accent-primary) / 60%),
     0 0 4px --alpha(var(--background-color-accent-primary) / 40%) !important;
   will-change: transform, opacity;
+}
+
+/*
+ * List rows show only the properties that are set. Empty ones (marked data-empty) come back while
+ * the row is hovered or focused, or while one of its pickers is open, so they stay one click away.
+ */
+.group\/list-block:not(:hover):not(:focus-within):not(:has([aria-expanded="true"])) [data-empty] {
+  display: none;
+}
+
+/* Set properties in a list row read as plain values; their borders and fills return on hover as the
+ * cue that each one is a picker. */
+.group\/list-block:not(:hover):not(:focus-within) .list-row-properties :is(button, button *) {
+  border-color: transparent;
+}
+.group\/list-block:not(:hover):not(:focus-within) .list-row-properties :is(button, button > div) {
+  background-color: transparent;
+}
+
+/*
+ * CCI: board cards show only the properties that are set, and never bring the empty ones back on
+ * hover (a card would change height under the pointer). Empties are edited from the peek pane or the
+ * quick-actions menu. Set properties read as plain values; the picker borders return on hover.
+ */
+.group\/kanban-block [data-empty] {
+  display: none;
+}
+.group\/kanban-block:not(:hover):not(:focus-within) .kanban-card-properties :is(button, button *) {
+  border-color: transparent;
+}
+.group\/kanban-block:not(:hover):not(:focus-within) .kanban-card-properties :is(button, button > div) {
+  background-color: transparent;
+}
+
+/* A date's clear "x" shows only while its button is hovered or focused, so a list of due dates is not
+ * a column of delete marks. visibility keeps the width, so nothing shifts on hover. */
+button:not(:hover):not(:focus-visible) .date-clear {
+  visibility: hidden;
+}
+
+/* On one-line desktop rows, state sits last in a fixed-width column, so states line up down the
+ * list however many other properties a row has. */
+@media (min-width: 1024px) {
+  .list-row-properties > [data-prop="state"] {
+    order: 99;
+    width: 8.5rem;
+    flex-shrink: 0;
+  }
+}
+
+/*
+ * CCI: Table cells with no value stay blank until their row is hovered or focused, or a picker in it
+ * is open, so the grid reads as data rather than a wall of "Due date" / "Assignees" placeholders.
+ */
+tr:not(:hover):not(:focus-within):not(:has([aria-expanded="true"])) [data-empty] > * {
+  visibility: hidden;
+}
+.cci-list-item:not(:hover):not(:focus-within):not(:has([aria-expanded="true"])) [data-empty] {
+  visibility: hidden;
 }

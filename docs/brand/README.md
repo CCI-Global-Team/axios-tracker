@@ -1,55 +1,52 @@
 # Axios brand assets
 
-These are the canonical brand files for **Axios**, CCI's engineering tracker. The apps under
-`apps/*/public/` and `apps/*/app/assets/` hold *copies* of these — when a mark changes, change it
+These are the canonical brand files for **Axios**, the CCI Technology Team's tracker. The apps under
+`apps/*/public/` and `apps/*/app/assets/` hold _copies_ of these — when a mark changes, change it
 here first, then re-copy.
 
 ## The mark
 
-The Axios mark is **the crossing**: two ribbons interlacing, one passing over the other.
+The Axios mark is **the chain**: CCI's three linked loops drawn as one continuous line that crosses
+itself twice. At each crossing the `\` strand passes over; the `/` strand underneath fades out under a
+soft radial mask, so the over/under reads on any ground without a painted gap.
 
-The CCI logo is two ribbon strands woven into three linked loops. What actually distinguishes it —
-what makes it read as woven rather than merely curved — is the over/under crossing where the strands
-pass through each other. The Axios mark takes that crossing on its own, with the loops removed.
+The wordmark is **AXIOS** in squared capitals. The A's crossbar is a slanted red "spark" that echoes
+the chain's strands. The O and S overshoot the cap line and baseline slightly so they look the same
+height as the flat letters.
 
-It reads as an X, which suits the name, and it is square, which matters more than it sounds: the
-single-loop marks considered alongside it are roughly 2:1, so in a square app-icon tile they have to
-shrink to fit their width and leave the top and bottom empty. The crossing fills the tile.
+Lockups:
 
-It is also the mark with the least to lose at small sizes. At 16px a loop's counter closes up and the
-artwork becomes a blob; two crossing strokes stay two crossing strokes.
+- **Horizontal** (`PlaneLockup`): chain, then AXIOS on the chain's centre line. Top bars and headers.
+- **Mark alone** (`PlaneLogo`): loaders, icons, small headers.
+- **Wordmark alone** (`PlaneWordmark`): where the chain is already on screen.
+
+All three draw from `packages/propel/src/icons/brand/axios-art.tsx`. The loader is `AxiosLoader` in the
+same folder: the chain draws itself from the left crossing, holds, and retracts, with soft ends and a
+fade at each end of the lap.
 
 ## Colour
 
-| Token | Value | Use |
-|---|---|---|
-| CCI Red | `#DF4E4E` | The only brand colour. Icon ground, mark on light surfaces. |
-| White | `#FFFFFF` | The mark on red, and on dark surfaces. |
+| Token         | Value                                   | Use                                                                  |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------- |
+| CCI Red       | `#D2181D`                               | The chain and the A's crossbar on light grounds; the favicon ground. |
+| Red on dark   | `#FF4B4B`                               | The same, on dark grounds (`--axios-brand` switches in dark mode).   |
+| Icon gradient | `#E3121B` → `#9A0710` → `#5E0007`, 135° | App icon ground at 48px and up.                                      |
+| White         | `#FFFFFF`                               | The chain on red.                                                    |
 
-There is no second brand colour. Product UI colours come from Plane's own theme tokens and are not
-brand colours — do not repurpose the red for status or semantic meaning.
+Product UI colours come from the theme tokens and are not brand colours; do not reuse the red for
+status or semantic meaning.
 
-## How the weave is drawn
+## Small sizes
 
-The two strokes are:
-
-```
-ascending   M20,24 C44,24 56,76 80,76
-descending  M20,76 C44,76 56,24 80,24
-```
-
-both at `stroke-width: 11` on a `0 0 100 100` box, with round caps. The weave gap is
-`stroke x 1.53`, so it stays optically constant if the weight ever changes again.
-
-The gap that makes the weave legible is cut with an **SVG mask**, not by painting a
-background-coloured stroke over the join. That distinction matters: a painted gap only works on the
-one background it was painted for, and silently breaks the moment the mark is placed on red, on a
-photo, or on a dark theme. The mask works everywhere.
+At 32px and under the soft crossing fade turns to mush, so favicons use a separate drawing: a heavier
+line (9 instead of 6.6 on the 123.1 x 37.9 box) with the under strand cut by a gap in the ground colour,
+on flat red. That cut only works on the one ground it was cut for, which is why it is limited to the
+favicon tiles.
 
 ## Regenerating
 
 Everything below is output. `tools/generate-brand-assets.py` produces the whole set from one
-definition; `STROKE` at the top of that file is the only place the weight is written down.
+definition; The chain geometry there must match `axios-art.tsx`.
 
 ```bash
 python tools/generate-brand-assets.py --install
@@ -60,20 +57,20 @@ failure mode there is silent and shipped once.
 
 ## Files
 
-| File | What it is |
-|---|---|
-| `axios-mark.svg` | Bare mark, `currentColor` — for inline React use where the parent sets colour |
-| `axios-mark-red.svg` | Bare mark in CCI Red, transparent ground — for light surfaces |
-| `axios-mark-white.svg` | Bare mark in white, transparent ground — for dark surfaces |
-| `axios-icon.svg` | White mark on a red rounded square — the app icon |
-| `axios-icon-maskable.svg` | Same, art pulled into the centre 80% safe zone — PWA `purpose: maskable` |
-| `axios-favicon.svg` | App icon with tighter padding so the weave still reads small |
-| `favicon.ico` | Multi-resolution: 16, 32, 48, 64, 128, 256 |
-| `axios-icon-<N>x<N>.png` | Rasterised icon, 16 through 1024 |
-| `axios-maskable-<N>.png` | Maskable rasters, 192 and 512 |
-| `axios-og-1200x630.png` | OpenGraph / link-preview card |
-| `gradient-logo.png`, `gradient-bg-logo.png` | The decorative marks on the instance-not-ready screen |
-| `takeoff-icon-{dark,light}.svg` | Circular badges used by the admin new-user popup |
+| File                                        | What it is                                                                    |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
+| `axios-mark.svg`                            | Bare mark, `currentColor` — for inline React use where the parent sets colour |
+| `axios-mark-red.svg`                        | Bare mark in CCI Red, transparent ground — for light surfaces                 |
+| `axios-mark-white.svg`                      | Bare mark in white, transparent ground — for dark surfaces                    |
+| `axios-icon.svg`                            | White mark on a red rounded square — the app icon                             |
+| `axios-icon-maskable.svg`                   | Same, art pulled into the centre 80% safe zone — PWA `purpose: maskable`      |
+| `axios-favicon.svg`                         | App icon with tighter padding so the weave still reads small                  |
+| `favicon.ico`                               | Multi-resolution: 16, 32, 48, 64, 128, 256                                    |
+| `axios-icon-<N>x<N>.png`                    | Rasterised icon, 16 through 1024                                              |
+| `axios-maskable-<N>.png`                    | Maskable rasters, 192 and 512                                                 |
+| `axios-og-1200x630.png`                     | OpenGraph / link-preview card                                                 |
+| `gradient-logo.png`, `gradient-bg-logo.png` | The decorative marks on the instance-not-ready screen                         |
+| `takeoff-icon-{dark,light}.svg`             | Circular badges used by the admin new-user popup                              |
 
 The 16px and 32px rasters are generated at tighter padding than the larger ones. That is
 deliberate — at the default padding the weave gap closes at those sizes. Do not regenerate them by

@@ -45,7 +45,7 @@ export const ProfileSettingsSidebarItemCategories = observer(function ProfileSet
   const { t } = useTranslation();
 
   return (
-    <div className="mt-4 flex flex-col gap-y-4">
+    <div className="mt-4 flex flex-col gap-y-4 max-md:mt-0 max-md:flex-row max-md:gap-x-1 max-md:overflow-x-auto">
       {PROFILE_SETTINGS_CATEGORIES.map((category) => {
         const categoryItems = GROUPED_PROFILE_SETTINGS[category];
 
@@ -53,10 +53,10 @@ export const ProfileSettingsSidebarItemCategories = observer(function ProfileSet
 
         return (
           <div key={category} className="shrink-0">
-            <div className="p-2 text-caption-md-medium text-tertiary capitalize">
+            <div className="p-2 text-caption-md-medium text-tertiary capitalize max-md:hidden">
               {t(PROFILE_SETTINGS_CATEGORY_LABELS[category])}
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col max-md:flex-row max-md:gap-x-1 max-md:whitespace-nowrap">
               {categoryItems.map((item) => (
                 <SettingsSidebarItem
                   key={item.key}

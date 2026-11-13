@@ -36,6 +36,8 @@ interface IIssueView {
   is_archived: boolean;
   disabled?: boolean;
   embedIssue?: boolean;
+  /** CCI: the peek has closed and the panel is playing its exit before it unmounts. */
+  isClosing?: boolean;
   embedRemoveCurrentNotification?: () => void;
   issueOperations: TIssueOperations;
 }
@@ -50,6 +52,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
     is_archived,
     disabled = false,
     embedIssue = false,
+    isClosing = false,
     embedRemoveCurrentNotification,
     issueOperations,
   } = props;
@@ -120,12 +123,17 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
 
   const peekOverviewIssueClassName = cn(
     !embedIssue
-      ? "absolute z-[25] flex flex-col overflow-hidden rounded-sm border border-subtle bg-surface-1 transition-all duration-300"
+      ? // CCI: enters once on open; switching modes snaps rather than tweening its size and position.
+        "absolute z-[25] flex flex-col overflow-hidden rounded-sm border border-subtle bg-surface-1"
       : `h-full w-full`,
     !embedIssue && {
       "top-0 right-0 bottom-0 w-full border-0 border-l md:w-[50%]": peekMode === "side-peek",
       "top-[8.33%] left-[8.33%] size-5/6": peekMode === "modal",
       "absolute inset-0 m-4": peekMode === "full-screen",
+      "motion-safe:animate-peek-in": peekMode === "side-peek" && !isClosing,
+      "motion-safe:animate-pop-in": peekMode !== "side-peek" && !isClosing,
+      "pointer-events-none motion-safe:animate-peek-out": peekMode === "side-peek" && isClosing,
+      "pointer-events-none motion-safe:animate-pop-out": peekMode !== "side-peek" && isClosing,
     }
   );
 
@@ -174,43 +182,53 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
               {/* content */}
               <div className="vertical-scrollbar relative scrollbar-md h-full w-full overflow-hidden overflow-y-auto">
                 {["side-peek", "modal"].includes(peekMode) ? (
-                  <div className="relative flex flex-col gap-3 space-y-3 px-8 py-5">
-                    <PeekOverviewIssueDetails
-                      editorRef={editorRef}
-                      workspaceSlug={workspaceSlug}
-                      projectId={projectId}
-                      issueId={issueId}
-                      issueOperations={issueOperations}
-                      disabled={disabled}
-                      isArchived={is_archived}
-                      isSubmitting={isSubmitting}
-                      setIsSubmitting={(value) => setIsSubmitting(value)}
-                    />
+                  // CCI: properties sit right under the title when the pane is narrow, and become a
+                  // column beside the description once the pane is wide enough for two.
+                  <div className="@container relative px-8 py-5">
+                    <div className="grid grid-cols-1 gap-y-6 @3xl:grid-cols-[minmax(0,1fr)_18rem] @3xl:gap-x-10">
+                      <div className="@3xl:col-start-1">
+                        <PeekOverviewIssueDetails
+                          editorRef={editorRef}
+                          workspaceSlug={workspaceSlug}
+                          projectId={projectId}
+                          issueId={issueId}
+                          issueOperations={issueOperations}
+                          disabled={disabled}
+                          isArchived={is_archived}
+                          isSubmitting={isSubmitting}
+                          setIsSubmitting={(value) => setIsSubmitting(value)}
+                        />
+                      </div>
 
-                    <div className="py-2">
-                      <IssueDetailWidgets
-                        workspaceSlug={workspaceSlug}
-                        projectId={projectId}
-                        issueId={issueId}
-                        disabled={disabled || is_archived}
-                        issueServiceType={EIssueServiceType.ISSUES}
-                      />
+                      <div className="@3xl:sticky @3xl:top-0 @3xl:col-start-2 @3xl:row-span-3 @3xl:row-start-1 @3xl:self-start">
+                        <PeekOverviewProperties
+                          workspaceSlug={workspaceSlug}
+                          projectId={projectId}
+                          issueId={issueId}
+                          issueOperations={issueOperations}
+                          disabled={disabled || is_archived}
+                        />
+                      </div>
+
+                      <div className="@3xl:col-start-1">
+                        <IssueDetailWidgets
+                          workspaceSlug={workspaceSlug}
+                          projectId={projectId}
+                          issueId={issueId}
+                          disabled={disabled || is_archived}
+                          issueServiceType={EIssueServiceType.ISSUES}
+                        />
+                      </div>
+
+                      <div className="@3xl:col-start-1">
+                        <IssueActivity
+                          workspaceSlug={workspaceSlug}
+                          projectId={projectId}
+                          issueId={issueId}
+                          disabled={is_archived}
+                        />
+                      </div>
                     </div>
-
-                    <PeekOverviewProperties
-                      workspaceSlug={workspaceSlug}
-                      projectId={projectId}
-                      issueId={issueId}
-                      issueOperations={issueOperations}
-                      disabled={disabled || is_archived}
-                    />
-
-                    <IssueActivity
-                      workspaceSlug={workspaceSlug}
-                      projectId={projectId}
-                      issueId={issueId}
-                      disabled={is_archived}
-                    />
                   </div>
                 ) : (
                   <div className="vertical-scrollbar flex h-full w-full overflow-auto">

@@ -50,11 +50,12 @@ export const WeekChartView = observer(function WeekChartView(_props: any) {
               <div className="flex h-5 w-full">
                 {block?.children?.map((weekDay, index) => (
                   <div
+                    // oxlint-disable-next-line react/no-array-index-key -- positional columns of a fixed calendar block
                     key={`sub-title-${rootIndex}-${index}`}
                     className={cn(
                       "flex flex-shrink-0 justify-between p-1 text-center capitalize outline-[0.25px] outline-subtle-1",
                       {
-                        "bg-accent-primary/20": weekDay.today,
+                        "bg-accent-subtle": weekDay.today,
                       }
                     )}
                     style={{ width: `${currentViewData?.data.dayWidth}px` }}
@@ -63,7 +64,7 @@ export const WeekChartView = observer(function WeekChartView(_props: any) {
                     <div className="space-x-1 text-11 font-medium">
                       <span
                         className={cn({
-                          "rounded-sm bg-accent-primary px-1 text-on-color": weekDay.today,
+                          "rounded-sm bg-[var(--txt-accent-primary)] px-1 text-on-color": weekDay.today,
                         })}
                       >
                         {weekDay.date.getDate()}
@@ -77,12 +78,19 @@ export const WeekChartView = observer(function WeekChartView(_props: any) {
             <div className="flex h-full w-full flex-grow bg-surface-1">
               {block?.children?.map((weekDay, index) => (
                 <div
+                  // oxlint-disable-next-line react/no-array-index-key -- positional columns of a fixed calendar block
                   key={`column-${rootIndex}-${index}`}
-                  className={cn("h-full overflow-hidden outline-[0.25px] outline-subtle", {
-                    "bg-accent-primary/20": weekDay.today,
-                  })}
+                  className="relative h-full overflow-hidden outline-[0.25px] outline-subtle"
                   style={{ width: `${currentViewData?.data.dayWidth}px` }}
                 >
+                  {/* CCI: today is a thin accent line, not a tinted column. */}
+                  {weekDay.today && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-0 z-[1] w-px bg-[var(--txt-accent-primary)]"
+                      style={{ left: currentViewData?.data.dayWidth / 2 }}
+                    />
+                  )}
                   {["sat", "sun"].includes(weekDay?.dayData?.shortTitle) && (
                     <div className="h-full bg-surface-2 outline-[0.25px] outline-strong" />
                   )}

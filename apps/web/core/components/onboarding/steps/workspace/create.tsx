@@ -169,7 +169,7 @@ export const WorkspaceCreateStep = observer(function WorkspaceCreateStep({
                   placeholder="Enter workspace name"
                   ref={ref}
                   className={cn(
-                    "w-full rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-all duration-200 placeholder:text-placeholder focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
+                    "w-full rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-[color,background-color,border-color,opacity,box-shadow] duration-200 placeholder:text-placeholder focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
                     {
                       "border-strong": !errors.name,
                       "border-danger-strong": errors.name,
@@ -203,7 +203,7 @@ export const WorkspaceCreateStep = observer(function WorkspaceCreateStep({
             render={({ field: { value, ref, onChange } }) => (
               <div
                 className={cn(
-                  "flex w-full items-center rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-all duration-200 focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
+                  "flex w-full items-center rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-[color,background-color,border-color,opacity,box-shadow] duration-200 focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
                   {
                     "border-strong": !errors.name,
                     "border-danger-strong": errors.name,
@@ -268,7 +268,7 @@ export const WorkspaceCreateStep = observer(function WorkspaceCreateStep({
                           e.stopPropagation();
                           onChange(size);
                         }}
-                        className={`flex items-center justify-between gap-1 rounded-lg border px-3 py-2 text-13 transition-all duration-200 ${
+                        className={`flex items-center justify-between gap-1 rounded-lg border px-3 py-2 text-13 transition-colors duration-200 ${
                           isSelected
                             ? "border-subtle bg-layer-1 text-secondary"
                             : "border-subtle text-tertiary hover:border-strong"

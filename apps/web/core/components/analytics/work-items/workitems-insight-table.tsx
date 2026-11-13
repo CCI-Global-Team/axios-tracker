@@ -88,7 +88,7 @@ const WorkItemsInsightTable = observer(function WorkItemsInsightTable() {
               return (
                 <div className="flex items-center gap-2">
                   {project?.logo_props ? (
-                    <Logo logo={project.logo_props} size={18} />
+                    <Logo logo={project.logo_props} seed={project.identifier} size={18} />
                   ) : (
                     <ProjectIcon className="h-4 w-4" />
                   )}

@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { Collapsible as BaseCollapsible } from "@base-ui-components/react/collapsible";
-import clsx from "clsx";
+import { clsx } from "clsx";
 
 // Types
 type CollapsibleContextType = {
@@ -64,6 +64,7 @@ function Root({ children, className, isOpen: controlledIsOpen, onToggle, default
   }, [controlledIsOpen, onToggle]);
 
   return (
+    // oxlint-disable-next-line jsx-no-constructed-context-values -- upstream shape; consumers are a handful of leaf nodes
     <CollapsibleContext.Provider value={{ isOpen: localIsOpen, onToggle: handleToggle }}>
       <BaseCollapsible.Root
         className={clsx(className)}
@@ -91,7 +92,8 @@ function Content({ children, className }: ContentProps) {
   return (
     <BaseCollapsible.Panel
       className={clsx(
-        "flex h-[var(--collapsible-panel-height)] flex-col overflow-hidden text-13 transition-all ease-out data-[ending-style]:h-0 data-[starting-style]:h-0",
+        // CCI: the height snaps and the content fades, so the page below reflows once instead of every frame.
+        "flex flex-col overflow-hidden text-13 transition-opacity duration-120 ease-out-strong data-[ending-style]:opacity-0 data-[ending-style]:duration-80 data-[ending-style]:ease-exit data-[starting-style]:opacity-0",
         className
       )}
     >

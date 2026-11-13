@@ -48,7 +48,7 @@ export function OAuthOptions(props: OAuthOptionsProps) {
             icon={option.icon}
             onClick={option.onClick}
             compact={compact}
-            className="transition-all duration-300 ease-in-out"
+            className="transition-colors duration-150 ease-in-out"
           />
         ))}
       </div>

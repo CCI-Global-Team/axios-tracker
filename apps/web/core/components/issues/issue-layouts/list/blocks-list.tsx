@@ -11,6 +11,9 @@ import type { TIssue, IIssueDisplayProperties, TIssueMap, TGroupedIssues } from 
 import type { TSelectionHelper } from "@/hooks/use-multiple-select";
 // types
 import { IssueBlockRoot } from "./block-root";
+
+/** Rows that fill a tall desktop screen (44 px each). */
+const FIRST_SCREEN_ROWS = 24;
 import type { TRenderQuickActions } from "./list-view-types";
 
 interface Props {
@@ -63,6 +66,8 @@ export function IssueBlocksList(props: Props) {
             selectionHelpers={selectionHelpers}
             groupId={groupId}
             isLastChild={index === issueIds.length - 1}
+            // CCI: a screenful renders straight away, so the skeleton gives way to rows, not to blank placeholders.
+            shouldRenderByDefault={index < FIRST_SCREEN_ROWS}
             isDragAllowed={isDragAllowed}
             canDropOverIssue={canDropOverIssue}
             isEpic={isEpic}

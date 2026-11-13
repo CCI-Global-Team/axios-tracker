@@ -45,7 +45,11 @@ export const QuarterChartView = observer(function QuarterChartView(_props: any) 
                 >
                   {quarterBlock?.title}
                   {quarterBlock.today && (
-                    <span className={cn("ml-2 rounded-sm bg-accent-primary px-1 text-9 font-medium text-on-color")}>
+                    <span
+                      className={cn(
+                        "ml-2 rounded-sm bg-[var(--txt-accent-primary)] px-1 text-9 font-medium text-on-color"
+                      )}
+                    >
                       Current
                     </span>
                   )}
@@ -58,11 +62,12 @@ export const QuarterChartView = observer(function QuarterChartView(_props: any) 
               <div className="flex h-5 w-full">
                 {quarterBlock?.children?.map((monthBlock, index) => (
                   <div
+                    // oxlint-disable-next-line react/no-array-index-key -- positional columns of a fixed calendar block
                     key={`sub-title-${rootIndex}-${index}`}
                     className={cn(
                       "flex flex-shrink-0 justify-center text-center capitalize outline-[0.25px] outline-subtle-1",
                       {
-                        "bg-accent-primary/20": monthBlock.today,
+                        "bg-accent-subtle": monthBlock.today,
                       }
                     )}
                     style={{ width: `${currentViewData?.data.dayWidth * monthBlock.days}px` }}
@@ -70,7 +75,7 @@ export const QuarterChartView = observer(function QuarterChartView(_props: any) 
                     <div className="flex h-full items-center justify-center space-x-1 text-11 font-medium">
                       <span
                         className={cn({
-                          "rounded-lg bg-accent-primary px-2 text-on-color": monthBlock.today,
+                          "rounded-lg bg-[var(--txt-accent-primary)] px-2 text-on-color": monthBlock.today,
                         })}
                       >
                         {monthBlock.monthData.shortTitle}
@@ -84,12 +89,20 @@ export const QuarterChartView = observer(function QuarterChartView(_props: any) 
             <div className="flex h-full w-full flex-grow">
               {quarterBlock?.children?.map((monthBlock, index) => (
                 <div
+                  // oxlint-disable-next-line react/no-array-index-key -- positional columns of a fixed calendar block
                   key={`column-${rootIndex}-${index}`}
-                  className={cn("h-full overflow-hidden outline-[0.25px] outline-subtle", {
-                    "bg-accent-primary/20": monthBlock.today,
-                  })}
+                  className="relative h-full overflow-hidden outline-[0.25px] outline-subtle"
                   style={{ width: `${currentViewData?.data.dayWidth * monthBlock.days}px` }}
-                />
+                >
+                  {/* CCI: today is a thin accent line, not a tinted column. */}
+                  {monthBlock.today && (
+                    <span
+                      aria-hidden
+                      className="absolute inset-y-0 z-[1] w-px bg-[var(--txt-accent-primary)]"
+                      style={{ left: (new Date().getDate() - 0.5) * currentViewData?.data.dayWidth }}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           </div>

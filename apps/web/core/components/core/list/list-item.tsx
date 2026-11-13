@@ -69,7 +69,7 @@ export function ListItem(props: IListItemProps) {
     <div ref={parentRef} className="relative">
       <Row
         className={cn(
-          "group flex min-h-[52px] w-full flex-col items-center justify-between gap-3 border-b border-subtle bg-layer-transparent py-4 text-13 hover:bg-layer-transparent-hover",
+          "group cci-list-item flex min-h-[52px] w-full flex-col items-center justify-between gap-3 border-b border-subtle bg-layer-transparent py-4 text-13 hover:bg-layer-transparent-hover",
           { "xl:flex-row xl:gap-5 xl:py-0": isSidebarOpen, "lg:flex-row lg:gap-5 lg:py-0": !isSidebarOpen },
           className
         )}
@@ -94,7 +94,7 @@ export function ListItem(props: IListItemProps) {
               <span className={cn("flex flex-shrink-0 items-center", rightElementClassName)}>{appendTitleElement}</span>
             )}
           </ControlLink>
-          {quickActionElement && quickActionElement}
+          {quickActionElement}
         </div>
         {actionableItems && (
           <div

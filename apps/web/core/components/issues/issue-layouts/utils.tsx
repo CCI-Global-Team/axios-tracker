@@ -172,7 +172,7 @@ const getProjectColumns = (): IGroupByColumn[] | undefined => {
         name: project.name,
         icon: (
           <div className="grid h-6 w-6 flex-shrink-0 place-items-center">
-            <Logo logo={project.logo_props} />
+            <Logo logo={project.logo_props} seed={project.identifier} />
           </div>
         ),
         payload: { project_id: project.id },
@@ -238,6 +238,14 @@ const getModuleColumns = (): IGroupByColumn[] | undefined => {
   return modules;
 };
 
+/** CCI: a grey state (Backlog, Todo) tints its header grey, so only coloured states tint. */
+const isTintable = (hex: string | undefined) => {
+  const m = hex?.match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  if (!m) return false;
+  const [r, g, b] = m.slice(1).map((x) => parseInt(x, 16));
+  return Math.max(r, g, b) - Math.min(r, g, b) > 48;
+};
+
 const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefined => {
   const { getProjectStates, projectStates } = store.state;
   const _states = projectId ? getProjectStates(projectId) : projectStates;
@@ -251,6 +259,7 @@ const getStateColumns = ({ projectId }: TGetColumns): IGroupByColumn[] | undefin
         <StateGroupIcon stateGroup={state.group} color={state.color} size={EIconSize.LG} percentage={state.order} />
       </div>
     ),
+    color: isTintable(state.color) ? state.color : undefined,
     payload: { state_id: state.id },
   }));
 };
@@ -374,7 +383,7 @@ export const highlightIssueOnDrop = (
     const sourceElement = document.getElementById(sourceElementId);
     sourceElement?.classList?.add(shouldHighLightWithLine ? HIGHLIGHT_WITH_LINE : HIGHLIGHT_CLASS);
     if (shouldScrollIntoView && sourceElement)
-      await scrollIntoView(sourceElement, { behavior: "smooth", block: "center", duration: 1500 });
+      await scrollIntoView(sourceElement, { behavior: "smooth", block: "center", duration: 300 });
   }, 200);
 };
 

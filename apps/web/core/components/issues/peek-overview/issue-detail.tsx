@@ -20,6 +20,7 @@ import { useMember } from "@/hooks/store/use-member";
 import { useUser } from "@/hooks/store/user";
 import useReloadConfirmations from "@/hooks/use-reload-confirmation";
 // plane web components
+import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 import { IssueTypeSwitcher } from "@/components/issues/issue-type-switcher";
 // plane web hooks
 // services
@@ -91,8 +92,24 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
           issueOperations={issueOperations}
         />
       )}
-      <div className="flex items-center justify-between gap-2">
+      {/* CCI: the state leads, next to the key, so status reads before the description. */}
+      <div className="flex items-center gap-2">
         <IssueTypeSwitcher issueId={issueId} disabled={isArchived || disabled} />
+        {issue.project_id && (
+          <div className="h-6">
+            <StateDropdown
+              value={issue.state_id}
+              onChange={(val) =>
+                issueOperations.update(workspaceSlug, issue.project_id ?? "", issueId, { state_id: val })
+              }
+              projectId={issue.project_id}
+              disabled={isArchived || disabled}
+              buttonVariant="border-with-text"
+              buttonContainerClassName="h-6 max-w-48 truncate"
+              showTooltip
+            />
+          </div>
+        )}
       </div>
       <IssueTitleInput
         workspaceSlug={workspaceSlug}

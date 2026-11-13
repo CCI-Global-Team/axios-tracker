@@ -24,8 +24,8 @@ import "@fontsource/material-symbols-rounded";
 // oxlint-disable-next-line import/no-unassigned-import
 import "@fontsource/ibm-plex-mono";
 
-const APP_TITLE = "Axios Admin | CCI's engineering tracker.";
-const APP_DESCRIPTION = "Configure and administer CCI's Axios engineering tracker instance.";
+const APP_TITLE = "Axios Admin | CCI Technology Team";
+const APP_DESCRIPTION = "Configure and administer the CCI Technology Team's Axios instance.";
 
 export const links: LinksFunction = () => [
   { rel: "apple-touch-icon", sizes: "180x180", href: appleTouchIcon },
@@ -84,7 +84,7 @@ export default function Root() {
 
 export function HydrateFallback() {
   return (
-    <div className="relative flex h-screen w-full items-center justify-center">
+    <div style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <LogoSpinner />
     </div>
   );

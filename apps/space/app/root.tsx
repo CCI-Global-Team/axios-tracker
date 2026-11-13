@@ -28,7 +28,7 @@ import "@fontsource/material-symbols-rounded";
 import "@fontsource/ibm-plex-mono";
 
 const APP_TITLE = "Axios Publish | Share Axios boards with one click";
-const APP_DESCRIPTION = "Axios Publish shares read-only views of CCI's engineering tracker.";
+const APP_DESCRIPTION = "Axios Publish shares read-only views from the CCI Technology Team.";
 
 export const links: Route.LinksFunction = () => [
   { rel: "apple-touch-icon", sizes: "180x180", href: appleTouchIcon },
@@ -92,7 +92,10 @@ export default function Root() {
 
 export function HydrateFallback() {
   return (
-    <div className="relative flex h-screen w-full items-center justify-center bg-surface-1">
+    <div
+      className="bg-surface-1"
+      style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+    >
       <LogoSpinner />
     </div>
   );

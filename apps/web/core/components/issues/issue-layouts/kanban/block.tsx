@@ -121,13 +121,13 @@ const KanbanIssueDetailsBlock = observer(function KanbanIssueDetailsBlock(props:
       </div>
 
       <Tooltip tooltipContent={issue.name} isMobile={isMobile} renderByDefault={false}>
-        <div className="line-clamp-1 w-full text-body-sm-medium text-primary">
+        <div className="line-clamp-2 w-full text-13 leading-5 font-medium text-primary">
           <span>{issue.name}</span>
         </div>
       </Tooltip>
 
       <IssueProperties
-        className="flex flex-wrap items-center gap-2 pt-1.5 whitespace-nowrap text-tertiary"
+        className="kanban-card-properties flex flex-wrap items-center gap-1.5 whitespace-nowrap text-tertiary empty:hidden"
         issue={issue}
         displayProperties={displayProperties}
         activeLayout="Kanban"
@@ -243,7 +243,7 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
       <div
         id={`issue-${issueId}`}
         // make Z-index higher at the beginning of drag, to have a issue drag image of issue block without any overlaps
-        className={cn("group/kanban-block relative mb-2", { "z-[1]": isCurrentBlockDragging })}
+        className={cn("group/kanban-block relative mb-1.5", { "z-[1]": isCurrentBlockDragging })}
         onDragStart={() => {
           if (isDragAllowed) setIsCurrentBlockDragging(true);
           else {
@@ -262,16 +262,19 @@ export const KanbanIssueBlock = observer(function KanbanIssueBlock(props: IssueB
           href={workItemLink}
           ref={cardRef}
           className={cn(
-            "block w-full rounded-lg border border-subtle bg-layer-2 p-3 text-13 shadow-raised-100 outline-[0.5px] outline-transparent transition-all hover:border-strong hover:shadow-raised-200",
+            // CCI: flat at rest; the border and a light shadow come up on hover.
+            "block w-full rounded-lg border border-subtle bg-layer-2 p-2.5 text-13 outline-[0.5px] outline-transparent transition-[border-color,box-shadow] duration-150 hover:border-strong hover:shadow-raised-100",
             { "hover:cursor-pointer": isDragAllowed },
-            { "border border-accent-strong hover:border-accent-strong": getIsIssuePeeked(issue.id) },
+            {
+              "border border-accent-strong bg-accent-subtle hover:border-accent-strong": getIsIssuePeeked(issue.id),
+            },
             { "z-[100] bg-layer-1": isCurrentBlockDragging }
           )}
           onClick={() => handleIssuePeekOverview(issue)}
           disabled={!!issue?.tempId}
         >
           <RenderIfVisible
-            classNames="space-y-2"
+            classNames="space-y-1.5"
             root={scrollableContainerRef}
             defaultHeight="100px"
             horizontalOffset={100}

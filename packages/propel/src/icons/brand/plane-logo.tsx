@@ -7,35 +7,28 @@
 import * as React from "react";
 
 import type { ISvgIcons } from "../type";
+import { AXIOS_MARK_H, AXIOS_MARK_W, AXIOS_RED, ChainArt, CrossingMask, useSvgId } from "./axios-art";
 
-// Component name is upstream Plane's; the artwork drawn here is CCI's Axios mark (see docs/brand/axios-mark.svg).
-// The mark is two ribbons interlacing. The mask cuts the gap where the descending stroke passes under the
-// ascending one, so the over/under weave holds on any background rather than being painted with a ground colour.
-export function PlaneLogo({ width = "59", height = "52", className, color = "currentColor" }: ISvgIcons) {
+// Component name is upstream Plane's; the artwork is CCI's Axios mark, the chain (see docs/brand/README.md).
+// The default size carries the mark's real aspect ratio, because call sites size it with a height class and
+// `w-auto`. `color` defaults to the brand red; pass "currentColor" on a coloured ground.
+export function PlaneLogo({ width = "123", height = "38", className, color = AXIOS_RED }: ISvgIcons) {
+  const maskId = useSvgId("axios-mark");
   return (
     <svg
       width={width}
       height={height}
-      viewBox="14.5 18.5 71 63"
+      viewBox={`0 0 ${AXIOS_MARK_W} ${AXIOS_MARK_H}`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      role="img"
+      aria-label="Axios"
     >
       <defs>
-        <mask id="axios-logo-weave" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
-          <rect width="100" height="100" fill="#fff" />
-          <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke="#000" strokeWidth="17" strokeLinecap="round" />
-        </mask>
+        <CrossingMask id={maskId} />
       </defs>
-      <path
-        d="M20,24 C44,24 56,76 80,76"
-        fill="none"
-        stroke={color}
-        strokeWidth="11"
-        strokeLinecap="round"
-        mask="url(#axios-logo-weave)"
-      />
-      <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke={color} strokeWidth="11" strokeLinecap="round" />
+      <ChainArt color={color} maskId={maskId} />
     </svg>
   );
 }

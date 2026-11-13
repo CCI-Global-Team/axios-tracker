@@ -16,6 +16,7 @@ import { AppSidebarItem } from "@/components/sidebar/sidebar-item";
 // hooks
 import { useAppRailPreferences } from "@/hooks/use-navigation-preferences";
 import { useAppRailVisibility } from "@/lib/app-rail/context";
+import { useChromeAttributes } from "@/lib/use-look";
 // local imports
 import { AppSidebarItemsRoot } from "./items-root";
 
@@ -30,10 +31,12 @@ export const AppRailRoot = observer(() => {
   const isWorkspaceSettingsPath = pathname.includes(`/${workspaceSlug}/settings`) && !projectId;
   const showLabel = preferences.displayMode === "icon_with_label";
   const railWidth = showLabel ? "3.75rem" : "3rem";
+  const chromeAttributes = useChromeAttributes();
 
   return (
     <div
-      className="z-[26] h-full flex-shrink-0 bg-canvas transition-all duration-300 ease-in-out"
+      {...chromeAttributes}
+      className="z-[26] h-full flex-shrink-0 bg-canvas"
       style={{
         width: railWidth,
         display: "block",

@@ -7,7 +7,7 @@
     }
   },
   "project_cycles": {
-    "add_cycle": "Add cycle",
+    "add_cycle": "New cycle",
     "more_details": "More details",
     "cycle": "Cycle",
     "update_cycle": "Update cycle",
@@ -216,7 +216,7 @@
     }
   },
   "project_module": {
-    "add_module": "Add Module",
+    "add_module": "New module",
     "update_module": "Update Module",
     "create_module": "Create Module",
     "archive_module": "Archive Module",

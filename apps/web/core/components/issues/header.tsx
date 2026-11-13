@@ -7,7 +7,7 @@
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // icons
-import { Circle } from "lucide-react";
+import { Circle, Plus } from "lucide-react";
 // plane imports
 import {
   EUserPermissions,
@@ -18,23 +18,19 @@ import {
 } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
-import { NewTabIcon, WorkItemsIcon } from "@plane/propel/icons";
-import { Tooltip } from "@plane/propel/tooltip";
+import { NewTabIcon } from "@plane/propel/icons";
 import { EIssuesStoreType } from "@plane/types";
 import { Breadcrumbs, Header } from "@plane/ui";
 // components
 import { BreadcrumbLink } from "@/components/common/breadcrumb-link";
-import { CountChip } from "@/components/common/count-chip";
 // constants
 import { HeaderFilters } from "@/components/issues/filters";
 // helpers
 // hooks
 import { useCommandPalette } from "@/hooks/store/use-command-palette";
-import { useIssues } from "@/hooks/store/use-issues";
 import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
 import { useAppRouter } from "@/hooks/use-app-router";
-import { usePlatformOS } from "@/hooks/use-platform-os";
 // plane web imports
 import { CommonProjectBreadcrumbs } from "@/components/breadcrumbs/common";
 
@@ -42,10 +38,6 @@ export const IssuesHeader = observer(function IssuesHeader() {
   // router
   const router = useAppRouter();
   const { workspaceSlug, projectId } = useParams();
-  // store hooks
-  const {
-    issues: { getGroupIssueCount },
-  } = useIssues(EIssuesStoreType.PROJECT);
   // i18n
   const { t } = useTranslation();
 
@@ -53,14 +45,12 @@ export const IssuesHeader = observer(function IssuesHeader() {
 
   const { toggleCreateIssueModal } = useCommandPalette();
   const { allowPermissions } = useUserPermissions();
-  const { isMobile } = usePlatformOS();
 
   const SPACE_APP_URL =
     (SPACE_BASE_URL.trim() === "" && typeof window !== "undefined" ? window.location.origin : SPACE_BASE_URL) +
     SPACE_BASE_PATH;
   const publishedURL = `${SPACE_APP_URL}/issues/${currentProjectDetails?.anchor}`;
 
-  const issuesCount = getGroupIssueCount(undefined, undefined, false);
   const canUserCreateIssue = allowPermissions(
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
     EUserPermissionsLevel.PROJECT
@@ -74,25 +64,11 @@ export const IssuesHeader = observer(function IssuesHeader() {
             <CommonProjectBreadcrumbs workspaceSlug={workspaceSlug?.toString()} projectId={projectId?.toString()} />
             <Breadcrumbs.Item
               component={
-                <BreadcrumbLink
-                  label="Work Items"
-                  href={`/${workspaceSlug}/projects/${projectId}/issues/`}
-                  icon={<WorkItemsIcon className="h-4 w-4 text-tertiary" />}
-                  isLast
-                />
+                <BreadcrumbLink label="Work items" href={`/${workspaceSlug}/projects/${projectId}/issues/`} isLast />
               }
               isLast
             />
           </Breadcrumbs>
-          {issuesCount && issuesCount > 0 ? (
-            <Tooltip
-              isMobile={isMobile}
-              tooltipContent={`There are ${issuesCount} ${issuesCount > 1 ? "work items" : "work item"} in this project`}
-              position="bottom"
-            >
-              <CountChip count={issuesCount} />
-            </Tooltip>
-          ) : null}
         </div>
         {currentProjectDetails?.anchor ? (
           <a
@@ -116,6 +92,7 @@ export const IssuesHeader = observer(function IssuesHeader() {
             currentProjectDetails={currentProjectDetails}
             workspaceSlug={workspaceSlug}
             canUserCreateIssue={canUserCreateIssue}
+            showLayoutSelection={false}
           />
         </div>
         {canUserCreateIssue && (
@@ -127,8 +104,11 @@ export const IssuesHeader = observer(function IssuesHeader() {
             }}
             data-ph-element={WORK_ITEM_TRACKER_ELEMENTS.HEADER_ADD_BUTTON.WORK_ITEMS}
           >
-            <div className="block sm:hidden">{t("issue.label", { count: 1 })}</div>
-            <div className="hidden sm:block">{t("issue.add.label")}</div>
+            <div className="block sm:hidden">{t("add")}</div>
+            <div className="hidden items-center gap-1.5 sm:flex">
+              <Plus className="size-3.5" strokeWidth={2.25} />
+              {t("sidebar.new_work_item")}
+            </div>
           </Button>
         )}
       </Header.RightItem>

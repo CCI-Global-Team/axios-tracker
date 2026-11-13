@@ -79,7 +79,8 @@ function AccordionTrigger({
 function AccordionContent({ className = "", contentWrapperClassName = "", children }: AccordionContentProps) {
   return (
     <BaseAccordion.Panel
-      className={`h-[var(--accordion-panel-height)] overflow-hidden transition-[height] ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 ${className}`}
+      // CCI: the height snaps and the content fades, so the page below reflows once instead of every frame.
+      className={`overflow-hidden transition-opacity duration-120 ease-out-strong data-[ending-style]:opacity-0 data-[ending-style]:duration-80 data-[ending-style]:ease-exit data-[starting-style]:opacity-0 ${className}`}
     >
       <div className={`py-2 ${contentWrapperClassName}`}>{children}</div>
     </BaseAccordion.Panel>

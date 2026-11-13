@@ -66,6 +66,7 @@ export const ModuleListItemAction = observer(function ModuleListItemAction(props
       () => {
         // open favorites menu if closed
         if (!storedValue) toggleFavoriteMenu(true);
+        return undefined;
       }
     );
 
@@ -116,6 +117,7 @@ export const ModuleListItemAction = observer(function ModuleListItemAction(props
           title: "Success!",
           message: "Module updated successfully.",
         });
+        return undefined;
       })
       .catch((err) => {
         setToast({
@@ -130,28 +132,31 @@ export const ModuleListItemAction = observer(function ModuleListItemAction(props
 
   return (
     <>
-      <DateRangeDropdown
-        buttonContainerClassName={`h-6 w-full flex ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"} items-center gap-1.5 text-tertiary border-[0.5px] border-strong rounded-sm text-11`}
-        buttonVariant="transparent-with-text"
-        className="h-7"
-        value={{
-          from: getDate(moduleDetails.start_date),
-          to: getDate(moduleDetails.target_date),
-        }}
-        onSelect={(val) => {
-          handleModuleDetailsChange({
-            start_date: val?.from ? renderFormattedPayloadDate(val.from) : null,
-            target_date: val?.to ? renderFormattedPayloadDate(val.to) : null,
-          });
-        }}
-        mergeDates
-        placeholder={{
-          from: t("start_date"),
-          to: t("end_date"),
-        }}
-        disabled={isDisabled}
-        hideIcon={{ from: renderIcon ?? true, to: renderIcon }}
-      />
+      {/* CCI: no dates set stays blank until the row is hovered. */}
+      <span className="contents" data-empty={(!moduleDetails.start_date && !moduleDetails.target_date) || undefined}>
+        <DateRangeDropdown
+          buttonContainerClassName={`h-6 w-full flex ${isDisabled ? "cursor-not-allowed" : "cursor-pointer"} items-center gap-1.5 text-tertiary border-[0.5px] border-strong rounded-sm text-11`}
+          buttonVariant="transparent-with-text"
+          className="h-7"
+          value={{
+            from: getDate(moduleDetails.start_date),
+            to: getDate(moduleDetails.target_date),
+          }}
+          onSelect={(val) => {
+            handleModuleDetailsChange({
+              start_date: val?.from ? renderFormattedPayloadDate(val.from) : null,
+              target_date: val?.to ? renderFormattedPayloadDate(val.to) : null,
+            });
+          }}
+          mergeDates
+          placeholder={{
+            from: t("start_date"),
+            to: t("end_date"),
+          }}
+          disabled={isDisabled}
+          hideIcon={{ from: renderIcon ?? true, to: renderIcon }}
+        />
+      </span>
 
       {moduleStatus && (
         <ModuleStatusDropdown
@@ -166,9 +171,11 @@ export const ModuleListItemAction = observer(function ModuleListItemAction(props
           <ButtonAvatars showTooltip={false} userIds={moduleLeadDetails?.id} />
         </span>
       ) : (
-        <Tooltip tooltipContent="No lead">
-          <SquareUser className="h-4 w-4 text-tertiary" />
-        </Tooltip>
+        <span className="contents" data-empty>
+          <Tooltip tooltipContent="No lead">
+            <SquareUser className="h-4 w-4 text-tertiary" />
+          </Tooltip>
+        </span>
       )}
 
       {isEditingAllowed && !moduleDetails.archived_at && (

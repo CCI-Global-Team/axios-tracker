@@ -11,6 +11,7 @@ import useSWR from "swr";
 // plane imports
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { GANTT_TIMELINE_TYPE } from "@plane/types";
+import { Row } from "@plane/ui";
 // components
 import { ProjectAccessRestriction } from "@/components/auth-screens/project/project-access-restriction";
 import {
@@ -144,7 +145,15 @@ export const ProjectAuthWrapper = observer(function ProjectAuthWrapper(props: IP
 
   const isProjectLoading = (isParentLoading || isProjectDetailsLoading) && !projectDetailsError;
 
-  if (isProjectLoading) return null;
+  // CCI: hold the page header's place while the project loads, so the frame after the loader is not blank.
+  if (isProjectLoading)
+    return (
+      <div className="z-[18]">
+        <Row className="flex h-11 w-full items-center gap-2 border-b border-subtle bg-surface-1">
+          <span className="h-4 w-40 rounded-sm bg-layer-1 motion-safe:animate-pulse" />
+        </Row>
+      </div>
+    );
 
   if (!isProjectLoading && hasPermissionToCurrentProject === false) {
     return (

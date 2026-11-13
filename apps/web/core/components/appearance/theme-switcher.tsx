@@ -17,8 +17,12 @@ import { applyCustomTheme } from "@plane/utils";
 import { CustomThemeSelector } from "@/components/core/theme/custom-theme-selector";
 import { ThemeSwitch } from "@/components/core/theme/theme-switch";
 import { SettingsControlItem } from "@/components/settings/control-item";
+import { LookSwitcher } from "./look-switcher";
 // hooks
 import { useUserProfile } from "@/hooks/store/user";
+
+// Custom and high-contrast themes bring their own palette, so the look picker steps aside.
+const LOOKLESS_THEMES = new Set(["custom", "light-contrast", "dark-contrast"]);
 
 export const ThemeSwitcher = observer(function ThemeSwitcher(props: {
   option: {
@@ -98,6 +102,7 @@ export const ThemeSwitcher = observer(function ThemeSwitcher(props: {
         }
       />
       {userProfile.theme?.theme === "custom" && <CustomThemeSelector />}
+      {!LOOKLESS_THEMES.has(userProfile.theme?.theme ?? "") && <LookSwitcher />}
     </>
   );
 });

@@ -5,3 +5,4 @@
  */
 
 export * from "./theme-switcher";
+export * from "./look-switcher";

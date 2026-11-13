@@ -41,8 +41,8 @@ export const ProjectFeatureUpdate = observer(function ProjectFeatureUpdate(props
       <div className="mt-4 flex items-center justify-between gap-2 border-t border-subtle px-6 py-4">
         <div className="flex gap-1 text-13 font-medium text-tertiary">
           {t("congrats")}
-          <Logo logo={currentProjectDetails.logo_props} /> <p className="break-all">{currentProjectDetails.name}</p>{" "}
-          {t("created").toLowerCase()}.
+          <Logo logo={currentProjectDetails.logo_props} seed={currentProjectDetails.identifier} />{" "}
+          <p className="break-all">{currentProjectDetails.name}</p> {t("created").toLowerCase()}.
         </div>
         <div className="flex gap-2">
           {/* eslint-disable-next-line jsx-a11y/tabindex-no-positive */}

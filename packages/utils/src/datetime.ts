@@ -18,7 +18,7 @@ import { isNumber } from "lodash-es";
  */
 export const renderFormattedDate = (
   date: string | Date | undefined | null,
-  formatToken: string = "MMM dd, yyyy"
+  formatToken?: string
 ): string | undefined => {
   // Parse the date to check if it is valid
   const parsedDate = getDate(date);
@@ -26,10 +26,11 @@ export const renderFormattedDate = (
   if (!parsedDate) return;
   // Check if the parsed date is valid before formatting
   if (!isValid(parsedDate)) return; // Return null for invalid dates
+  // CCI: one date format across the app — "Nov 25", with the year only when it isn't this year.
+  const token = formatToken ?? (parsedDate.getFullYear() === new Date().getFullYear() ? "MMM d" : "MMM d, yyyy");
   let formattedDate;
   try {
-    // Format the date in the format provided or default format (MMM dd, yyyy)
-    formattedDate = format(parsedDate, formatToken);
+    formattedDate = format(parsedDate, token);
   } catch (_e) {
     // Format the date in format (MMM dd, yyyy) in case of any error
     formattedDate = format(parsedDate, "MMM dd, yyyy");
@@ -284,6 +285,7 @@ export const getDate = (date: string | Date | undefined | null): Date | undefine
   try {
     if (!date || date === "") return;
 
+    // oxlint-disable-next-line unicorn/no-instanceof-builtins -- guards boxed strings from untyped callers
     if (typeof date !== "string" && !(date instanceof String)) return date;
 
     const [yearString, monthString, dayString] = date.substring(0, 10).split("-");
@@ -400,6 +402,7 @@ export const generateDateArray = (startDate: string | Date, endDate: string | Da
   const dateArray = [];
 
   // Use a while loop to generate dates between the range
+  // oxlint-disable-next-line no-unmodified-loop-condition -- start advances via setDate below
   while (start <= end) {
     // Push the current date (converted to ISO string for consistency)
     dateArray.push({

@@ -32,13 +32,16 @@ import { AppProvider } from "./provider";
 // fonts
 // oxlint-disable-next-line import/no-unassigned-import
 import "@fontsource-variable/inter";
+// oxlint-disable-next-line import/no-unassigned-import
+import "@fontsource-variable/plus-jakarta-sans";
 import interVariableWoff2 from "@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url";
 // oxlint-disable-next-line import/no-unassigned-import
 import "@fontsource/material-symbols-rounded";
 // oxlint-disable-next-line import/no-unassigned-import
 import "@fontsource/ibm-plex-mono";
+import { LOOK_BOOT_SCRIPT } from "@/lib/look";
 
-const APP_TITLE = "Axios | CCI's engineering tracker.";
+const APP_TITLE = "Axios | CCI Technology Team";
 
 export const links: LinksFunction = () => [
   { rel: "icon", type: "image/png", sizes: "32x32", href: favicon32 },
@@ -77,6 +80,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <meta name="mobile-web-app-capable" content="yes" />
         <Meta />
         <Links />
+        <script dangerouslySetInnerHTML={{ __html: LOOK_BOOT_SCRIPT }} />
       </head>
       <body suppressHydrationWarning>
         <div id="context-menu-portal" />
@@ -119,7 +123,7 @@ export const meta: Route.MetaFunction = () => [
   { property: "og:image", content: absoluteOgImage },
   { property: "og:image:width", content: "1200" },
   { property: "og:image:height", content: "630" },
-  { property: "og:image:alt", content: "Axios - CCI's engineering tracker" },
+  { property: "og:image:alt", content: "Axios - CCI Technology Team" },
   {
     name: "keywords",
     content: "CCI, Axios, work item tracking, sprints, project management, volunteer availability, engineering",
@@ -132,7 +136,7 @@ export const meta: Route.MetaFunction = () => [
   // frame and letterboxed the wide card into it, which is the "squished preview".
   { name: "twitter:image:width", content: "1200" },
   { name: "twitter:image:height", content: "630" },
-  { name: "twitter:image:alt", content: "Axios - CCI's engineering tracker" },
+  { name: "twitter:image:alt", content: "Axios - CCI Technology Team" },
 ];
 
 export default function Root() {
@@ -154,7 +158,13 @@ export function HydrateFallback() {
   if (typeof window === "undefined" || resolvedTheme === undefined) return <div />;
 
   return (
-    <div className="relative flex h-screen w-full items-center justify-center bg-canvas">
+    // CCI: centred with inline styles, because this can paint before globals.css has loaded; with classes alone
+    // the loader shows in the top-left corner and then jumps to the middle when the stylesheet lands. Fixed to the
+    // viewport, so the body's default 8px margin (gone once the stylesheet loads) can't nudge it mid-draw.
+    <div
+      className="bg-surface-1"
+      style={{ position: "fixed", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+    >
       <LogoSpinner />
     </div>
   );

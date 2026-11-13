@@ -15,7 +15,6 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Avatar, CustomMenu } from "@plane/ui";
 import { getFileURL } from "@plane/utils";
 // components
-import { CoverImage } from "@/components/common/cover-image";
 import { AppSidebarItem } from "@/components/sidebar/sidebar-item";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
@@ -34,6 +33,7 @@ export const UserMenuRoot = observer(function UserMenuRoot() {
   const { toggleProfileSettingsModal } = useCommandPalette();
   // derived values
   const isUserInstanceAdmin = false;
+  const fullName = [currentUser?.first_name, currentUser?.last_name].filter(Boolean).join(" ");
   // translation
   const { t } = useTranslation();
 
@@ -76,67 +76,48 @@ export const UserMenuRoot = observer(function UserMenuRoot() {
       onMenuClose={() => setIsUserMenuOpen(false)}
       placement="bottom-end"
       maxHeight="2xl"
-      optionsClassName="w-72 p-3 flex flex-col gap-y-3"
+      optionsClassName="w-64 p-1.5 flex flex-col"
       closeOnSelect
     >
-      <div className="relative h-29 w-full rounded-lg">
-        <CoverImage
-          src={currentUser?.cover_image_url ?? undefined}
-          alt={currentUser?.display_name}
-          className="h-29 w-full rounded-lg"
-          showDefaultWhenEmpty
+      {/* CCI: who you are in one row, then actions, then sign out on its own; no cover image to read text over. */}
+      <div className="flex items-center gap-3 px-2 pt-1.5 pb-2.5">
+        <Avatar
+          name={currentUser?.display_name}
+          src={getFileURL(currentUser?.avatar_url ?? "")}
+          size={36}
+          shape="circle"
+          className="text-15 shrink-0 font-medium"
         />
-        <div className="absolute inset-0 bg-layer-1/50" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-          <div className="flex flex-col items-center gap-y-2">
-            <div>
-              <Avatar
-                name={currentUser?.display_name}
-                src={getFileURL(currentUser?.avatar_url ?? "")}
-                size={40}
-                shape="circle"
-                className="text-18 font-medium"
-              />
-            </div>
-            <div className="text-center">
-              <p className="text-body-sm-medium">
-                {currentUser?.first_name} {currentUser?.last_name}
-              </p>
-              <p className="text-caption-md-regular">{currentUser?.email}</p>
-            </div>
-          </div>
+        <div className="min-w-0">
+          <p className="truncate text-body-sm-medium text-primary">{fullName || currentUser?.display_name}</p>
+          <p className="truncate text-caption-md-regular text-tertiary">{currentUser?.email}</p>
         </div>
       </div>
-      <div>
+      <div className="border-t border-subtle py-1">
         <CustomMenu.MenuItem
-          onClick={() =>
-            toggleProfileSettingsModal({
-              activeTab: "general",
-              isOpen: true,
-            })
-          }
-          className="flex items-center gap-2"
+          onClick={() => toggleProfileSettingsModal({ activeTab: "general", isOpen: true })}
+          className="flex items-center gap-2.5 py-1.5 max-sm:py-2.5"
         >
-          <Settings className="size-3.5 shrink-0" />
+          <Settings className="size-4 shrink-0 text-tertiary" />
           {t("settings")}
         </CustomMenu.MenuItem>
         <CustomMenu.MenuItem
-          onClick={() =>
-            toggleProfileSettingsModal({
-              activeTab: "preferences",
-              isOpen: true,
-            })
-          }
-          className="flex items-center gap-2"
+          onClick={() => toggleProfileSettingsModal({ activeTab: "preferences", isOpen: true })}
+          className="flex items-center gap-2.5 py-1.5 max-sm:py-2.5"
         >
-          <Settings2 className="size-3.5 shrink-0" />
+          <Settings2 className="size-4 shrink-0 text-tertiary" />
           {t("preferences")}
         </CustomMenu.MenuItem>
       </div>
-      <CustomMenu.MenuItem onClick={handleSignOut} className="flex items-center gap-2">
-        <LogOut className="size-3.5 shrink-0" />
-        {t("sign_out")}
-      </CustomMenu.MenuItem>
+      <div className="border-t border-subtle pt-1">
+        <CustomMenu.MenuItem
+          onClick={handleSignOut}
+          className="group flex items-center gap-2.5 py-1.5 hover:text-danger-primary max-sm:py-2.5"
+        >
+          <LogOut className="size-4 shrink-0 text-tertiary group-hover:text-danger-primary" />
+          {t("sign_out")}
+        </CustomMenu.MenuItem>
+      </div>
       {isUserInstanceAdmin && (
         <CustomMenu.MenuItem
           onClick={() => router.push(GOD_MODE_URL)}

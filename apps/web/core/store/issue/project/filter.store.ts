@@ -56,6 +56,25 @@ export interface IProjectIssuesFilter extends IBaseIssueFilterStore {
   ) => Promise<void>;
 }
 
+const AXIOS_DEFAULT_DISPLAY_PROPERTIES: IIssueDisplayProperties = {
+  key: true,
+  labels: true,
+  priority: true,
+  due_date: true,
+  assignee: true,
+  state: false,
+  start_date: false,
+  sub_issue_count: false,
+  attachment_count: false,
+  link: false,
+  estimate: false,
+  created_on: false,
+  updated_on: false,
+  modules: false,
+  cycle: false,
+  issue_type: false,
+};
+
 export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProjectIssuesFilter {
   // observables
   filters: { [projectId: string]: IIssueFilters } = {};
@@ -138,8 +157,20 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
     const _filters = await this.projectService.getProjectUserProperties(workspaceSlug, projectId);
 
     const richFilters = _filters?.rich_filters;
-    const displayFilters = this.computedDisplayFilters(_filters?.display_filters);
-    const displayProperties = this.computedDisplayProperties(_filters?.display_properties);
+    // CCI (Direction A): a list nobody has customised opens grouped by state, with the key, labels, priority,
+    // due date and assignees on each row. The server seeds `calendar_date_range` and no `calendar`; the first
+    // save from the app writes the computed shape, so a user's own choice (including no grouping) sticks.
+    const rawDisplayFilters = _filters?.display_filters as Record<string, unknown> | undefined;
+    const rawDisplayProperties = _filters?.display_properties as Record<string, unknown> | undefined;
+    const isUntouchedDisplayFilters =
+      !rawDisplayFilters || ("calendar_date_range" in rawDisplayFilters && !("calendar" in rawDisplayFilters));
+    const isUntouchedDisplayProperties = !rawDisplayProperties || !("modules" in rawDisplayProperties);
+    const displayFilters = this.computedDisplayFilters(
+      isUntouchedDisplayFilters ? { ...rawDisplayFilters, group_by: "state" } : _filters?.display_filters
+    );
+    const displayProperties = this.computedDisplayProperties(
+      isUntouchedDisplayProperties ? AXIOS_DEFAULT_DISPLAY_PROPERTIES : _filters?.display_properties
+    );
 
     // fetching the kanban toggle helpers in the local storage
     const kanbanFilters = {

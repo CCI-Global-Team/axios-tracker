@@ -38,13 +38,13 @@ export function RecentProject(props: BlockProps) {
       prependTitleElement={
         <div className="flex flex-shrink-0 items-center gap-2">
           <div className="grid size-8 flex-shrink-0 place-items-center rounded-sm bg-layer-2">
-            <Logo logo={projectDetails?.logo_props} size={16} />
+            <Logo logo={projectDetails?.logo_props} seed={projectDetails?.identifier} size={16} />
           </div>
           <div className="text-13 font-medium whitespace-nowrap text-placeholder">{projectDetails?.identifier}</div>
         </div>
       }
       appendTitleElement={
-        <div className="flex-shrink-0 text-11 font-medium text-placeholder">
+        <div className="hidden flex-shrink-0 text-12 text-tertiary tabular-nums sm:block">
           {calculateTimeAgo(activity.visited_at)}
         </div>
       }

@@ -20,7 +20,7 @@ import { Disclosure, Transition } from "@headlessui/react";
 import { EUserPermissions, EUserPermissionsLevel, MEMBER_TRACKER_ELEMENTS } from "@plane/constants";
 import { useOutsideClickDetector } from "@plane/hooks";
 import { useTranslation } from "@plane/i18n";
-import { Logo } from "@plane/propel/emoji-icon-picker";
+import { Logo, ProjectDot } from "@plane/propel/emoji-icon-picker";
 import { LinkIcon, ArchiveIcon, ChevronRightIcon } from "@plane/propel/icons";
 import { IconButton } from "@plane/propel/icon-button";
 import { Tooltip } from "@plane/propel/tooltip";
@@ -161,7 +161,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
               root.render(
                 <div className="flex items-center rounded-sm bg-surface-1 p-1 pr-2 text-13">
                   <div className="grid size-4 flex-shrink-0 place-items-center">
-                    {project && <Logo logo={project?.logo_props} />}
+                    {project && <Logo logo={project?.logo_props} seed={project?.identifier} />}
                   </div>
                   <p className="truncate text-secondary">{project?.name}</p>
                 </div>
@@ -339,14 +339,14 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
                     }
                   >
                     <div className="grid size-4 flex-shrink-0 place-items-center">
-                      <Logo logo={project.logo_props} size={16} />
+                      <ProjectDot seed={project.identifier ?? project.id} />
                     </div>
                     <p className="truncate text-13 font-medium text-secondary">{project.name}</p>
                   </Disclosure.Button>
                 ) : (
                   <div className="flex w-full flex-grow items-center gap-1.5 text-left select-none">
                     <div className="grid size-4 flex-shrink-0 place-items-center">
-                      <Logo logo={project.logo_props} size={16} />
+                      <ProjectDot seed={project.identifier ?? project.id} />
                     </div>
                     <p className="truncate text-13 font-medium text-secondary">{project.name}</p>
                   </div>
@@ -397,7 +397,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
                   {isAdmin && (
                     <CustomMenu.MenuItem onClick={() => setPublishModal(true)}>
                       <div className="relative flex flex-shrink-0 items-center justify-start gap-2">
-                        <div className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm text-secondary transition-all duration-300 hover:bg-layer-1">
+                        <div className="flex h-4 w-4 cursor-pointer items-center justify-center rounded-sm text-secondary transition-colors duration-150 hover:bg-layer-1">
                           <Share2 className="h-3.5 w-3.5 stroke-[1.5]" />
                         </div>
                         <div>{t("publish_project")}</div>

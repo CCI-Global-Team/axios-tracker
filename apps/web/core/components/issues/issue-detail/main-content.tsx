@@ -15,6 +15,7 @@ import { EFileAssetType, EIssueServiceType } from "@plane/types";
 import { DescriptionVersionsRoot } from "@/components/core/description-versions";
 import { DescriptionInput } from "@/components/editor/rich-text/description-input";
 import { IssueTypeSwitcher } from "@/components/issues/issue-type-switcher";
+import { StateDropdown } from "@/components/dropdowns/state/dropdown";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
@@ -89,7 +90,21 @@ export const IssueMainContent = observer(function IssueMainContent(props: Props)
         )}
 
         <div className="mb-2.5 flex items-center justify-between gap-4">
-          <IssueTypeSwitcher issueId={issueId} disabled={isArchived || !isEditable} />
+          {/* CCI: the state leads, next to the key, so status reads before anything else. */}
+          <div className="flex min-w-0 items-center gap-2">
+            <IssueTypeSwitcher issueId={issueId} disabled={isArchived || !isEditable} />
+            <div className="h-6">
+              <StateDropdown
+                value={issue.state_id}
+                onChange={(val) => issueOperations.update(workspaceSlug, projectId, issueId, { state_id: val })}
+                projectId={issue.project_id ?? projectId}
+                disabled={isArchived || !isEditable}
+                buttonVariant="border-with-text"
+                buttonContainerClassName="h-6 max-w-48 truncate"
+                showTooltip
+              />
+            </div>
+          </div>
           <div className="flex items-center gap-3">
             <NameDescriptionUpdateStatus isSubmitting={isSubmitting} />
           </div>

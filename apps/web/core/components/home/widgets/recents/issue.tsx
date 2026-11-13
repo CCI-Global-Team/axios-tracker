@@ -84,7 +84,7 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
               <div className="grid size-8 flex-shrink-0 place-items-center rounded-sm bg-layer-2">
                 <WorkItemsIcon className="size-4 text-tertiary" />
               </div>
-              <div className="text-13 font-medium whitespace-nowrap text-placeholder">
+              <div className="text-13 font-medium whitespace-nowrap text-tertiary">
                 {issueDetails?.project_identifier}-{issueDetails?.sequence_id}
               </div>
             </div>
@@ -92,7 +92,7 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
         </div>
       }
       appendTitleElement={
-        <div className="flex-shrink-0 text-11 font-medium text-placeholder">
+        <div className="hidden flex-shrink-0 text-12 text-tertiary tabular-nums sm:block">
           {calculateTimeAgo(activity.visited_at)}
         </div>
       }
@@ -108,11 +108,13 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
               />
             </div>
           </Tooltip>
-          <Tooltip tooltipHeading="Priority" tooltipContent={issueDetails?.priority ?? "Priority"}>
-            <div>
-              <PriorityIcon priority={issueDetails?.priority} withContainer size={12} />
-            </div>
-          </Tooltip>
+          {issueDetails?.priority && issueDetails.priority !== "none" && (
+            <Tooltip tooltipHeading="Priority" tooltipContent={issueDetails.priority}>
+              <div>
+                <PriorityIcon priority={issueDetails.priority} withContainer size={12} />
+              </div>
+            </Tooltip>
+          )}
           {issueDetails?.assignees?.length > 0 && (
             <div className="h-5">
               <MemberDropdown

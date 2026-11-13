@@ -15,6 +15,7 @@ import { applyCustomTheme, clearCustomTheme } from "@plane/utils";
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import { useRouterParams } from "@/hooks/store/use-router-params";
 import { useUserProfile } from "@/hooks/store/user";
+import { applyLook, DEFAULT_LOOK, isLook } from "@/lib/look";
 
 type TStoreWrapper = {
   children: ReactNode;
@@ -42,7 +43,7 @@ function StoreWrapper(props: TStoreWrapper) {
    */
   useEffect(() => {
     const localValue = localStorage && localStorage.getItem("app_sidebar_collapsed");
-    const localBoolValue = localValue ? (localValue === "true" ? true : false) : false;
+    const localBoolValue = localValue === "true";
     if (localValue && sidebarCollapsed === undefined) toggleSidebar(localBoolValue);
   }, [sidebarCollapsed, setTheme, toggleSidebar]);
 
@@ -74,7 +75,7 @@ function StoreWrapper(props: TStoreWrapper) {
 
     // Mark as initialized - prevents future syncs from server
     hasInitializedThemeRef.current = true;
-  }, [userProfile?.theme?.theme, setTheme]);
+  }, [userProfile?.id, userProfile?.theme?.theme, setTheme]);
 
   /**
    * Effect 2: Custom theme CSS application (runs on every change)
@@ -102,6 +103,13 @@ function StoreWrapper(props: TStoreWrapper) {
     // Update previous theme for next comparison
     previousThemeRef.current = currentTheme;
   }, [userProfile?.theme]);
+
+  // CCI look: follow the saved profile once it has loaded (the boot script covers first paint).
+  useEffect(() => {
+    if (!userProfile?.theme) return;
+    const look = userProfile.theme.look;
+    applyLook(isLook(look) ? look : DEFAULT_LOOK);
+  }, [userProfile?.theme, userProfile?.theme?.look]);
 
   useEffect(() => {
     if (!params) return;

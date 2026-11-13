@@ -16,7 +16,6 @@ import { CustomizeNavigationDialog } from "@/components/navigation/customize-nav
 import { useAppTheme } from "@/hooks/store/use-app-theme";
 import useSize from "@/hooks/use-window-size";
 // plane web components
-import { WorkspaceEditionBadge } from "@/components/workspace/edition-badge";
 import { AppSidebarToggleButton } from "./sidebar-toggle-button";
 import { IconButton } from "@plane/propel/icon-button";
 
@@ -42,34 +41,35 @@ export const SidebarWrapper = observer(function SidebarWrapper(props: TSidebarWr
     }
   });
 
+  // Phones always keep the sidebar closed. On tablets it starts closed, and closes again when the window
+  // narrows from desktop, so the list gets the width; it can still be opened from the toggle.
+  const lastWidth = useRef<number | null>(null);
   useEffect(() => {
-    if (windowSize[0] < 768 && !sidebarCollapsed) toggleSidebar();
+    const width = windowSize[0];
+    if (!width) return;
+    const previous = lastWidth.current;
+    lastWidth.current = width;
+    if (sidebarCollapsed) return;
+    if (width < 768) toggleSidebar(true);
+    else if (width < 1024 && (previous === null || previous >= 1024)) toggleSidebar(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [windowSize]);
 
   return (
     <>
       <CustomizeNavigationDialog isOpen={isCustomizeNavDialogOpen} onClose={() => setIsCustomizeNavDialogOpen(false)} />
-      <div ref={ref} className="flex h-full w-full animate-fade-in flex-col">
-        <div className="flex flex-col gap-3 px-3">
-          {/* Workspace switcher and settings */}
-
-          <div className="flex items-center justify-between gap-2 px-2">
-            <span className="pt-1 text-16 font-medium text-primary">{title}</span>
-            <div className="flex items-center gap-2">
-              {title === "Projects" && (
-                <IconButton
-                  size="base"
-                  variant="ghost"
-                  icon={PreferencesIcon}
-                  onClick={() => setIsCustomizeNavDialogOpen(true)}
-                />
-              )}
-              <AppSidebarToggleButton />
-            </div>
-          </div>
-          {/* Quick actions */}
-          {quickActions}
+      <div ref={ref} className="flex h-full w-full flex-col">
+        {/* CCI: no title row. The new-work-item action shares one row with the customise and collapse buttons. */}
+        <div className="flex items-center gap-1 px-3">
+          <div className="min-w-0 flex-1">{quickActions}</div>
+          <IconButton
+            size="base"
+            variant="ghost"
+            icon={PreferencesIcon}
+            onClick={() => setIsCustomizeNavDialogOpen(true)}
+            aria-label={title ? `Customize ${title.toLowerCase()} navigation` : "Customize navigation"}
+          />
+          <AppSidebarToggleButton />
         </div>
 
         <ScrollArea
@@ -81,15 +81,6 @@ export const SidebarWrapper = observer(function SidebarWrapper(props: TSidebarWr
         >
           {children}
         </ScrollArea>
-        {/* Help Section */}
-        <div className="flex h-12 items-center justify-between border-t border-subtle bg-surface-1 p-3">
-          <WorkspaceEditionBadge />
-          {/* TODO: To be checked if we need this */}
-          {/* <div className="flex items-center gap-2">
-          {!shouldRenderAppRail && <HelpMenu />}
-          {!isAppRailEnabled && <AppSidebarToggleButton />}
-        </div> */}
-        </div>
       </div>
     </>
   );

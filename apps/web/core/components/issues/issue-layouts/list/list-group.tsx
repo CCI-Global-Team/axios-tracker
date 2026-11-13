@@ -253,6 +253,9 @@ export const ListGroup = observer(function ListGroup(props: Props) {
   const isDropDisabled = isWorkflowDropDisabled || !!group.isDropDisabled;
 
   const isGroupByCreatedBy = group_by === "created_by";
+  // The group header already names the state, so rows drop their state chip.
+  const rowDisplayProperties =
+    group_by === "state" && displayProperties ? { ...displayProperties, state: false } : displayProperties;
   const shouldExpand = (!!groupIssueCount && isExpanded) || !group_by;
 
   return validateEmptyIssueGroups(groupIssueCount) ? (
@@ -267,6 +270,10 @@ export const ListGroup = observer(function ListGroup(props: Props) {
         className={cn("w-full flex-shrink-0 border-b border-subtle bg-layer-1 py-1 pr-3 hover:bg-layer-1-hover", {
           "sticky top-0 z-[2]": isExpanded && groupIssueCount > 0,
         })}
+        // CCI: a state group's header carries a soft tint of the state's colour.
+        style={
+          group.color ? { backgroundColor: `color-mix(in srgb, ${group.color} 10%, var(--bg-surface-1))` } : undefined
+        }
       >
         <HeaderGroupByCard
           groupID={group.id}
@@ -304,7 +311,7 @@ export const ListGroup = observer(function ListGroup(props: Props) {
               issuesMap={issuesMap}
               updateIssue={updateIssue}
               quickActions={quickActions}
-              displayProperties={displayProperties}
+              displayProperties={rowDisplayProperties}
               canEditProperties={canEditProperties}
               containerRef={containerRef}
               isDragAllowed={isDragAllowed}

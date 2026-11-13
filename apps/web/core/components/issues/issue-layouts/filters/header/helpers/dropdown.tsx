@@ -78,9 +78,10 @@ export function FiltersDropdown(props: Props) {
                   <Button
                     disabled={disabled}
                     ref={setReferenceElement}
-                    variant="secondary"
+                    variant="ghost"
                     tabIndex={tabIndex}
                     size="lg"
+                    aria-label={title}
                   >
                     {miniIcon || title}
                   </Button>

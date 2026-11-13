@@ -46,7 +46,7 @@ function ActiveProjectItem(props: Props) {
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-layer-1">
           <span className="grid h-4 w-4 flex-shrink-0 place-items-center">
             {projectDetails?.logo_props ? (
-              <Logo logo={projectDetails?.logo_props} size={16} />
+              <Logo logo={projectDetails?.logo_props} seed={projectDetails?.identifier} size={16} />
             ) : (
               <span className="grid h-4 w-4 flex-shrink-0 place-items-center">
                 <ProjectIcon className="h-4 w-4" />

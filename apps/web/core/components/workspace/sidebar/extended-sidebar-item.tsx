@@ -39,10 +39,19 @@ type TExtendedSidebarItemProps = {
   disableDrag?: boolean;
   disableDrop?: boolean;
   isLastChild: boolean;
+  /** Static items (Projects, Drafts, Stickies) always live here, so they have nothing to pin. */
+  hidePin?: boolean;
 };
 
 export const ExtendedSidebarItem = observer(function ExtendedSidebarItem(props: TExtendedSidebarItemProps) {
-  const { item, handleOnNavigationItemDrop, disableDrag = false, disableDrop = false, isLastChild } = props;
+  const {
+    item,
+    handleOnNavigationItemDrop,
+    disableDrag = false,
+    disableDrop = false,
+    isLastChild,
+    hidePin = false,
+  } = props;
   const { t } = useTranslation();
   // states
   const [isDragging, setIsDragging] = useState(false);
@@ -206,7 +215,7 @@ export const ExtendedSidebarItem = observer(function ExtendedSidebarItem(props: 
                 <UpgradeBadge />
               </div>
             )}
-            {isPinned ? (
+            {hidePin ? null : isPinned ? (
               <Tooltip tooltipContent="Unpin">
                 <PinOff
                   className="size-3.5 flex-shrink-0 text-placeholder outline-none hover:text-tertiary"

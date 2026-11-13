@@ -129,6 +129,7 @@ export const CalendarDayTile = observer(function CalendarDayTile(props: Props) {
         },
       })
     );
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- re-register only when the tile or its date changes
   }, [dayTileRef?.current, formattedDatePayload]);
 
   if (!formattedDatePayload) return null;
@@ -158,7 +159,7 @@ export const CalendarDayTile = observer(function CalendarDayTile(props: Props) {
         >
           {date.date.getDate() === 1 && MONTHS_LIST[date.date.getMonth() + 1].shortTitle + " "}
           {isToday ? (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-accent-primary text-on-color">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[var(--txt-accent-primary)] font-semibold text-on-color">
               {date.date.getDate()}
             </span>
           ) : (
@@ -196,7 +197,8 @@ export const CalendarDayTile = observer(function CalendarDayTile(props: Props) {
         </div>
 
         {/* Mobile view content */}
-        <div
+        <button
+          type="button"
           onClick={() => setSelectedDate(date.date)}
           className={cn(
             "mx-auto flex h-full w-full cursor-pointer flex-col items-center justify-start py-2.5 text-13 font-medium opacity-80 md:hidden",
@@ -205,15 +207,15 @@ export const CalendarDayTile = observer(function CalendarDayTile(props: Props) {
             }
           )}
         >
-          <div
+          <span
             className={cn("flex size-6 items-center justify-center rounded-full", {
-              "bg-accent-primary text-on-color": isSelectedDate,
-              "bg-accent-primary/10 text-accent-primary": isToday && !isSelectedDate,
+              "bg-[var(--txt-accent-primary)] text-on-color": isSelectedDate,
+              "bg-accent-subtle font-semibold text-accent-primary": isToday && !isSelectedDate,
             })}
           >
             {date.date.getDate()}
-          </div>
-        </div>
+          </span>
+        </button>
       </div>
     </>
   );

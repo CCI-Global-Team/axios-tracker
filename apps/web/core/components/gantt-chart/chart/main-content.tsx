@@ -86,7 +86,7 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
   // refs
   const ganttContainerRef = useRef<HTMLDivElement>(null);
   // chart hook
-  const { currentView, currentViewData } = useTimeLineChartStore();
+  const { currentView, currentViewData, getBlockById } = useTimeLineChartStore();
   // plane web hooks
   const isBulkOperationsEnabled = useBulkOperationStatus();
 
@@ -143,6 +143,22 @@ export const GanttChartMainContent = observer(function GanttChartMainContent(pro
         scrollContainer.scrollLeft = updatedPosition.marginLeft - 4 - (scrollToEndDate ? DEFAULT_BLOCK_WIDTH : 0);
     });
   };
+
+  // CCI: open at the first row's bar rather than an empty stretch around today. Runs once, after the
+  // chart has positioned itself on today.
+  const hasOpenedAtFirstBar = useRef(false);
+  const firstDatedBlock = hasOpenedAtFirstBar.current
+    ? undefined
+    : blockIds?.map((id) => getBlockById(id)).find((b) => b?.start_date || b?.target_date);
+  useEffect(() => {
+    if (hasOpenedAtFirstBar.current || !currentViewData || !firstDatedBlock) return;
+    const timer = setTimeout(() => {
+      hasOpenedAtFirstBar.current = true;
+      handleScrollToBlock(firstDatedBlock);
+    }, 300);
+    return () => clearTimeout(timer);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- first load only
+  }, [firstDatedBlock?.id, currentViewData]);
 
   const CHART_VIEW_COMPONENTS: {
     [key in TGanttViews]: React.FC;

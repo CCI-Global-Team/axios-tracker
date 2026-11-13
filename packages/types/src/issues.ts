@@ -137,6 +137,8 @@ export interface IGroupByColumn {
   id: string;
   name: string;
   icon?: React.ReactElement | undefined;
+  /** CCI: the group's own colour (a state's colour), used to tint its header. */
+  color?: string;
   payload: Partial<TIssue>;
   isDropDisabled?: boolean;
   dropErrorMessage?: string;

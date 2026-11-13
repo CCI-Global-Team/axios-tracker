@@ -24,7 +24,7 @@ export function PowerKProjectsMenu({ projects, onSelect }: Props) {
       getKey={(project) => project.id}
       getIconNode={(project) => (
         <span className="shrink-0">
-          <Logo logo={project.logo_props} size={14} />
+          <Logo logo={project.logo_props} seed={project.identifier} size={14} />
         </span>
       )}
       getValue={(project) => project.name}

@@ -27,7 +27,7 @@ import { usePlatformOS } from "@/hooks/use-platform-os";
 import { IssueSubscription } from "../issue-detail/subscription";
 import { WorkItemDetailQuickActions } from "../issue-layouts/quick-action-dropdowns";
 import { NameDescriptionUpdateStatus } from "../issue-update-status";
-import { IconButton } from "@plane/propel/icon-button";
+import { IconButton, getIconButtonStyling } from "@plane/propel/icon-button";
 
 export type TPeekModes = "side-peek" | "modal" | "full-screen";
 
@@ -116,15 +116,14 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
     isArchived,
   });
 
-  const handleCopyText = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCopyText = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     e.preventDefault();
-    copyUrlToClipboard(workItemLink).then(() => {
-      setToast({
-        type: TOAST_TYPE.SUCCESS,
-        title: t("common.link_copied"),
-        message: t("common.link_copied_to_clipboard"),
-      });
+    await copyUrlToClipboard(workItemLink);
+    setToast({
+      type: TOAST_TYPE.SUCCESS,
+      title: t("common.link_copied"),
+      message: t("common.link_copied_to_clipboard"),
     });
   };
 
@@ -132,9 +131,8 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
     try {
       const deleteIssue = issueDetails?.archived_at ? removeArchivedIssue : removeIssue;
 
-      return deleteIssue(workspaceSlug, projectId, issueId).then(() => {
-        setPeekIssue(undefined);
-      });
+      await deleteIssue(workspaceSlug, projectId, issueId);
+      setPeekIssue(undefined);
     } catch (_error) {
       setToast({
         title: t("toast.error"),
@@ -158,28 +156,40 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
         currentMode?.key === "full-screen" ? "border-b border-subtle" : ""
       }`}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1">
         <Tooltip tooltipContent={t("common.close_peek_view")} isMobile={isMobile}>
-          <button onClick={removeRoutePeekId}>
-            <MoveRight className="h-4 w-4 text-tertiary hover:text-secondary" />
-          </button>
+          <IconButton
+            variant="ghost"
+            size="lg"
+            aria-label={t("common.close_peek_view")}
+            onClick={removeRoutePeekId}
+            icon={MoveRight}
+          />
         </Tooltip>
 
         <Tooltip tooltipContent={t("issue.open_in_full_screen")} isMobile={isMobile}>
-          <Link href={workItemLink} onClick={() => removeRoutePeekId()}>
-            <MoveDiagonal className="h-4 w-4 text-tertiary hover:text-secondary" />
+          <Link
+            href={workItemLink}
+            aria-label={t("issue.open_in_full_screen")}
+            onClick={() => removeRoutePeekId()}
+            className={getIconButtonStyling("ghost", "lg")}
+          >
+            <MoveDiagonal className="size-4" />
           </Link>
         </Tooltip>
         {currentMode && embedIssue === false && (
-          <div className="flex flex-shrink-0 items-center gap-2">
+          <div className="flex flex-shrink-0 items-center">
             <CustomSelect
               value={currentMode}
               onChange={(val: any) => setPeekMode(val)}
               customButton={
                 <Tooltip tooltipContent={t("common.toggle_peek_view_layout")} isMobile={isMobile}>
-                  <button type="button" className="">
-                    <currentMode.icon className="h-4 w-4 text-tertiary hover:text-secondary" />
-                  </button>
+                  <span
+                    aria-label={t("common.toggle_peek_view_layout")}
+                    className={getIconButtonStyling("ghost", "lg")}
+                  >
+                    <currentMode.icon className="size-4" />
+                  </span>
                 </Tooltip>
               }
             >
@@ -201,12 +211,18 @@ export const IssuePeekOverviewHeader = observer(function IssuePeekOverviewHeader
       </div>
       <div className="flex items-center gap-x-4">
         <NameDescriptionUpdateStatus isSubmitting={isSubmitting} />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {currentUser && !isArchived && (
             <IssueSubscription workspaceSlug={workspaceSlug} projectId={projectId} issueId={issueId} />
           )}
           <Tooltip tooltipContent={t("common.actions.copy_link")} isMobile={isMobile}>
-            <IconButton variant="secondary" size="lg" onClick={handleCopyText} icon={CopyLinkIcon} />
+            <IconButton
+              variant="ghost"
+              size="lg"
+              aria-label={t("common.actions.copy_link")}
+              onClick={handleCopyText}
+              icon={CopyLinkIcon}
+            />
           </Tooltip>
           {issueDetails && (
             <WorkItemDetailQuickActions

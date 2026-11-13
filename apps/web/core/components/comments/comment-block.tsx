@@ -30,13 +30,10 @@ export const CommentBlock = observer(function CommentBlock(props: TCommentBlock)
       className={`relative flex gap-3 ${ends === "top" ? `pb-2` : ends === "bottom" ? `pt-2` : `py-2`}`}
       ref={commentBlockRef}
     >
-      <div
-        className="transition-border absolute top-0 bottom-0 left-[13px] w-px bg-layer-3 duration-1000"
-        aria-hidden
-      />
+      <div className="transition-border absolute top-0 bottom-0 left-[13px] w-px bg-layer-3 duration-200" aria-hidden />
       <div
         className={cn(
-          "transition-border relative z-[3] flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border border-subtle bg-layer-2 uppercase shadow-raised-100 duration-1000"
+          "transition-border relative z-[3] flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border border-subtle bg-layer-2 uppercase shadow-raised-100 duration-200"
         )}
       >
         <CommentReplyIcon width={14} height={14} className="text-secondary" aria-hidden="true" />

@@ -29,16 +29,14 @@ export const ModuleStatusDropdown = observer(function ModuleStatusDropdown(props
   return (
     <CustomSelect
       customButton={
+        // CCI: status as a coloured dot and plain text, not a tinted pill.
         <span
-          className={`flex h-6 w-20 items-center justify-center rounded-sm text-center text-11 ${
+          className={`flex h-6 min-w-20 items-center gap-1.5 rounded-sm px-1.5 text-12 text-secondary hover:bg-layer-1 ${
             isDisabled ? "cursor-not-allowed" : "cursor-pointer"
           }`}
-          style={{
-            color: moduleStatus ? moduleStatus.color : "#a3a3a2",
-            backgroundColor: moduleStatus ? `${moduleStatus.color}20` : "#a3a3a220",
-          }}
         >
-          {(moduleStatus && t(moduleStatus?.i18n_label)) ?? t("project_modules.status.backlog")}
+          <span className="size-2 flex-shrink-0 rounded-full" style={{ backgroundColor: moduleStatus.color }} />
+          {t(moduleStatus.i18n_label)}
         </span>
       }
       value={moduleStatus?.value}

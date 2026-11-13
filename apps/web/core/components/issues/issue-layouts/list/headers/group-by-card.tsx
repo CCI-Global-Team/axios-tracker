@@ -115,8 +115,8 @@ export const HeaderGroupByCard = observer(function HeaderGroupByCard(props: IHea
           className="relative flex w-full cursor-pointer flex-row items-center gap-1 overflow-hidden"
           onClick={() => handleCollapsedGroups(groupID)}
         >
-          <div className="line-clamp-1 inline-block truncate font-medium text-primary">{title}</div>
-          <div className="pl-2 text-13 font-medium text-tertiary">{count || 0}</div>
+          <div className="line-clamp-1 inline-block truncate text-13 font-semibold text-primary">{title}</div>
+          <div className="pl-1.5 text-12 font-medium text-tertiary tabular-nums">{count || 0}</div>
           <div className="px-2.5"></div>
         </div>
 
@@ -124,7 +124,7 @@ export const HeaderGroupByCard = observer(function HeaderGroupByCard(props: IHea
           (renderExistingIssueModal ? (
             <CustomMenu
               customButton={
-                <span className="flex h-5 w-5 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xs transition-all hover:bg-layer-1">
+                <span className="flex h-5 w-5 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xs transition-colors hover:bg-layer-1">
                   <PlusIcon className="h-3.5 w-3.5" strokeWidth={2} />
                 </span>
               }
@@ -147,7 +147,7 @@ export const HeaderGroupByCard = observer(function HeaderGroupByCard(props: IHea
           ) : (
             // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
             <div
-              className="flex h-5 w-5 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xs transition-all hover:bg-layer-1"
+              className="flex h-5 w-5 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-xs transition-colors hover:bg-layer-1"
               onClick={() => {
                 setIsOpen(true);
               }}

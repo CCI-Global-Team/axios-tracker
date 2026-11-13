@@ -4,6 +4,7 @@
  * See the LICENSE file for details.
  */
 
+import { useState } from "react";
 import { cn } from "@plane/utils";
 // helpers
 import { getCoverImageDisplayURL, DEFAULT_COVER_IMAGE_URL } from "@/helpers/cover-image.helper";
@@ -19,6 +20,8 @@ type TCoverImageProps = {
   showDefaultWhenEmpty?: boolean;
   /** Custom fallback URL to use instead of DEFAULT_COVER_IMAGE_URL */
   fallbackUrl?: string;
+  /** CCI: a flat colour shown when there is no cover or it fails to load, instead of a grey skeleton. */
+  fallbackColor?: string;
 } & React.ComponentProps<"img">;
 
 /**
@@ -36,8 +39,15 @@ export function CoverImage(props: TCoverImageProps) {
     className,
     showDefaultWhenEmpty = false,
     fallbackUrl = DEFAULT_COVER_IMAGE_URL,
+    fallbackColor,
     ...restProps
   } = props;
+  const [failed, setFailed] = useState(false);
+
+  // CCI: with a fallback colour, a missing or broken cover is a flat tint, never alt text over a gradient.
+  if (fallbackColor && (failed || (!src && !showDefaultWhenEmpty))) {
+    return <div className={className} style={{ background: fallbackColor }} />;
+  }
 
   // Show loading skeleton when src is undefined/null and we don't want to show default
   if (!src && !showDefaultWhenEmpty) {
@@ -46,5 +56,16 @@ export function CoverImage(props: TCoverImageProps) {
 
   const displayUrl = getCoverImageDisplayURL(src, fallbackUrl);
 
-  return <img src={displayUrl} alt={alt} className={cn("object-cover", className)} {...restProps} />;
+  return (
+    <img
+      src={displayUrl}
+      alt={alt}
+      className={cn("object-cover", className)}
+      {...restProps}
+      onError={(e) => {
+        setFailed(true);
+        restProps.onError?.(e);
+      }}
+    />
+  );
 }

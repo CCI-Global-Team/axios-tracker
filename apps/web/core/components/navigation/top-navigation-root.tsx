@@ -15,9 +15,11 @@ import { WorkspaceMenuRoot } from "@/components/workspace/sidebar/workspace-menu
 import { useAppRailPreferences } from "@/hooks/use-navigation-preferences";
 import { Tooltip } from "@plane/propel/tooltip";
 import { AppSidebarItem } from "@/components/sidebar/sidebar-item";
-import { InboxIcon } from "@plane/propel/icons";
+import { InboxIcon, PlaneLogo } from "@plane/propel/icons";
+import Link from "next/link";
 import useSWR from "swr";
 import { useWorkspaceNotifications } from "@/hooks/store/notifications";
+import { useChromeAttributes } from "@/lib/use-look";
 // local imports
 
 export const TopNavigationRoot = observer(function TopNavigationRoot() {
@@ -30,6 +32,7 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
   const { preferences } = useAppRailPreferences();
 
   const showLabel = preferences.displayMode === "icon_with_label";
+  const chromeAttributes = useChromeAttributes();
 
   // Fetch notification count
   useSWR(
@@ -45,20 +48,29 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
 
   return (
     <div
-      className={cn("z-[27] flex min-h-10 w-full items-center bg-canvas px-3.5 transition-all duration-300", {
+      {...chromeAttributes}
+      className={cn("z-[27] flex min-h-10 w-full items-center bg-canvas px-3.5", {
         "px-2": !showLabel,
       })}
     >
-      {/* Workspace Menu */}
-      <div className="flex-1 shrink-0">
+      {/* CCI: the Axios mark leads the bar and goes home; phones keep the room for search. */}
+      <div className="flex shrink-0 items-center gap-1 sm:flex-1">
+        <Link
+          href={`/${workspaceSlug?.toString()}/`}
+          aria-label="Axios home"
+          className="mr-1 hidden h-8 shrink-0 items-center rounded-md px-1.5 transition-opacity duration-150 ease-out-strong hover:opacity-80 sm:flex"
+        >
+          <PlaneLogo width="46" height="14" className="h-3.5 w-auto" />
+        </Link>
+        <span aria-hidden className="mr-1 hidden h-4 w-px bg-white/15 sm:block" />
         <WorkspaceMenuRoot variant="top-navigation" />
       </div>
       {/* Power K Search */}
-      <div className="shrink-0">
+      <div className="min-w-0 flex-1 px-2 sm:flex-none sm:px-0">
         <TopNavPowerK />
       </div>
       {/* Additional Actions */}
-      <div className="flex flex-1 shrink-0 items-center justify-end gap-1">
+      <div className="flex shrink-0 items-center justify-end gap-1 sm:flex-1">
         <Tooltip tooltipContent="Inbox" position="bottom">
           <AppSidebarItem
             variant="link"

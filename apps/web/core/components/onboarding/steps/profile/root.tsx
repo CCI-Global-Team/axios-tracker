@@ -225,7 +225,7 @@ export const ProfileSetupStep = observer(function ProfileSetupStep({ handleStepC
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 className={cn(
-                  "w-full rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-all duration-200 placeholder:text-placeholder focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
+                  "w-full rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-[color,background-color,border-color,opacity,box-shadow] duration-200 placeholder:text-placeholder focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
                   {
                     "border-strong": !errors.first_name,
                     "border-danger-strong": errors.first_name,
@@ -268,7 +268,7 @@ export const ProfileSetupStep = observer(function ProfileSetupStep({ handleStepC
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 className={cn(
-                  "w-full rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-all duration-200 placeholder:text-placeholder focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
+                  "w-full rounded-md border border-strong bg-surface-1 px-3 py-2 text-secondary transition-[color,background-color,border-color,opacity,box-shadow] duration-200 placeholder:text-placeholder focus:border-transparent focus:ring-2 focus:ring-accent-strong focus:outline-none",
                   {
                     "border-strong": !errors.last_name,
                     "border-danger-strong": errors.last_name,

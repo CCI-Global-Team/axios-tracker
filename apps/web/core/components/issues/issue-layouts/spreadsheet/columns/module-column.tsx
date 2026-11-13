@@ -47,7 +47,7 @@ export const SpreadsheetModuleColumn = observer(function SpreadsheetModuleColumn
   );
 
   return (
-    <div className="h-11 border-b-[0.5px] border-subtle">
+    <div className="h-11 border-b-[0.5px] border-subtle" data-empty={!issue.module_ids?.length || undefined}>
       <ModuleDropdown
         projectId={issue?.project_id ?? undefined}
         value={issue?.module_ids ?? []}

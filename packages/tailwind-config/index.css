@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./variables.css";
+@import "./looks.css";
 @import "./animations.css";
 @source "../**/*.{ts,tsx}";
 
@@ -171,8 +172,9 @@ body {
 }
 
 /* highlight class */
+/* CCI: a dropped or moved item gets one accent wash that fades out, instead of a hard border left behind. */
 @utility highlight {
-  border: 1px solid var(--border-color-accent-strong) !important;
+  animation: var(--animate-row-flash);
 }
 
 @utility highlight-with-line {

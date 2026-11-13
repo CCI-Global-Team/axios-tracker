@@ -15,7 +15,7 @@ type Props = {
 
 function Loader({ children, className = "" }: Props) {
   return (
-    <div className={cn("animate-pulse", className)} role="status">
+    <div className={cn("motion-safe:animate-pulse", className)} role="status">
       {children}
     </div>
   );

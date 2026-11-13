@@ -5,17 +5,15 @@
  */
 
 import { useTranslation } from "@plane/i18n";
-import { EmptyStateCompact } from "@plane/propel/empty-state";
+import { Link2 } from "lucide-react";
 
+// CCI: one quiet line, not a large illustration; "Add quick link" sits in the section header.
 export function LinksEmptyState() {
   const { t } = useTranslation();
   return (
-    <div className="flex w-full items-center justify-center rounded-lg bg-layer-1 py-10">
-      <EmptyStateCompact
-        assetKey="link"
-        assetClassName="w-20 h-20"
-        title={t("workspace_empty_state.home_widget_quick_links.title")}
-      />
+    <div className="flex w-full items-center gap-2 rounded-lg border border-dashed border-subtle px-4 py-3 text-13 text-tertiary">
+      <Link2 className="size-4 flex-shrink-0" aria-hidden />
+      {t("workspace_empty_state.home_widget_quick_links.title")}
     </div>
   );
 }

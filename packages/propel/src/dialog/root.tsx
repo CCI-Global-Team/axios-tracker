@@ -7,6 +7,7 @@
 import { forwardRef, memo, useMemo } from "react";
 import { Dialog as BaseDialog } from "@base-ui-components/react";
 import { cn } from "../utils/classname";
+import { BACKDROP_MOTION, DIALOG_MOTION } from "../utils/motion";
 
 // enums
 
@@ -67,7 +68,13 @@ const DialogOverlay = memo(function DialogOverlay({
   className,
   ...props
 }: React.ComponentProps<typeof BaseDialog.Backdrop>) {
-  return <BaseDialog.Backdrop data-slot="dialog-overlay" className={cn(OVERLAY_CLASSNAME, className)} {...props} />;
+  return (
+    <BaseDialog.Backdrop
+      data-slot="dialog-overlay"
+      className={cn(OVERLAY_CLASSNAME, BACKDROP_MOTION, className)}
+      {...props}
+    />
+  );
 });
 DialogOverlay.displayName = "DialogOverlay";
 
@@ -103,7 +110,7 @@ const DialogPanel = forwardRef(function DialogPanel(
       <BaseDialog.Popup
         ref={ref}
         data-slot="dialog-content"
-        className={cn(BASE_CLASSNAME, positionClassNames, width, className)}
+        className={cn(BASE_CLASSNAME, DIALOG_MOTION, positionClassNames, width, className)}
         role="dialog"
         aria-modal="true"
         {...props}
