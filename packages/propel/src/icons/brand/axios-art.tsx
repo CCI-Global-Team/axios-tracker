@@ -42,29 +42,44 @@ export const useSvgId = (prefix: string) => `${prefix}-${React.useId().replace(/
  * A mask that hides the under strand around each crossing with a soft radial falloff.
  * `soft` is the loader's version: fully hidden further out, so a strand that is only partly drawn
  * never shows a square end under the crossing.
+ *
+ * Each crossing is a full-size rect filled with a radial gradient that pads out to white, and the
+ * second crossing's mask masks the first, so the two multiply. Circles drawn over a white rect left a
+ * pale anti-aliased ring at their edge, which showed as stripes across the line.
  */
 export function CrossingMask({ id, soft = false }: { id: string; soft?: boolean }) {
-  const g = `${id}-g`;
+  // Luminance stops, opaque greys: #404040 is black at 75% over white, #1a1a1a black at 90%.
+  const stops: [number, string][] = soft
+    ? [
+        [0, "#000"],
+        [0.4, "#000"],
+        [0.6, "#404040"],
+        [1, "#fff"],
+      ]
+    : [
+        [0, "#000"],
+        [0.35, "#1a1a1a"],
+        [1, "#fff"],
+      ];
+  const box = { x: -5, y: -5, width: 133.1, height: 47.9 };
   return (
     <>
-      <radialGradient id={g}>
-        <stop offset="0" stopColor="#000" />
-        {soft ? (
-          <>
-            <stop offset=".4" stopColor="#000" />
-            <stop offset=".6" stopColor="#000" stopOpacity=".75" />
-          </>
-        ) : (
-          <stop offset=".35" stopColor="#000" stopOpacity=".9" />
-        )}
-        <stop offset="1" stopColor="#000" stopOpacity="0" />
-      </radialGradient>
-      <mask id={id} maskUnits="userSpaceOnUse" x="-5" y="-5" width="133.1" height="47.9">
-        <rect x="-5" y="-5" width="133.1" height="47.9" fill="#fff" />
-        {CROSSINGS.map(([cx, cy]) => (
-          <circle key={cx} cx={cx} cy={cy} r="15.8" fill={`url(#${g})`} />
-        ))}
-      </mask>
+      {CROSSINGS.map(([cx, cy], i) => (
+        <React.Fragment key={cx}>
+          <radialGradient id={`${id}-g${i}`} gradientUnits="userSpaceOnUse" cx={cx} cy={cy} r="15.8">
+            {stops.map(([offset, color]) => (
+              <stop key={offset} offset={offset} stopColor={color} />
+            ))}
+          </radialGradient>
+          <mask id={i === 0 ? id : `${id}-${i}`} maskUnits="userSpaceOnUse" {...box}>
+            <rect
+              {...box}
+              fill={`url(#${id}-g${i})`}
+              mask={i + 1 < CROSSINGS.length ? `url(#${id}-${i + 1})` : undefined}
+            />
+          </mask>
+        </React.Fragment>
+      ))}
     </>
   );
 }

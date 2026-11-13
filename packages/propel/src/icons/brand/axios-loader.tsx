@@ -30,8 +30,9 @@ const OVER_LEN = 9.79;
 const OVER_AT = [27.732, 77.732];
 
 const CYCLE = "2.4s";
-const HALO_LAYERS = 12;
-const HALO_STEP = 0.7;
+// Each layer adds 1/(N+1) of opacity, so the ends ramp linearly; steps this small don't read as stripes.
+const HALO_LAYERS = 24;
+const HALO_STEP = 0.35;
 
 const fill = (name: string, start: number) =>
   `@keyframes ${name} { 0% { stroke-dashoffset: ${(100 + start).toFixed(3)}; } ` +
@@ -87,6 +88,16 @@ export interface AxiosLoaderProps {
   width?: number;
 }
 
+/** One piece's halo layers, faintest first, then the line itself. */
+const renderRun = (piece: (typeof PIECES)[number]) => (
+  <React.Fragment key={piece.key}>
+    {HALOS.filter((h) => h.piece === piece).map(({ cls }) => (
+      <path key={cls} d={piece.d} pathLength={piece.length} className={`axios-ld__run axios-ld__halo ${cls}`} />
+    ))}
+    <path d={piece.d} pathLength={piece.length} className={`axios-ld__run axios-ld-${piece.key}0`} />
+  </React.Fragment>
+);
+
 export function AxiosLoader({ className, color = AXIOS_RED, width = 120 }: AxiosLoaderProps) {
   const maskId = useSvgId("axios-ld");
   const height = Math.round((width * (AXIOS_MARK_H + 2)) / (AXIOS_MARK_W + 2));
@@ -111,24 +122,9 @@ export function AxiosLoader({ className, color = AXIOS_RED, width = 120 }: Axios
         ))}
       </g>
       <g className="axios-ld__runs">
-        {HALOS.map(({ cls, piece }) => (
-          <path
-            key={cls}
-            d={piece.d}
-            pathLength={piece.length}
-            className={`axios-ld__run axios-ld__halo ${cls}`}
-            mask={piece.masked ? `url(#${maskId})` : undefined}
-          />
-        ))}
-        {PIECES.map((p) => (
-          <path
-            key={p.key}
-            d={p.d}
-            pathLength={p.length}
-            className={`axios-ld__run axios-ld-${p.key}0`}
-            mask={p.masked ? `url(#${maskId})` : undefined}
-          />
-        ))}
+        {/* The masked line is masked once, as a group: cheaper than a mask per halo layer. */}
+        <g mask={`url(#${maskId})`}>{PIECES.filter((p) => p.masked).map(renderRun)}</g>
+        {PIECES.filter((p) => !p.masked).map(renderRun)}
       </g>
     </svg>
   );
