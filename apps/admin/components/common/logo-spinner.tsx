@@ -45,7 +45,11 @@ const useSharedClock = () => {
 export function LogoSpinner() {
   const ref = useSharedClock();
   return (
-    <div ref={ref} className="axios-loader flex items-center justify-center">
+    <div
+      ref={ref}
+      className="axios-loader flex items-center justify-center"
+      style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+    >
       <style>{`
         @keyframes axios-loader-in {
           from { opacity: 0; transform: scale(0.96); }
@@ -58,7 +62,7 @@ export function LogoSpinner() {
           .axios-loader { animation-duration: 1ms; }
         }
       `}</style>
-      <AxiosLoader width={96} className="h-auto w-20 sm:w-28" />
+      <AxiosLoader width={112} className="h-auto w-20 sm:w-28" />
     </div>
   );
 }

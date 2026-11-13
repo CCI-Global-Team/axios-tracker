@@ -92,7 +92,10 @@ export default function Root() {
 
 export function HydrateFallback() {
   return (
-    <div className="relative flex h-screen w-full items-center justify-center bg-surface-1">
+    <div
+      className="relative flex h-screen w-full items-center justify-center bg-surface-1"
+      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100vh" }}
+    >
       <LogoSpinner />
     </div>
   );
