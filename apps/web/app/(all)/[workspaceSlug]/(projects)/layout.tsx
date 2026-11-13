@@ -15,7 +15,8 @@ function WorkspaceLayout() {
   return (
     <>
       <ProjectsAppPowerKProvider />
-      <div className="relative flex h-full w-full flex-col overflow-hidden rounded-lg border border-subtle">
+      {/* CCI: no outline on the frame; on the navy chrome it drew a grey line around the sidebar. */}
+      <div className="relative flex h-full w-full flex-col overflow-hidden rounded-lg">
         <div id="full-screen-portal" className="absolute inset-0 w-full" />
         <div className="relative flex size-full overflow-hidden">
           <ProjectAppSidebar />

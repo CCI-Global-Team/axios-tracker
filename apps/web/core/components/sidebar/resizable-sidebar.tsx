@@ -186,7 +186,7 @@ export function ResizableSidebar({
         id="main-sidebar"
         {...panelAttributes}
         className={cn(
-          "z-20 h-full border-r border-subtle bg-surface-1",
+          "z-20 h-full bg-surface-1", // CCI: navy against the white work area needs no divider
           !isResizing && "transition-all duration-300 ease-in-out",
           isCollapsed ? "w-0 translate-x-[-100%] opacity-0" : "translate-x-0 opacity-100",
           isMobile && "absolute",
