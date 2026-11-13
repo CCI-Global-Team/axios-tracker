@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useLayoutEffect, useRef } from "react";
-import { AxiosLoader } from "@plane/propel/icons";
+import { AxiosLoader, PlaneWordmark } from "@plane/propel/icons";
 
 /**
  * CCI: the Axios chain drawing itself (the artwork lives in @plane/propel's AxiosLoader), replacing
@@ -47,8 +47,8 @@ export function LogoSpinner() {
   return (
     <div
       ref={ref}
-      className="axios-loader flex items-center justify-center"
-      style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+      className="axios-loader relative flex items-center justify-center"
+      style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
     >
       <style>{`
         @keyframes axios-loader-in {
@@ -63,6 +63,18 @@ export function LogoSpinner() {
         }
       `}</style>
       <AxiosLoader width={176} className="h-auto w-32 sm:w-44" />
+      {/* CCI: the name sits under the chain, out of the flow, so the chain stays dead centre in every loader. */}
+      <span
+        style={{
+          position: "absolute",
+          top: "calc(100% + 20px)",
+          left: "50%",
+          transform: "translateX(-50%)",
+          lineHeight: 0,
+        }}
+      >
+        <PlaneWordmark width="96" height="19" color="var(--txt-primary, #0f172a)" />
+      </span>
     </div>
   );
 }
