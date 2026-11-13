@@ -18,6 +18,7 @@ Lockups:
 
 - **Horizontal** (`PlaneLockup`): chain, then AXIOS on the chain's centre line. Top bars and headers.
 - **Mark alone** (`PlaneLogo`): loaders, icons, small headers.
+- **Stacked**: AXIOS over the chain, both the same width. Share cards, splash screens, print.
 - **Wordmark alone** (`PlaneWordmark`): where the chain is already on screen.
 
 All three draw from `packages/propel/src/icons/brand/axios-art.tsx`. The loader is `AxiosLoader` in the
@@ -26,12 +27,14 @@ fade at each end of the lap.
 
 ## Colour
 
-| Token         | Value                                   | Use                                                                  |
-| ------------- | --------------------------------------- | -------------------------------------------------------------------- |
-| CCI Red       | `#D2181D`                               | The chain and the A's crossbar on light grounds; the favicon ground. |
-| Red on dark   | `#FF4B4B`                               | The same, on dark grounds (`--axios-brand` switches in dark mode).   |
-| Icon gradient | `#E3121B` → `#9A0710` → `#5E0007`, 135° | App icon ground at 48px and up.                                      |
-| White         | `#FFFFFF`                               | The chain on red.                                                    |
+| Token         | Value                                                     | Use                                                                  |
+| ------------- | --------------------------------------------------------- | -------------------------------------------------------------------- |
+| CCI Red       | `#D2181D`                                                 | The chain and the A's crossbar on light grounds; the favicon ground. |
+| Red on dark   | `#FF4B4B`                                                 | The same, on dark grounds (`--axios-brand` switches in dark mode).   |
+| Icon gradient | `#E3121B` → `#9A0710` → `#5E0007`, 135°                   | App icon ground at 48px and up.                                      |
+| CCI Navy      | `#1A2340`                                                 | The wordmark on light grounds; the ground for the reversed set.      |
+| White         | `#FFFFFF`                                                 | The chain and wordmark on red or navy.                               |
+| Chrome        | `#F4F6F9` → `#D3D8E0` → `#9BA3B2` → `#E2E6EC` → `#AEB5C2` | The metallic finish, on navy or red, at 48px and up.                 |
 
 Product UI colours come from the theme tokens and are not brand colours; do not reuse the red for
 status or semantic meaning.
@@ -57,34 +60,50 @@ failure mode there is silent and shipped once.
 
 ## Files
 
-| File                                        | What it is                                                                    |
-| ------------------------------------------- | ----------------------------------------------------------------------------- |
-| `axios-mark.svg`                            | Bare mark, `currentColor` — for inline React use where the parent sets colour |
-| `axios-mark-red.svg`                        | Bare mark in CCI Red, transparent ground — for light surfaces                 |
-| `axios-mark-white.svg`                      | Bare mark in white, transparent ground — for dark surfaces                    |
-| `axios-icon.svg`                            | White mark on a red rounded square — the app icon                             |
-| `axios-icon-maskable.svg`                   | Same, art pulled into the centre 80% safe zone — PWA `purpose: maskable`      |
-| `axios-favicon.svg`                         | App icon with tighter padding so the weave still reads small                  |
-| `favicon.ico`                               | Multi-resolution: 16, 32, 48, 64, 128, 256                                    |
-| `axios-icon-<N>x<N>.png`                    | Rasterised icon, 16 through 1024                                              |
-| `axios-maskable-<N>.png`                    | Maskable rasters, 192 and 512                                                 |
-| `axios-og-1200x630.png`                     | OpenGraph / link-preview card                                                 |
-| `gradient-logo.png`, `gradient-bg-logo.png` | The decorative marks on the instance-not-ready screen                         |
-| `takeoff-icon-{dark,light}.svg`             | Circular badges used by the admin new-user popup                              |
+| File                                         | What it is                                                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `axios-mark.svg`                             | Bare mark, `currentColor` — for inline React use where the parent sets colour        |
+| `axios-mark-red.svg`                         | Bare mark in CCI Red, transparent ground — for light surfaces                        |
+| `axios-mark-white.svg`                       | Bare mark in white, transparent ground — for dark surfaces                           |
+| `axios-icon.svg`                             | White mark on a red rounded square — the app icon                                    |
+| `axios-icon-maskable.svg`                    | Same, art pulled into the centre 80% safe zone — PWA `purpose: maskable`             |
+| `axios-favicon.svg`                          | App icon with tighter padding so the weave still reads small                         |
+| `favicon.ico`                                | Multi-resolution: 16, 32, 48, 64, 128, 256                                           |
+| `axios-icon-<N>x<N>.png`                     | Rasterised icon, 16 through 1024                                                     |
+| `axios-maskable-<N>.png`                     | Maskable rasters, 192 and 512                                                        |
+| `axios-og-1200x630.png`                      | OpenGraph / link-preview card                                                        |
+| `axios-loader{,-red,-white}.svg`             | The loader as a self-animating SVG, for places without React                         |
+| `axios-loader.lottie.json`                   | An earlier loader; `AxiosLoader` is the current one and this file is not regenerated |
+| `lockups/axios-<form>-<colourway>.{svg,png}` | Every form in every colourway; see Lockups below                                     |
+| `gradient-logo.png`, `gradient-bg-logo.png`  | The decorative marks on the instance-not-ready screen                                |
+| `takeoff-icon-{dark,light}.svg`              | Circular badges used by the admin new-user popup                                     |
 
 The 16px and 32px rasters are generated at tighter padding than the larger ones. That is
 deliberate — at the default padding the weave gap closes at those sizes. Do not regenerate them by
 scaling `axios-icon-512x512.png` down.
 
-## Lockup
+## Lockups
 
-Horizontal lockup is the mark followed by the word **Axios** set in the product UI face, semibold,
-with slight negative tracking.
+`docs/brand/lockups/` holds the full set as files for decks, print, partner sites and email:
+four forms in four colourways, each as an SVG and a transparent PNG (1600 px wide, 1200 for the mark).
 
-The lockup is composed in the app from the mark plus live text rather than shipped as a single
-flattened image, so it stays crisp at any size and follows the light/dark theme. There is no
-standalone wordmark file, and one should not be added without a decision about which weight and
-tracking are canonical.
+| Form         | What it is                           |
+| ------------ | ------------------------------------ |
+| `horizontal` | Chain, then AXIOS on its centre line |
+| `stacked`    | AXIOS over the chain, the same width |
+| `wordmark`   | AXIOS alone                          |
+| `mark`       | The chain alone                      |
+
+| Colourway  | Chain     | Wordmark | Spark     | For                                              |
+| ---------- | --------- | -------- | --------- | ------------------------------------------------ |
+| `color`    | CCI Red   | CCI Navy | CCI Red   | White and light grounds                          |
+| `reversed` | `#FF4B4B` | White    | `#FF4B4B` | CCI Navy and other dark grounds                  |
+| `white`    | White     | White    | `#FF3B3B` | CCI Red and photographs                          |
+| `chrome`   | Chrome    | Chrome   | `#FF4B4B` | The metallic finish, on navy or red; 48px and up |
+
+Any form pairs with any colourway, for example `lockups/axios-stacked-reversed.svg`. The horizontal
+geometry matches `PlaneLockup` (wordmark cap height 28.3 on the chain's 37.9, gap 21.4); the stacked one
+matches the share card. In the product, use the components instead: they follow the theme.
 
 `PlaneLockup`, `PlaneLogo`, `PlaneWordmark` and `PlaneNewIcon` in `packages/propel` keep their
 upstream names deliberately — renaming them would multiply the rebase conflict surface against
@@ -92,8 +111,9 @@ upstream for no user-visible gain. Only the artwork inside them is CCI's.
 
 ## What not to do
 
-- Do not recolour the mark to anything but CCI Red or white.
-- Do not add a stroke, shadow, or gradient beyond the two supplied gradient files.
-- Do not close the weave gap, or draw it by painting over the join with a background colour.
-- Do not stretch it — the aspect ratio is fixed at 71:63.
+- Do not recolour the mark or the lockups outside the colourways above.
+- Do not add a stroke or shadow, or a gradient other than the icon ground and the chrome finish.
+- Do not paint the crossings with a ground colour above 32px; the soft fade is the large-size drawing.
+- Do not stretch it; the chain is fixed at 123.1:37.9.
 - Do not place the red mark on a red ground, or the white mark on white.
+- Do not set the wordmark in a typeface; it is drawn, so use the files or `PlaneWordmark`.
