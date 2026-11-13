@@ -72,8 +72,18 @@ for (let j = HALO_LAYERS; j >= 1; j--) {
     );
   }
 }
+// The glint: a slanted band of light, clipped to the chain, crossing while the chain is fully drawn
+// (the 45-55% hold), so the draw and the shine take turns instead of moving at once.
+CSS.push(
+  ".axios-ld__glint { transform: translateX(-45px) skewX(-22deg); animation: axios-ld-glint " +
+    CYCLE +
+    " linear infinite; }",
+  "@keyframes axios-ld-glint { 0%, 36% { transform: translateX(-45px) skewX(-22deg); " +
+    "animation-timing-function: cubic-bezier(.45,.05,.35,1); } 64%, 100% { transform: translateX(175px) skewX(-22deg); } }"
+);
 CSS.push(
   "@media (prefers-reduced-motion: reduce) {",
+  "  .axios-ld .axios-ld__glint { animation: none; opacity: 0; }",
   "  .axios-ld .axios-ld__run, .axios-ld .axios-ld__runs { animation: none; stroke-dashoffset: 0; opacity: 1; }",
   "  .axios-ld .axios-ld__halo { display: none; }",
   "}"
@@ -86,6 +96,8 @@ export interface AxiosLoaderProps {
   color?: string;
   /** Pixel size before any stylesheet applies; keeps the first server-rendered paint from filling the screen. */
   width?: number;
+  /** A band of light crosses the chain once per lap, while it is fully drawn. */
+  glint?: boolean;
 }
 
 /** One piece's halo layers, faintest first, then the line itself. */
@@ -98,8 +110,10 @@ const renderRun = (piece: (typeof PIECES)[number]) => (
   </React.Fragment>
 );
 
-export function AxiosLoader({ className, color = AXIOS_RED, width = 120 }: AxiosLoaderProps) {
+export function AxiosLoader({ className, color = AXIOS_RED, width = 120, glint = true }: AxiosLoaderProps) {
   const maskId = useSvgId("axios-ld");
+  const glintMaskId = useSvgId("axios-ld-gm");
+  const glintId = useSvgId("axios-ld-g");
   const height = Math.round((width * (AXIOS_MARK_H + 2)) / (AXIOS_MARK_W + 2));
   return (
     <svg
@@ -115,6 +129,31 @@ export function AxiosLoader({ className, color = AXIOS_RED, width = 120 }: Axios
       <style>{LOADER_CSS}</style>
       <defs>
         <CrossingMask id={maskId} soft />
+        {glint && (
+          <>
+            <linearGradient id={glintId} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="36" y2="0">
+              <stop offset="0" stopColor="#fff" stopOpacity="0" />
+              <stop offset=".38" stopColor="#fff" stopOpacity=".25" />
+              <stop offset=".5" stopColor="#fff" stopOpacity=".95" />
+              <stop offset=".56" stopColor="#fff" stopOpacity=".5" />
+              <stop offset=".6" stopColor="#fff" stopOpacity="0" />
+              <stop offset=".7" stopColor="#fff" stopOpacity=".3" />
+              <stop offset=".76" stopColor="#fff" stopOpacity="0" />
+            </linearGradient>
+            <mask
+              id={glintMaskId}
+              maskUnits="userSpaceOnUse"
+              x="-5"
+              y="-5"
+              width={AXIOS_MARK_W + 10}
+              height={AXIOS_MARK_H + 10}
+            >
+              {PIECES.map((p) => (
+                <path key={p.key} d={p.d} stroke="#fff" mask={p.masked ? `url(#${maskId})` : undefined} />
+              ))}
+            </mask>
+          </>
+        )}
       </defs>
       <g className="axios-ld__track">
         {PIECES.map((p) => (
@@ -126,6 +165,19 @@ export function AxiosLoader({ className, color = AXIOS_RED, width = 120 }: Axios
         <g mask={`url(#${maskId})`}>{PIECES.filter((p) => p.masked).map(renderRun)}</g>
         {PIECES.filter((p) => !p.masked).map(renderRun)}
       </g>
+      {glint && (
+        <g mask={`url(#${glintMaskId})`}>
+          <rect
+            className="axios-ld__glint"
+            x="0"
+            y="-20"
+            width="36"
+            height="80"
+            fill={`url(#${glintId})`}
+            stroke="none"
+          />
+        </g>
+      )}
     </svg>
   );
 }
