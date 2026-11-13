@@ -95,7 +95,7 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
     const lastLayout = readLastLayout(projectId);
     return (
       <div className="relative flex h-full w-full flex-col overflow-hidden">
-        <LayoutTabs selectedLayout={lastLayout} onChange={() => {}} />
+        <LayoutTabs selectedLayout={lastLayout} onChange={() => {}} disabled />
         <div className="relative h-full w-full overflow-auto bg-surface-1">
           <ActiveLoader layout={lastLayout} />
         </div>

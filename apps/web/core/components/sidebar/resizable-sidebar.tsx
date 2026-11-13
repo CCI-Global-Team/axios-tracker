@@ -7,6 +7,7 @@
 import type { Dispatch, ReactElement, SetStateAction } from "react";
 import React, { useCallback, useEffect, useState, useRef } from "react";
 import { usePathname } from "next/navigation";
+import { useIsPhoneWidth } from "@/hooks/use-is-phone-width";
 // helpers
 import { usePlatformOS } from "@plane/hooks";
 import { cn } from "@plane/utils";
@@ -64,14 +65,7 @@ export function ResizableSidebar({
   const { isMobile: isMobileOS } = usePlatformOS();
   // CCI: below 768px the sidebar overlays the page whatever the device, so a narrow window or split view
   // doesn't squeeze the content into a sliver.
-  const [isNarrow, setIsNarrow] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia("(max-width: 767px)");
-    const update = () => setIsNarrow(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
+  const isNarrow = useIsPhoneWidth();
   const isMobile = isMobileOS || isNarrow;
   // CCI: on a phone the overlay starts closed and closes after each navigation, so a page never
   // opens hidden behind it.

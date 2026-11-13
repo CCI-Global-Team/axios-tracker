@@ -4,31 +4,17 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useState } from "react";
 import { ISSUE_LAYOUTS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { ChevronDownIcon } from "@plane/propel/icons";
 import { EIssueLayoutTypes } from "@plane/types";
 import { CustomMenu } from "@plane/ui";
+import { useIsPhoneWidth } from "@/hooks/use-is-phone-width";
 import { IssueLayoutIcon } from "../../layout-icon";
 
 // CCI: Table and Timeline need width; on a phone the menu offers List, Board and Calendar only.
 const WIDE_ONLY_LAYOUTS = new Set([EIssueLayoutTypes.SPREADSHEET, EIssueLayoutTypes.GANTT]);
-const PHONE_QUERY = "(max-width: 767px)";
-
-function useIsPhoneWidth() {
-  const [isPhone, setIsPhone] = useState(() => typeof window !== "undefined" && window.matchMedia(PHONE_QUERY).matches);
-  useEffect(() => {
-    const media = window.matchMedia(PHONE_QUERY);
-    const update = () => setIsPhone(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
-  return isPhone;
-}
-
 export function MobileLayoutSelection({
   layouts,
   onChange,

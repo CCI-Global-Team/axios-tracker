@@ -57,4 +57,4 @@ export function applyLook(look: TLook) {
 }
 
 /** Runs before first paint so a saved look does not flash the default. */
-export const LOOK_BOOT_SCRIPT = `try{var l=localStorage.getItem("${LOOK_STORAGE_KEY}");if(l==="navy"||l==="ink"||l==="campus")document.documentElement.dataset.look=l}catch(e){}`;
+export const LOOK_BOOT_SCRIPT = `try{var l=localStorage.getItem(${JSON.stringify(LOOK_STORAGE_KEY)});if(${JSON.stringify(LOOKS.map((look) => look.value))}.indexOf(l)>-1)document.documentElement.dataset.look=l}catch(e){}`;

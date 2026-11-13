@@ -21,9 +21,11 @@ const TABS: { key: EIssueLayoutTypes; i18n: string }[] = [
 type Props = {
   selectedLayout: EIssueLayoutTypes | undefined;
   onChange: (layout: EIssueLayoutTypes) => void;
+  /** The tabs show but take no clicks, e.g. while the filters they would change are still loading. */
+  disabled?: boolean;
 };
 
-export function LayoutTabs({ selectedLayout, onChange }: Props) {
+export function LayoutTabs({ selectedLayout, onChange, disabled = false }: Props) {
   const { t } = useTranslation();
   return (
     <div
@@ -39,9 +41,10 @@ export function LayoutTabs({ selectedLayout, onChange }: Props) {
             type="button"
             role="tab"
             aria-selected={isActive}
+            disabled={disabled}
             onClick={() => !isActive && onChange(key)}
             className={cn(
-              "-mb-px flex items-center rounded-t-sm border-b-2 text-13 whitespace-nowrap transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
+              "-mb-px flex items-center rounded-t-sm border-b-2 text-13 whitespace-nowrap transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] disabled:cursor-default",
               isActive
                 ? "border-[var(--axios-brand)] font-semibold text-primary"
                 : "border-transparent font-medium text-tertiary hover:text-secondary"
