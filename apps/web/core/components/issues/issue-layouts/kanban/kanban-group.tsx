@@ -263,7 +263,7 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
   ) : (
     // oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions
     <div
-      className="sticky bottom-0 w-full cursor-pointer p-3 text-13 font-medium text-accent-primary hover:text-accent-secondary hover:underline"
+      className="sticky bottom-0 w-full cursor-pointer rounded-md p-3 text-13 font-medium text-secondary transition-colors duration-150 hover:bg-layer-1 hover:text-primary"
       onClick={loadMoreIssuesInThisGroup}
     >
       {t("common.load_more")} &darr;
@@ -282,8 +282,8 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
     <div
       id={`${groupId}__${sub_group_id}`}
       className={cn(
-        "relative h-full min-h-[120px] transition-all",
-        { "rounded-sm bg-layer-1": isDraggingOverColumn },
+        "relative h-full min-h-[120px] rounded-md transition-colors duration-150",
+        { "bg-layer-1": isDraggingOverColumn },
         { "vertical-scrollbar scrollbar-md": !sub_group_by && !shouldOverlayBeVisible }
       )}
       ref={columnRef}
@@ -312,6 +312,11 @@ export const KanbanGroup = observer(function KanbanGroup(props: IKanbanGroup) {
         canDragIssuesInCurrentGrouping={canDragIssuesInCurrentGrouping}
         isEpic={isEpic}
       />
+
+      {/* CCI: an empty column still reads as a place to drop cards. */}
+      {!issueIds?.length && !shouldLoadMore && (
+        <div aria-hidden className="mb-1.5 h-20 rounded-lg border border-dashed border-subtle" />
+      )}
 
       {shouldLoadMore &&
         (isSubGroup ? (

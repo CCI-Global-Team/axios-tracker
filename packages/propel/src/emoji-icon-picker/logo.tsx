@@ -53,10 +53,7 @@ export function Logo({ logo, size = 16, type = "material", seed }: Props) {
     },
   ]);
 
-  // Reusable loading skeleton
-  const loadingSkeleton = <span style={{ height: size, width: size }} className="rounded-sm bg-layer-1" />;
-
-  // CCI: no logo set — a project shows its colour dot, centred in the logo's box; anything else stays blank.
+  // CCI: no logo set (or its icon font still loading) — a project shows its colour dot, centred in the logo's box; anything else stays blank.
   const emptyLogo = (
     <span style={{ height: size, width: size }} className="inline-flex flex-shrink-0 items-center justify-center">
       {seed ? <ProjectDot seed={seed} size={Math.round(size * 0.6)} /> : null}
@@ -101,7 +98,7 @@ export function Logo({ logo, size = 16, type = "material", seed }: Props) {
       return <LucideIconElement style={{ color, height: size, width: size }} />;
     }
 
-    if (!isMaterialSymbolsFontLoaded) return loadingSkeleton;
+    if (!isMaterialSymbolsFontLoaded) return emptyLogo;
 
     // Material icon
     return (

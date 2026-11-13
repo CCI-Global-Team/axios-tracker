@@ -16,11 +16,18 @@ export const KanbanIssueBlockLoader = forwardRef(function KanbanIssueBlockLoader
   ref: React.ForwardedRef<HTMLSpanElement>
 ) {
   return (
+    // CCI: shaped like a card (key, title, a property row) so the board doesn't jump when it loads.
     <span
       ref={ref}
-      className={cn(`block rounded-sm bg-[var(--illustration-fill-secondary)]`, { "animate-pulse": shouldAnimate })}
-      style={{ height: `${cardHeight}px` }}
-    />
+      className={cn("flex flex-col gap-2 rounded-lg border border-subtle bg-layer-2 p-2.5", {
+        "motion-safe:animate-pulse": shouldAnimate,
+      })}
+      style={{ minHeight: `${Math.min(cardHeight, 84)}px` }}
+    >
+      <span className="h-3 w-12 rounded-sm bg-layer-1" />
+      <span className="h-3.5 w-4/5 rounded-sm bg-layer-1" />
+      <span className="mt-auto h-3 w-1/3 rounded-sm bg-layer-1" />
+    </span>
   );
 });
 
@@ -36,13 +43,15 @@ export function KanbanColumnLoader({
   shouldAnimate?: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex w-[280px] flex-col gap-1.5 lg:w-[300px]">
       {!ignoreHeader && (
-        <div className="flex h-9 w-80 items-center justify-between">
-          <div className="item-center flex gap-3">
-            <span className={cn("h-6 w-6 rounded-sm bg-layer-1", { "animate-pulse": shouldAnimate })} />
-            <span className={cn("h-6 w-24 rounded-sm bg-layer-1", { "animate-pulse": shouldAnimate })} />
-          </div>
+        <div
+          className={cn("flex h-9 w-[280px] items-center gap-2 rounded-md bg-layer-1 px-2.5 lg:w-[300px]", {
+            "motion-safe:animate-pulse": shouldAnimate,
+          })}
+        >
+          <span className="size-3.5 rounded-full bg-layer-3" />
+          <span className="h-3 w-20 rounded-sm bg-layer-3" />
         </div>
       )}
       {range(cardsInColumn).map((cardIndex) => (
@@ -56,8 +65,9 @@ KanbanIssueBlockLoader.displayName = "KanbanIssueBlockLoader";
 
 export function KanbanLayoutLoader({ cardsInEachColumn = [2, 3, 2, 4, 3] }: { cardsInEachColumn?: number[] }) {
   return (
-    <ContentWrapper className="flex-row gap-5 overflow-x-auto py-1.5">
+    <ContentWrapper className="flex-row gap-3 overflow-x-auto py-1.5">
       {cardsInEachColumn.map((cardsInColumn, columnIndex) => (
+        // oxlint-disable-next-line react/no-array-index-key -- static skeleton columns
         <KanbanColumnLoader key={columnIndex} cardsInColumn={cardsInColumn} />
       ))}
     </ContentWrapper>

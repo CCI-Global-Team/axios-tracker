@@ -144,7 +144,7 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
   const isSubGroup = !!sub_group_id && sub_group_id !== "null";
 
   return (
-    <ContentWrapper className={`relative flex-row gap-4 !pt-2 !pb-0`}>
+    <ContentWrapper className={`relative flex-row gap-3 !pt-2 !pb-0`}>
       {list &&
         list.length > 0 &&
         list.map((subList: IGroupByColumn, groupIndex) => {
@@ -162,16 +162,17 @@ export const KanBan = observer(function KanBan(props: IKanBan) {
             <div
               key={subList.id}
               className={`group relative flex flex-shrink-0 flex-col ${
-                groupByVisibilityToggle.showIssues ? `w-[350px]` : ``
+                groupByVisibilityToggle.showIssues ? `w-[280px] lg:w-[300px]` : ``
               } `}
             >
               {sub_group_by === null && (
-                <div className="sticky top-0 z-[2] w-full flex-shrink-0 bg-surface-2 py-1">
+                <div className="sticky top-0 z-[2] w-full flex-shrink-0 bg-surface-2 pt-1 pb-2">
                   <HeaderGroupByCard
                     sub_group_by={sub_group_by}
                     group_by={group_by}
                     column_id={subList.id}
                     icon={subList.icon}
+                    color={subList.color}
                     title={subList.name}
                     count={getGroupIssueCount(subList.id, undefined, false) ?? 0}
                     issuePayload={subList.payload}

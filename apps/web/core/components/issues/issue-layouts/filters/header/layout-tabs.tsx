@@ -41,7 +41,7 @@ export function LayoutTabs({ selectedLayout, onChange }: Props) {
             aria-selected={isActive}
             onClick={() => !isActive && onChange(key)}
             className={cn(
-              "-mb-px flex items-center border-b-2 text-13 whitespace-nowrap transition-colors duration-150",
+              "-mb-px flex items-center rounded-t-sm border-b-2 text-13 whitespace-nowrap transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
               isActive
                 ? "border-[var(--axios-brand)] font-semibold text-primary"
                 : "border-transparent font-medium text-tertiary hover:text-secondary"
