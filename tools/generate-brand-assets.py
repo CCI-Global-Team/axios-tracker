@@ -117,6 +117,55 @@ def tile_svg(size=512, small=False, full_bleed=False, pad=None):
             f'width="{size}" height="{size}">{ground}{placed(512, pad, inner)}</svg>')
 
 
+
+# The AXIOS wordmark on a 100-unit cap height, as drawn in axios-art.tsx (WordmarkArt).
+WORDMARK_W = 513.2
+
+
+def wordmark(color="#fff", accent="#FF3B3B", cid="wx"):
+    return (
+        f'<g fill="{color}"><polygon points="0,100 38,0 54,0 92,100 70,100 46,36 22,100"/>'
+        f'<polygon points="34,68 53.5,56 59.5,72 28,84" fill="{accent}"/>'
+        f'<g transform="translate(10 0)"><clipPath id="{cid}"><rect x="90" y="0" width="110" height="100"/></clipPath>'
+        f'<path d="M104,-8 L186,108 M186,-8 L104,108" clip-path="url(#{cid})" stroke="{color}" stroke-width="21" fill="none"/></g>'
+        f'<rect x="223.2" y="0" width="20" height="100"/>'
+        f'<rect x="276.95" y="8.25" width="92.5" height="83.5" rx="17" fill="none" stroke="{color}" stroke-width="19.5"/>'
+        f'<path d="M509.2,8.25 H426.95 Q409.95,8.25 409.95,25.25 V31 Q409.95,48 426.95,48 H486.45 Q503.45,48 503.45,65 '
+        f'V74.75 Q503.45,91.75 486.45,91.75 H404.2" fill="none" stroke="{color}" stroke-width="19.5"/></g>'
+    )
+
+
+def og_svg():
+    """The site-wide share card: the stacked lockup in white on the icon gradient, a tagline, and a large
+    faint chain running off the right edge."""
+    wm_h = 62                        # cap height in px
+    wm_s = wm_h / 100
+    mk_s = (WORDMARK_W * wm_s) / MARK_W
+    x0, y0 = 96, 196
+    big = 1180 / MARK_W
+    return (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">'
+        + gradient_def() + '<rect width="1200" height="630" fill="url(#bg)"/>'
+        f'<g opacity=".09" transform="translate(560,250) scale({big:.4f})">{mark("#fff", "big")}</g>'
+        f'<g transform="translate({x0},{y0}) scale({wm_s})">{wordmark()}</g>'
+        f'<g transform="translate({x0},{y0 + wm_h + 26}) scale({mk_s:.4f})">{mark("#fff", "og")}</g>'
+        f'<text x="{x0}" y="{y0 + wm_h + 26 + MARK_H * mk_s + 70}" fill="#FFD2D2" '
+        'font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="34" font-weight="500">'
+        "CCI\u2019s engineering tracker</text></svg>"
+    )
+
+
+def gradient_mark_svg(w, h, pad, stops, mid):
+    """The chain stroked with a gradient, centred on a transparent canvas of w x h (for <img> slots)."""
+    s = w * (1 - 2 * pad) / MARK_W
+    g = "".join(f'<stop offset="{o}" stop-color="{c}"/>' for o, c in stops)
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="0 0 {w} {h}">'
+        f'<defs><linearGradient id="{mid}s" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="{MARK_W}" y2="{MARK_H}">{g}</linearGradient></defs>'
+        f'<g transform="translate({w/2},{h/2}) scale({s:.5f}) translate({-MARK_W/2},{-MARK_H/2})">{mark(f"url(#{mid}s)", mid)}</g></svg>'
+    )
+
+
 # ---------------------------------------------------------------- rasterising
 
 def find_chrome():
@@ -129,20 +178,26 @@ def find_chrome():
     sys.exit("Could not find Chrome. Add its path to CHROME_CANDIDATES.")
 
 
-def shoot(chrome, html, out, size, profile):
+def shoot(chrome, html, out, size, profile, height=None):
     with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False, encoding="utf-8") as f:
         f.write('<meta charset="utf-8"><style>html,body{margin:0;padding:0;'
                 'overflow:hidden;background:transparent}svg{display:block}</style>' + html)
         tmp = f.name
+    cmd = [chrome, "--headless", "--disable-gpu", "--hide-scrollbars",
+           f"--user-data-dir={profile}",
+           # without this every corner comes out opaque white; see the module docstring
+           "--default-background-color=00000000",
+           f"--screenshot={out}", f"--window-size={size},{height or size}",
+           pathlib.Path(tmp).as_uri()]
     try:
-        subprocess.run(
-            [chrome, "--headless", "--disable-gpu", "--hide-scrollbars",
-             f"--user-data-dir={profile}",
-             # without this every corner comes out opaque white; see the module docstring
-             "--default-background-color=00000000",
-             f"--screenshot={out}", f"--window-size={size},{size}",
-             pathlib.Path(tmp).as_uri()],
-            check=True, capture_output=True)
+        # headless Chrome occasionally hangs on a screenshot; one retry clears it
+        for attempt in (1, 2):
+            try:
+                subprocess.run(cmd, check=True, capture_output=True, timeout=45)
+                break
+            except subprocess.TimeoutExpired:
+                if attempt == 2:
+                    raise
     finally:
         pathlib.Path(tmp).unlink(missing_ok=True)
 
@@ -213,6 +268,13 @@ def main():
     for size in (192, 512):
         shoot(chrome, tile_svg(size, pad=0.2, full_bleed=True), brand / f"axios-maskable-{size}.png", size, profile)
     build_ico(brand)
+    shoot(chrome, og_svg(), brand / "axios-og-1200x630.png", 1200, profile, 630)
+    # the instance welcome page shows this one in a 160x96 object-contain slot
+    shoot(chrome, gradient_mark_svg(561, 312, 0.04, (("0", "#F0444A"), ("1", "#9A0710")), "gl"),
+          brand / "gradient-logo.png", 561, profile, 312)
+    # a faint corner decoration, shown at 15% opacity in a 384x224 slot (no object-fit, so keep the canvas)
+    shoot(chrome, gradient_mark_svg(1080, 672, 0.02, (("0", "#E8A3A6"), ("1", "#B0484D")), "gb"),
+          brand / "gradient-bg-logo.png", 1080, profile, 672)
     print(f"  {len(SIZES)} icons + 2 maskables + favicon.ico")
 
     bad = verify(brand)
@@ -238,6 +300,9 @@ def main():
         shutil.copy(brand / "axios-icon-512x512.png", icons / "icon-512x512.png")
         shutil.copy(brand / "axios-maskable-192.png", icons / "icon-192x192-maskable.png")
         shutil.copy(brand / "axios-maskable-512.png", icons / "icon-512x512-maskable.png")
+        shutil.copy(brand / "axios-og-1200x630.png", root / "apps" / "web" / "app" / "assets" / "og-image.png")
+        for name in ("gradient-logo.png", "gradient-bg-logo.png"):
+            shutil.copy(brand / name, root / "apps" / "web" / "app" / "assets" / "auth" / name)
         shutil.copy(brand / "axios-icon-1024x1024.png",
                     root / "apps" / "web" / "public" / "plane-logos" / "plane-mobile-pwa.png")
         for name in ("dark", "light"):
