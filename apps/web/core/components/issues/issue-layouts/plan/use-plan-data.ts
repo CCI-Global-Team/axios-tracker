@@ -133,7 +133,7 @@ export function usePlanData(args: {
       const user = getUserDetails(id);
       return {
         id,
-        name: user?.display_name || user?.first_name || "Unknown",
+        name: [user?.first_name, user?.last_name].filter(Boolean).join(" ") || user?.display_name || "Unknown",
         avatarUrl: user?.avatar_url,
         declaredHours: declared.get(id) ?? null,
       };

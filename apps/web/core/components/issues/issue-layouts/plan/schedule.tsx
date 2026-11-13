@@ -10,6 +10,7 @@ import { cn } from "@plane/utils";
 import type { TPlanShared } from "./board";
 import type { TLink } from "./links";
 import { PlanLinks } from "./links";
+import type { TPlanNode, TScheduleSlot } from "./model";
 import { NO_OWNER, weeksToDate } from "./model";
 import { formatDay } from "./overview";
 import { PersonAvatar } from "./parts";
@@ -20,6 +21,27 @@ type Props = TPlanShared & {
   personHours: Record<string, number>;
   setPersonHours: (id: string, h: number | null) => void;
 };
+
+const BAR_H = 28;
+const ROW_H = 34;
+const LANE_PAD = 8;
+
+/** Bars that overlap in time (only possible for items with no owner) go on rows of their own. */
+function packRows(items: TPlanNode[], slots: Map<string, TScheduleSlot>) {
+  const rowEnds: number[] = [];
+  const rowOf = new Map<string, number>();
+  const placed = items
+    .filter((n) => slots.has(n.id))
+    .toSorted((a, b) => (slots.get(a.id) as TScheduleSlot).start - (slots.get(b.id) as TScheduleSlot).start);
+  for (const n of placed) {
+    const slot = slots.get(n.id) as TScheduleSlot;
+    let row = rowEnds.findIndex((end) => end <= slot.start + 1e-6);
+    if (row === -1) row = rowEnds.push(0) - 1;
+    rowEnds[row] = slot.end;
+    rowOf.set(n.id, row);
+  }
+  return { items: placed, rowOf, rows: Math.max(1, rowEnds.length) };
+}
 
 function usePhone() {
   const [phone, setPhone] = useState(false);
@@ -47,16 +69,11 @@ export function ScheduleView(props: Props) {
   const lanes = useMemo(() => {
     const ids = [...new Set(open.map((n) => n.ownerId ?? NO_OWNER))];
     return ids
-      .map((id) => ({
-        id,
-        person: id === NO_OWNER ? undefined : personById.get(id),
-        items: open.filter((n) => (n.ownerId ?? NO_OWNER) === id && isVisible(n)),
-        end: plan.laneEnd.get(id) ?? now,
-      }))
+      .map((id) => (Object.assign({id,person:id===NO_OWNER?undefined:personById.get(id)}, packRows(open.filter(n=>(n.ownerId??NO_OWNER)===id&&isVisible(n)),plan.slots))))
       .toSorted((a, b) =>
         a.id === NO_OWNER ? 1 : b.id === NO_OWNER ? -1 : (a.person?.name ?? "").localeCompare(b.person?.name ?? "")
       );
-  }, [open, personById, isVisible, plan, now]);
+  }, [open, personById, isVisible, plan]);
 
   const selected = selectedId ? graph.nodes.get(selectedId) : undefined;
   const links = useMemo<TLink[]>(
@@ -142,7 +159,11 @@ export function ScheduleView(props: Props) {
             const override = props.personHours[lane.id];
             const hours = weekHoursOf(lane.id);
             return (
-              <div key={lane.id || "none"} className="flex h-11 border-b border-subtle last:border-b-0">
+              <div
+                key={lane.id || "none"}
+                className="flex border-b border-subtle last:border-b-0"
+                style={{ height: LANE_PAD * 2 + lane.rows * ROW_H - (ROW_H - BAR_H) }}
+              >
                 <div
                   className="sticky left-0 z-[3] flex shrink-0 items-center gap-2 border-r border-subtle bg-layer-1 pr-2 pl-3"
                   style={{ width: NAME_W }}
@@ -208,12 +229,13 @@ export function ScheduleView(props: Props) {
                         title={`${n.key} ${n.name}`}
                         onClick={() => onSelect(n.id)}
                         className={cn(
-                          "absolute top-2 z-[1] flex h-7 items-center gap-1.5 overflow-hidden rounded-md border px-1.5 text-left text-12 whitespace-nowrap text-primary transition-[opacity,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
+                          "absolute z-[1] flex h-7 items-center gap-1.5 overflow-hidden rounded-md border px-1.5 text-left text-12 whitespace-nowrap text-primary transition-[opacity,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
                           n.kind === "wip" && "border-2",
                           isSel && "z-[2] shadow-raised-100 ring-2 ring-[var(--txt-primary)]",
                           dim && "opacity-30"
                         )}
                         style={{
+                          top: LANE_PAD + (lane.rowOf.get(n.id) ?? 0) * ROW_H,
                           left: slot.start * PX + 1,
                           width: Math.max(10, (slot.end - slot.start) * PX - 3),
                           borderColor: hue,

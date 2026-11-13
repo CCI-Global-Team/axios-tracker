@@ -186,19 +186,19 @@ export type TSchedule = {
   /** when each lane frees up */
   laneEnd: Map<string, number>;
   end: number;
-  /** the lane that finishes last */
+  /** the lane that finishes last; NO_OWNER when unowned items do */
   setter: string | null;
 };
 
-/**
- * List scheduling: each person works one item at a time; an item starts once its open blockers in the plan
- * are finished and its owner is free. Ties go to urgent, then items already under way, then the item with
- * the most open work waiting on it.
- */
 /** Lower goes first: urgent, then already started, then whatever unblocks the most. */
 const priorityRank = (n: TPlanNode) =>
   (n.priority === "urgent" ? 0 : 1) * 1e6 + (n.kind === "wip" ? 0 : 1) * 5e5 - n.downstreamOpen;
 
+/**
+ * List scheduling: each person works one item at a time; an item starts once its open blockers in the plan
+ * are finished and its owner is free. Items with no owner are not queued behind each other: each starts as
+ * soon as what it waits on is finished, as if whoever is free picks it up.
+ */
 export function schedule(
   nodes: Map<string, TPlanNode>,
   hoursOf: (id: string) => number,
@@ -218,7 +218,7 @@ export function schedule(
     for (const n of todo) {
       const blockers = inPlanBlockers.get(n.id) ?? [];
       if (!blockers.every((b) => slots.has(b))) continue;
-      let start = laneEnd.get(lane(n)) ?? now;
+      let start = lane(n) === NO_OWNER ? now : (laneEnd.get(lane(n)) ?? now);
       for (const b of blockers) start = Math.max(start, (slots.get(b) as TScheduleSlot).end);
       if (
         start < bestStart - 1e-9 ||
@@ -236,7 +236,7 @@ export function schedule(
     const weekHours = Math.max(1, weekHoursOf(lane(best)));
     const slot = { start: bestStart, end: bestStart + hoursOf(best.id) / weekHours };
     slots.set(best.id, slot);
-    laneEnd.set(lane(best), slot.end);
+    laneEnd.set(lane(best), Math.max(laneEnd.get(lane(best)) ?? now, slot.end));
     const picked = best;
     todo = todo.filter((n) => n !== picked);
   }

@@ -223,7 +223,13 @@ export function OverviewView(props: Props) {
                   <div className="mt-3 flex items-center gap-2 text-13 text-secondary">
                     <PersonAvatar person={setter} size={20} />
                     <span className="truncate">
-                      <span className="font-medium text-primary">{setter?.name ?? "No owner"}</span> finishes last
+                      {setter ? (
+                        <>
+                          <span className="font-medium text-primary">{setter.name}</span> finishes last
+                        </>
+                      ) : (
+                        "Items with no owner finish last"
+                      )}
                     </span>
                   </div>
                 )}
