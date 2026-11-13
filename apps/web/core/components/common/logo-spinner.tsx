@@ -62,7 +62,7 @@ export function LogoSpinner() {
           .axios-loader { animation-duration: 1ms; }
         }
       `}</style>
-      <AxiosLoader width={112} className="h-auto w-20 sm:w-28" />
+      <AxiosLoader width={176} className="h-auto w-32 sm:w-44" />
     </div>
   );
 }
