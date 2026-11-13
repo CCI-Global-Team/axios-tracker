@@ -9,13 +9,23 @@ import type { RefObject } from "react";
 import { DOWN_COLOUR, UP_COLOUR } from "./parts";
 
 export type TLink = { from: string; to: string; dir: "up" | "down" };
-type TPath = { d: string; dir: "up" | "down"; key: string };
-type TBox = { l: number; r: number; y: number; cx: number };
+type TDir = TLink["dir"];
+type TPoint = [number, number];
+type TRect = { l: number; r: number; t: number; b: number; y: number };
+/** where a link ends: the arrow's tip on the card edge, and which way the arrow points */
+type THead = { x: number; y: number; to: "right" | "left"; dir: TDir };
+type TDrawn = { lines: { d: string; dir: TDir; key: string }[]; heads: (THead & { key: string })[] };
+
+/** arrowhead length and half-width; a line stops at the arrow's base, never at its tip */
+const HEAD = 8;
+const HALF = 4;
+/** corner radius where a line turns */
+const RADIUS = 8;
+/** how far before the target a line takes its last turn; links into one card share it, so they meet at one arrow */
+const LANE = 16;
 
 /** The element for a work item inside the container is marked `data-plan-id`. */
 const findEl = (root: HTMLElement, id: string) => root.querySelector<HTMLElement>(`[data-plan-id="${id}"]`);
-
-type TRect = { l: number; r: number; t: number; b: number; y: number; cx: number };
 
 function rect(el: HTMLElement, base: DOMRect, anchorY: "top" | "middle"): TRect {
   const r = el.getBoundingClientRect();
@@ -26,30 +36,110 @@ function rect(el: HTMLElement, base: DOMRect, anchorY: "top" | "middle"): TRect 
     t,
     b: t + r.height,
     y: t + (anchorY === "top" ? Math.min(20, r.height / 2) : r.height / 2),
-    cx: r.left - base.left + r.width / 2,
   };
 }
 
-/** Several links on one card fan out along its edge, in the order of the cards at their other ends. */
-const FAN = 7;
-function fanned(at: TRect, index: number, count: number): TBox {
-  const y = at.y + (index - (count - 1) / 2) * FAN;
-  return { l: at.l, r: at.r, cx: at.cx, y: Math.min(at.b - 6, Math.max(at.t + 6, y)) };
+/** An orthogonal polyline with rounded corners. */
+function rounded(points: TPoint[]): string {
+  const pts = points.filter(
+    (p, i) => i === 0 || Math.abs(p[0] - points[i - 1][0]) > 0.5 || Math.abs(p[1] - points[i - 1][1]) > 0.5
+  );
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [px, py] = pts[i - 1];
+    const [x, y] = pts[i];
+    const [nx, ny] = pts[i + 1];
+    const r = Math.min(RADIUS, Math.hypot(x - px, y - py) / 2, Math.hypot(nx - x, ny - y) / 2);
+    const inX = x - Math.sign(x - px) * r;
+    const inY = y - Math.sign(y - py) * r;
+    const outX = x + Math.sign(nx - x) * r;
+    const outY = y + Math.sign(ny - y) * r;
+    d += `L${inX} ${inY}Q${x} ${y} ${outX} ${outY}`;
+  }
+  const [lx, ly] = pts[pts.length - 1];
+  return `${d}L${lx} ${ly}`;
 }
 
-function curve(a: TBox, z: TBox): string {
-  if (Math.abs(a.cx - z.cx) < 40) {
-    // same column: loop out to the right
-    const x = Math.max(a.r, z.r) + 28;
-    return `M${a.r} ${a.y}C${x} ${a.y},${x} ${z.y},${z.r} ${z.y}`;
+/**
+ * Route one link: out of the source's side, along a lane just in front of the target, and straight into the
+ * target's edge. Every link into a card uses the same lane and end, so they join before one shared arrow.
+ */
+function route(a: TRect, z: TRect, dir: TDir): { points: TPoint[]; head: THead } | null {
+  const sameRow = Math.abs(z.y - a.y) < 1;
+  const below = z.t >= a.b;
+  const above = z.b <= a.t;
+  // target to the right: turn in a lane just in front of it and come straight in from the left
+  if (z.l > a.r - 1 || (z.l > a.l && (below || above))) {
+    const room = z.l - a.r - HEAD;
+    if (room >= 2 * RADIUS) {
+      const lane = z.l - HEAD - Math.min(LANE, room / 2);
+      return {
+        points: [
+          [a.r, a.y],
+          [lane, a.y],
+          [lane, z.y],
+          [z.l - HEAD, z.y],
+        ],
+        head: { x: z.l, y: z.y, to: "right", dir },
+      };
+    }
+    if (sameRow) {
+      // bars that touch on one row already read in order
+      return room >= 2
+        ? {
+            points: [
+              [a.r, a.y],
+              [z.l - HEAD, z.y],
+            ],
+            head: { x: z.l, y: z.y, to: "right", dir },
+          }
+        : null;
+    }
+    // the source runs past the lane: leave from its bottom or top edge instead
+    const lane = z.l - HEAD - LANE / 2;
+    if (lane > a.l + 4 && (below || above)) {
+      return {
+        points: [
+          [lane, below ? a.b : a.t],
+          [lane, z.y],
+          [z.l - HEAD, z.y],
+        ],
+        head: { x: z.l, y: z.y, to: "right", dir },
+      };
+    }
   }
-  if (a.r < z.l) {
-    const mx = (a.r + z.l) / 2;
-    return `M${a.r} ${a.y}C${mx} ${a.y},${mx} ${z.y},${z.l} ${z.y}`;
+  // target to the left: the mirror image
+  if (a.l - z.r - HEAD >= 2 * RADIUS) {
+    const lane = z.r + HEAD + Math.min(LANE, (a.l - z.r - HEAD) / 2);
+    return {
+      points: [
+        [a.l, a.y],
+        [lane, a.y],
+        [lane, z.y],
+        [z.r + HEAD, z.y],
+      ],
+      head: { x: z.r, y: z.y, to: "left", dir },
+    };
   }
-  const mx = (z.r + a.l) / 2;
-  return `M${a.l} ${a.y}C${mx} ${a.y},${mx} ${z.y},${z.r} ${z.y}`;
+  // same column: loop out past the right edges and come back in
+  const lane = Math.max(a.r, z.r) + HEAD + LANE;
+  return {
+    points: [
+      [a.r, a.y],
+      [lane, a.y],
+      [lane, z.y],
+      [z.r + HEAD, z.y],
+    ],
+    head: { x: z.r, y: z.y, to: "left", dir },
+  };
 }
+
+function headPath({ x, y, to }: THead): string {
+  const back = to === "right" ? x - HEAD : x + HEAD;
+  return `M${x} ${y}L${back} ${y - HALF}L${back} ${y + HALF}z`;
+}
+
+const colour = (dir: TDir) => (dir === "up" ? UP_COLOUR : DOWN_COLOUR);
 
 /**
  * Arrows from each item the selection waits on, and to each item waiting on it. Drawn in the container's own
@@ -65,44 +155,39 @@ export function PlanLinks(props: {
   above?: boolean;
 }) {
   const { containerRef, links, anchorY, layoutKey, above } = props;
-  const [paths, setPaths] = useState<TPath[]>([]);
+  const [drawn, setDrawn] = useState<TDrawn>({ lines: [], heads: [] });
   const [size, setSize] = useState({ w: 0, h: 0 });
 
   useLayoutEffect(() => {
     const root = containerRef.current;
     if (!root || !links.length) {
-      setPaths([]);
+      setDrawn({ lines: [], heads: [] });
       return;
     }
     const measure = () => {
       const base = root.getBoundingClientRect();
-      const rects = new Map<string, TRect>();
+      const rects = new Map<string, TRect | null>();
       const rectOf = (id: string) => {
         if (!rects.has(id)) {
           const el = findEl(root, id);
-          if (el) rects.set(id, rect(el, base, anchorY));
+          rects.set(id, el ? rect(el, base, anchorY) : null);
         }
-        return rects.get(id);
+        return rects.get(id) ?? null;
       };
-      const drawn = links.filter((l) => rectOf(l.from) && rectOf(l.to));
-      // the links leaving and arriving at each card, sorted by where the other end sits
-      const ends = new Map<string, string[]>();
-      const add = (id: string, other: string) => ends.set(id, [...(ends.get(id) ?? []), other]);
-      drawn.forEach((l) => {
-        add(l.from, l.to);
-        add(l.to, l.from);
-      });
-      ends.forEach((others) => others.sort((x, y) => rectOf(x)!.y - rectOf(y)!.y));
-      const endBox = (id: string, other: string) => {
-        const others = ends.get(id)!;
-        return fanned(rectOf(id)!, others.indexOf(other), others.length);
-      };
-      const next: TPath[] = drawn.map((link) => ({
-        d: curve(endBox(link.from, link.to), endBox(link.to, link.from)),
-        dir: link.dir,
-        key: `${link.from}>${link.to}`,
-      }));
-      setPaths(next);
+      const lines: TDrawn["lines"] = [];
+      const heads = new Map<string, TDrawn["heads"][number]>();
+      for (const link of links) {
+        const a = rectOf(link.from);
+        const z = rectOf(link.to);
+        if (!a || !z) continue;
+        const routed = route(a, z, link.dir);
+        if (!routed) continue;
+        const { points, head } = routed;
+        lines.push({ d: rounded(points), dir: link.dir, key: `${link.from}>${link.to}` });
+        const key = `${link.to}:${head.to}:${head.x.toFixed(1)}:${head.y.toFixed(1)}`;
+        if (!heads.has(key)) heads.set(key, { ...head, key });
+      }
+      setDrawn({ lines, heads: [...heads.values()] });
       setSize({ w: root.scrollWidth, h: root.scrollHeight });
     };
     measure();
@@ -111,7 +196,7 @@ export function PlanLinks(props: {
     return () => ro.disconnect();
   }, [containerRef, links, anchorY, layoutKey]);
 
-  if (!paths.length) return null;
+  if (!drawn.lines.length) return null;
   return (
     <svg
       aria-hidden
@@ -119,34 +204,22 @@ export function PlanLinks(props: {
       width={size.w}
       height={size.h}
     >
-      <defs>
-        {(["up", "down"] as const).map((dir) => (
-          <marker
-            key={dir}
-            id={`plan-arrow-${dir}`}
-            viewBox="0 0 8 8"
-            refX="7"
-            refY="4"
-            markerWidth="7"
-            markerHeight="7"
-            orient="auto"
-          >
-            <path d="M0 0L8 4L0 8z" fill={dir === "up" ? UP_COLOUR : DOWN_COLOUR} />
-          </marker>
+      <g className="motion-safe:animate-[plan-link-in_200ms_ease-out]">
+        {drawn.lines.map((l) => (
+          <path
+            key={l.key}
+            d={l.d}
+            fill="none"
+            stroke={colour(l.dir)}
+            strokeWidth={1.5}
+            strokeOpacity={0.8}
+            strokeLinejoin="round"
+          />
         ))}
-      </defs>
-      {paths.map((p) => (
-        <path
-          key={p.key}
-          d={p.d}
-          fill="none"
-          stroke={p.dir === "up" ? UP_COLOUR : DOWN_COLOUR}
-          strokeWidth={1.25}
-          strokeOpacity={0.75}
-          markerEnd={`url(#plan-arrow-${p.dir})`}
-          className="motion-safe:animate-[plan-link-in_200ms_ease-out]"
-        />
-      ))}
+        {drawn.heads.map((h) => (
+          <path key={h.key} d={headPath(h)} fill={colour(h.dir)} />
+        ))}
+      </g>
     </svg>
   );
 }
