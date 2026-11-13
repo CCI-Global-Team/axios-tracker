@@ -33,7 +33,7 @@ export const ProjectSelect = observer(function ProjectSelect(props: Props) {
       content: (
         <div className="flex max-w-[300px] items-center gap-2">
           {projectDetails?.logo_props ? (
-            <Logo logo={projectDetails?.logo_props} size={16} />
+            <Logo logo={projectDetails?.logo_props} seed={projectDetails?.identifier} size={16} />
           ) : (
             <ProjectIcon className="h-4 w-4" />
           )}

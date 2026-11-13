@@ -20,7 +20,7 @@ import { Disclosure, Transition } from "@headlessui/react";
 import { EUserPermissions, EUserPermissionsLevel, MEMBER_TRACKER_ELEMENTS } from "@plane/constants";
 import { useOutsideClickDetector } from "@plane/hooks";
 import { useTranslation } from "@plane/i18n";
-import { Logo } from "@plane/propel/emoji-icon-picker";
+import { Logo, ProjectDot } from "@plane/propel/emoji-icon-picker";
 import { LinkIcon, ArchiveIcon, ChevronRightIcon } from "@plane/propel/icons";
 import { IconButton } from "@plane/propel/icon-button";
 import { Tooltip } from "@plane/propel/tooltip";
@@ -57,16 +57,6 @@ type Props = {
   isLastChild: boolean;
   renderInExtendedSidebar?: boolean;
 };
-
-// CCI (Direction A): projects in the sidebar are marked by a colour square, stable per project, instead of
-// their emoji or icon, so the list reads as one quiet column on the navy ground.
-const PROJECT_DOT_HUES = [25, 250, 140, 300, 60, 200, 340, 100];
-function ProjectDot({ seed }: { seed: string }) {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  const hue = PROJECT_DOT_HUES[Math.abs(hash) % PROJECT_DOT_HUES.length];
-  return <span aria-hidden className="size-[9px] rounded-[3px]" style={{ background: `oklch(0.64 0.14 ${hue})` }} />;
-}
 
 export const SidebarProjectsListItem = observer(function SidebarProjectsListItem(props: Props) {
   const {
@@ -171,7 +161,7 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
               root.render(
                 <div className="flex items-center rounded-sm bg-surface-1 p-1 pr-2 text-13">
                   <div className="grid size-4 flex-shrink-0 place-items-center">
-                    {project && <Logo logo={project?.logo_props} />}
+                    {project && <Logo logo={project?.logo_props} seed={project?.identifier} />}
                   </div>
                   <p className="truncate text-secondary">{project?.name}</p>
                 </div>

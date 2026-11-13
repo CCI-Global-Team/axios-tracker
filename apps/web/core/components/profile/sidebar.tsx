@@ -201,7 +201,7 @@ export const ProfileSidebar = observer(function ProfileSidebar(props: TProfileSi
                         <Disclosure.Button className="flex w-full items-center justify-between gap-2">
                           <div className="flex w-3/4 items-center gap-2">
                             <span className="grid h-7 w-7 flex-shrink-0 place-items-center">
-                              <Logo logo={projectDetails.logo_props} />
+                              <Logo logo={projectDetails.logo_props} seed={projectDetails.identifier} />
                             </span>
                             <div className="truncate text-13 font-medium break-words">{projectDetails.name}</div>
                           </div>

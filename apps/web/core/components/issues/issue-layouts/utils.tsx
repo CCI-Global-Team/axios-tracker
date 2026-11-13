@@ -172,7 +172,7 @@ const getProjectColumns = (): IGroupByColumn[] | undefined => {
         name: project.name,
         icon: (
           <div className="grid h-6 w-6 flex-shrink-0 place-items-center">
-            <Logo logo={project.logo_props} />
+            <Logo logo={project.logo_props} seed={project.identifier} />
           </div>
         ),
         payload: { project_id: project.id },

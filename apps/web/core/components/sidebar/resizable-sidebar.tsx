@@ -60,7 +60,18 @@ export function ResizableSidebar({
   const initialWidthRef = useRef<number>(0);
   const initialMouseXRef = useRef<number>(0);
   // hooks
-  const { isMobile } = usePlatformOS();
+  const { isMobile: isMobileOS } = usePlatformOS();
+  // CCI: below 768px the sidebar overlays the page whatever the device, so a narrow window or split view
+  // doesn't squeeze the content into a sliver.
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsNarrow(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  const isMobile = isMobileOS || isNarrow;
   // handlers
   const setShowPeek = useCallback(
     (value: boolean) => {
@@ -181,6 +192,9 @@ export function ResizableSidebar({
 
   return (
     <>
+      {/* CCI: a scrim behind the overlaid sidebar on narrow screens. It swallows the tap; the sidebar's
+          outside-click handler closes it. */}
+      {isMobile && !isCollapsed && <div aria-hidden className="fixed inset-0 z-[19] bg-black/30" />}
       {/* Main Sidebar */}
       <div
         id="main-sidebar"

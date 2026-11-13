@@ -5,6 +5,7 @@
  */
 
 // ui
+import { useState } from "react";
 import { Tooltip } from "@plane/propel/tooltip";
 // helpers
 import { cn } from "../utils";
@@ -76,6 +77,9 @@ export function Avatar(props: Props) {
 
   // get size details based on the size prop
   const sizeInfo = getSizeInfo(size);
+  // CCI: a broken avatar image falls back to the initial instead of the browser's broken-image glyph.
+  const [failedSrc, setFailedSrc] = useState<string | undefined>();
+  const showImage = !!src && failedSrc !== src;
 
   return (
     <Tooltip tooltipContent={fallbackText ?? name ?? "?"} disabled={!showTooltip}>
@@ -93,8 +97,13 @@ export function Avatar(props: Props) {
         }
         tabIndex={-1}
       >
-        {src ? (
-          <img src={src} className={cn("h-full w-full", getBorderRadius(shape), className)} alt={name} />
+        {showImage ? (
+          <img
+            src={src}
+            className={cn("h-full w-full", getBorderRadius(shape), className)}
+            alt={name}
+            onError={() => setFailedSrc(src)}
+          />
         ) : (
           <div
             className={cn(

@@ -13,7 +13,7 @@ import { ArchiveRestoreIcon, Settings, UserPlus } from "lucide-react";
 import { EUserPermissions, EUserPermissionsLevel, IS_FAVORITE_MENU_OPEN } from "@plane/constants";
 import { useLocalStorage } from "@plane/hooks";
 import { Button } from "@plane/propel/button";
-import { Logo } from "@plane/propel/emoji-icon-picker";
+import { Logo, projectHue } from "@plane/propel/emoji-icon-picker";
 import { LinkIcon, LockIcon, NewTabIcon, TrashIcon, CheckIcon } from "@plane/propel/icons";
 import { setPromiseToast, setToast, TOAST_TYPE } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
@@ -217,12 +217,13 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
             src={project.cover_image_url}
             alt={project.name}
             className="absolute top-0 left-0 h-full w-full rounded-t"
+            fallbackColor={`oklch(0.52 0.12 ${projectHue(project.identifier)})`}
           />
 
           <div className="absolute bottom-4 z-[1] flex h-10 w-full items-center justify-between gap-3 px-4">
             <div className="flex flex-grow items-center gap-2.5 truncate">
               <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-sm bg-white/10">
-                <Logo logo={project.logo_props} size={18} />
+                <Logo logo={project.logo_props} seed={project.identifier} size={18} />
               </div>
 
               <div className="flex w-full flex-col justify-between gap-0.5 truncate">
@@ -307,7 +308,8 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
             {isArchived ? (
               hasAdminRole && (
                 <div className="flex items-center justify-center gap-2">
-                  <div
+                  <button
+                    type="button"
                     className="flex items-center justify-center text-11 font-medium text-placeholder hover:text-secondary"
                     onClick={(e) => {
                       e.preventDefault();
@@ -319,8 +321,9 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
                       <ArchiveRestoreIcon className="h-3.5 w-3.5" />
                       Restore
                     </div>
-                  </div>
-                  <div
+                  </button>
+                  <button
+                    type="button"
                     className="flex items-center justify-center text-11 font-medium text-placeholder hover:text-secondary"
                     onClick={(e) => {
                       e.preventDefault();
@@ -329,7 +332,7 @@ export const ProjectCard = observer(function ProjectCard(props: Props) {
                     }}
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
-                  </div>
+                  </button>
                 </div>
               )
             ) : (

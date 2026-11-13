@@ -38,7 +38,7 @@ export const CycleListProjectGroupHeader = observer(function CycleListProjectGro
         strokeWidth={2}
       />
       <div className="flex size-4 flex-shrink-0 items-center justify-center overflow-hidden">
-        <Logo logo={project.logo_props} size={16} />
+        <Logo logo={project.logo_props} seed={project.identifier} size={16} />
       </div>
       <div className="relative flex w-full flex-row items-center gap-1 overflow-hidden">
         <div className="line-clamp-1 inline-block truncate font-medium text-primary">{project.name}</div>
