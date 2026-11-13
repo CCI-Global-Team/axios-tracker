@@ -41,6 +41,7 @@ from plane.db.models import (
     ModuleIssue,
 )
 from plane.utils.issue_filters import issue_filters
+from plane.utils.issue_visibility import get_issue_project_permission_filters
 from plane.utils.order_queryset import VIEW_ORDER_BY_ALLOWLIST, order_issue_queryset, sanitize_order_by
 from plane.bgtasks.recent_visited_task import recent_visited_task
 from .. import BaseViewSet
@@ -150,22 +151,7 @@ class WorkspaceViewIssuesViewSet(BaseViewSet):
         Get common project permission filters for guest users and role-based access control.
         Returns Q object for filtering issues based on user role and project settings.
         """
-        return Q(
-            Q(
-                project__project_projectmember__role=5,
-                project__guest_view_all_features=True,
-            )
-            | Q(
-                project__project_projectmember__role=5,
-                project__guest_view_all_features=False,
-                created_by=self.request.user,
-            )
-            |
-            # For other roles (role > 5), show all issues
-            Q(project__project_projectmember__role__gt=5),
-            project__project_projectmember__member=self.request.user,
-            project__project_projectmember__is_active=True,
-        )
+        return get_issue_project_permission_filters(self.request.user)
 
     def apply_annotations(self, issues):
         return (
