@@ -58,7 +58,7 @@ export function FiltersDropdown(props: Props) {
                 <div className="hidden @4xl:flex">
                   <Button
                     disabled={disabled}
-                    variant="ghost"
+                    variant="secondary"
                     prependIcon={icon}
                     tabIndex={tabIndex}
                     className="relative"

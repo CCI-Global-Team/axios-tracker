@@ -65,7 +65,7 @@ export const FiltersToggle = observer(function FiltersToggle<P extends TFilterPr
       <AddFilterButton
         filter={filter}
         buttonConfig={{
-          variant: "ghost",
+          variant: "secondary",
           className: "h-7 rounded-md px-2 text-13 font-medium text-secondary",
           label: "Filter",
         }}
@@ -78,7 +78,7 @@ export const FiltersToggle = observer(function FiltersToggle<P extends TFilterPr
   return (
     <Button
       size="lg"
-      variant="ghost"
+      variant="secondary"
       onClick={handleToggleFilter}
       aria-expanded={isFilterRowVisible}
       className={cn("gap-1 px-2 text-13 font-medium text-secondary", buttonClassName)}

@@ -154,7 +154,8 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
   // Use next_work_item_sequence from backend (static value from project endpoint)
   const maxSequenceId = currentProjectNextSequenceId ?? 1;
   const keyMinWidth = displayProperties?.key
-    ? calculateIdentifierWidth(projectIdentifier?.length ?? 0, maxSequenceId)
+    ? // CCI: keys render at 12px rather than the 11px the helper measures for.
+      Math.ceil(calculateIdentifierWidth(projectIdentifier?.length ?? 0, maxSequenceId) * 1.1)
     : 0;
 
   const workItemLink = generateWorkItemLink({
@@ -179,7 +180,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
       <Row
         ref={issueRef}
         className={cn(
-          "group/list-block relative flex min-h-10 flex-col gap-2 bg-layer-transparent py-2 text-13 transition-colors hover:bg-layer-transparent-hover lg:flex-row lg:items-center",
+          "group/list-block relative flex min-h-11 flex-col gap-2 bg-layer-transparent py-2 text-13 transition-colors hover:bg-layer-transparent-hover lg:flex-row lg:items-center",
           {
             // CCI: the row you are reading in the side pane. This used to be a border COLOUR
             // change only, which on the dark theme is indistinguishable from the ordinary row
@@ -243,7 +244,7 @@ export const IssueBlock = observer(function IssueBlock(props: IssueBlockProps) {
                     <IssueIdentifier
                       issueId={issueId}
                       projectId={issue.project_id}
-                      size="xs"
+                      size="sm"
                       variant="tertiary"
                       displayProperties={displayProperties}
                     />

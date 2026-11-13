@@ -270,6 +270,10 @@ export const ListGroup = observer(function ListGroup(props: Props) {
         className={cn("w-full flex-shrink-0 border-b border-subtle bg-layer-1 py-1 pr-3 hover:bg-layer-1-hover", {
           "sticky top-0 z-[2]": isExpanded && groupIssueCount > 0,
         })}
+        // CCI: a state group's header carries a soft tint of the state's colour.
+        style={
+          group.color ? { backgroundColor: `color-mix(in srgb, ${group.color} 10%, var(--bg-surface-1))` } : undefined
+        }
       >
         <HeaderGroupByCard
           groupID={group.id}

@@ -206,9 +206,11 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
                   <item.icon
                     className={`size-4 flex-shrink-0 ${item.name === "Intake" ? "stroke-1" : "stroke-[1.5]"}`}
                   />
-                  <span className="text-11 font-medium">{t(item.i18n_key)}</span>
+                  <span className="text-13 font-medium">{t(item.i18n_key)}</span>
                 </div>
-                {shouldShowCount && <span className="text-11 font-medium text-tertiary">{project.intake_count}</span>}
+                {shouldShowCount && (
+                  <span className="text-12 font-medium text-tertiary tabular-nums">{project.intake_count}</span>
+                )}
               </div>
             </SidebarNavItem>
           </Link>
