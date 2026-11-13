@@ -56,7 +56,11 @@ export const MonthChartView = observer(function MonthChartView(_props: any) {
                   >
                     {monthBlock?.title}
                     {monthBlock.today && (
-                      <span className={cn("ml-2 rounded-sm bg-accent-primary px-1 text-9 font-medium text-on-color")}>
+                      <span
+                        className={cn(
+                          "ml-2 rounded-sm bg-[var(--txt-accent-primary)] px-1 text-9 font-medium text-on-color"
+                        )}
+                      >
                         Current
                       </span>
                     )}
@@ -72,7 +76,7 @@ export const MonthChartView = observer(function MonthChartView(_props: any) {
                   className={cn(
                     "flex flex-shrink-0 justify-between px-2 py-1 text-center capitalize outline-[0.25px] outline-subtle-1",
                     {
-                      "bg-accent-primary/20": weekBlock.today,
+                      "bg-accent-subtle": weekBlock.today,
                     }
                   )}
                   style={{ width: `${currentViewData?.data.dayWidth * 7}px` }}
@@ -80,7 +84,7 @@ export const MonthChartView = observer(function MonthChartView(_props: any) {
                   <div className="space-x-1 text-11 font-medium text-placeholder">
                     <span
                       className={cn({
-                        "rounded-sm bg-accent-primary px-1 text-on-color": weekBlock.today,
+                        "rounded-sm bg-[var(--txt-accent-primary)] px-1 text-on-color": weekBlock.today,
                       })}
                     >
                       {weekBlock.startDate.getDate()}-{weekBlock.endDate.getDate()}
@@ -96,11 +100,22 @@ export const MonthChartView = observer(function MonthChartView(_props: any) {
             {weeks?.map((weekBlock) => (
               <div
                 key={`column-${weekBlock.startDate.toString()}-${weekBlock.endDate.toString()}`}
-                className={cn("h-full overflow-hidden outline-[0.25px] outline-subtle", {
-                  "bg-accent-primary/20": weekBlock.today,
-                })}
+                className="relative h-full overflow-hidden outline-[0.25px] outline-subtle"
                 style={{ width: `${currentViewData?.data.dayWidth * 7}px` }}
-              />
+              >
+                {/* CCI: today is a thin accent line, not a tinted column. */}
+                {weekBlock.today && (
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-0 z-[1] w-px bg-[var(--txt-accent-primary)]"
+                    style={{
+                      left:
+                        (Math.floor((Date.now() - weekBlock.startDate.getTime()) / 86_400_000) + 0.5) *
+                        currentViewData?.data.dayWidth,
+                    }}
+                  />
+                )}
+              </div>
             ))}
           </div>
         </div>

@@ -51,7 +51,7 @@ export const BlockRow = observer(function BlockRow(props: Props) {
     );
 
     // Observe if the block is visible on the chart
-    const observer = new IntersectionObserver(
+    const visibilityObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           setIsHidden(!entry.isIntersecting);
@@ -64,10 +64,10 @@ export const BlockRow = observer(function BlockRow(props: Props) {
       }
     );
 
-    observer.observe(timelineBlock);
+    visibilityObserver.observe(timelineBlock);
 
     return () => {
-      observer.unobserve(timelineBlock);
+      visibilityObserver.unobserve(timelineBlock);
     };
   }, [block]);
 
@@ -89,7 +89,7 @@ export const BlockRow = observer(function BlockRow(props: Props) {
       }}
     >
       <div
-        className={cn("relative h-full bg-layer-transparent hover:bg-layer-transparent-hover", {
+        className={cn("group/gantt-row relative h-full bg-layer-transparent hover:bg-layer-transparent-hover", {
           "rounded-l-sm border border-r-0 border-accent-strong": getIsIssuePeeked(block.data.id),
           "bg-layer-transparent-hover": isBlockHoveredOn,
           "bg-accent-primary/5 hover:bg-accent-primary/10": isBlockSelected,
@@ -101,7 +101,8 @@ export const BlockRow = observer(function BlockRow(props: Props) {
           ? isHidden && (
               <button
                 type="button"
-                className="sticky z-[5] grid h-8 w-8 translate-y-1.5 cursor-pointer place-items-center rounded-sm border border-strong bg-layer-1 text-secondary hover:text-primary"
+                aria-label="Scroll to bar"
+                className="sticky z-[5] grid h-8 w-8 translate-y-1.5 cursor-pointer place-items-center rounded-sm text-tertiary opacity-0 transition-opacity duration-150 group-hover/gantt-row:opacity-100 hover:bg-layer-1 hover:text-primary focus-visible:opacity-100"
                 style={{
                   left: `${SIDEBAR_WIDTH + 4}px`,
                 }}
