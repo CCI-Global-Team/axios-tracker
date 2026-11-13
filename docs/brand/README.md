@@ -1,6 +1,6 @@
 # Axios brand assets
 
-These are the canonical brand files for **Axios**, CCI's engineering tracker. The apps under
+These are the canonical brand files for **Axios**, the CCI Technology Team's tracker. The apps under
 `apps/*/public/` and `apps/*/app/assets/` hold _copies_ of these — when a mark changes, change it
 here first, then re-copy.
 

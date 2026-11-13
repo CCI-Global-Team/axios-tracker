@@ -41,7 +41,7 @@ import "@fontsource/material-symbols-rounded";
 import "@fontsource/ibm-plex-mono";
 import { LOOK_BOOT_SCRIPT } from "@/lib/look";
 
-const APP_TITLE = "Axios | CCI's engineering tracker.";
+const APP_TITLE = "Axios | CCI Technology Team";
 
 export const links: LinksFunction = () => [
   { rel: "icon", type: "image/png", sizes: "32x32", href: favicon32 },
@@ -123,7 +123,7 @@ export const meta: Route.MetaFunction = () => [
   { property: "og:image", content: absoluteOgImage },
   { property: "og:image:width", content: "1200" },
   { property: "og:image:height", content: "630" },
-  { property: "og:image:alt", content: "Axios - CCI's engineering tracker" },
+  { property: "og:image:alt", content: "Axios - CCI Technology Team" },
   {
     name: "keywords",
     content: "CCI, Axios, work item tracking, sprints, project management, volunteer availability, engineering",
@@ -136,7 +136,7 @@ export const meta: Route.MetaFunction = () => [
   // frame and letterboxed the wide card into it, which is the "squished preview".
   { name: "twitter:image:width", content: "1200" },
   { name: "twitter:image:height", content: "630" },
-  { name: "twitter:image:alt", content: "Axios - CCI's engineering tracker" },
+  { name: "twitter:image:alt", content: "Axios - CCI Technology Team" },
 ];
 
 export default function Root() {

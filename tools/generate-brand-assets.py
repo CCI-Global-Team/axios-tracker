@@ -151,7 +151,7 @@ def og_svg():
         f'<g transform="translate({x0},{y0 + wm_h + 26}) scale({mk_s:.4f})">{mark("#fff", "og")}</g>'
         f'<text x="{x0}" y="{y0 + wm_h + 26 + MARK_H * mk_s + 70}" fill="#FFD2D2" '
         'font-family="Inter, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="34" font-weight="500">'
-        "CCI\u2019s engineering tracker</text></svg>"
+        "CCI Technology Team</text></svg>"
     )
 
 
