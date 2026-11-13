@@ -18,6 +18,8 @@ import type { TPlanArea } from "./use-plan-data";
 type Props = TPlanShared & {
   arrange: TPlanArrange;
   areas: TPlanArea[];
+  /** "No module", "No label" … */
+  noAreaName: string;
   onSelect: (id: string | null) => void;
 };
 
@@ -27,7 +29,19 @@ type TColumn = { key: string; title: string; items: TPlanNode[] };
 const COLUMN_CAP = 30;
 
 export function BuildOrderView(props: Props) {
-  const { graph, areas, areaById, personById, people, arrange, isVisible, selectedId, itemHours, onSelect } = props;
+  const {
+    graph,
+    areas,
+    noAreaName,
+    areaById,
+    personById,
+    people,
+    arrange,
+    isVisible,
+    selectedId,
+    itemHours,
+    onSelect,
+  } = props;
   const boardRef = useRef<HTMLDivElement>(null);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
@@ -42,7 +56,7 @@ export function BuildOrderView(props: Props) {
           x.key.localeCompare(y.key, undefined, { numeric: true })
       );
     if (arrange === "area") {
-      return [...areas.map((a) => ({ id: a.id, name: a.name })), { id: "", name: "No area" }]
+      return [...areas.map((a) => ({ id: a.id, name: a.name })), { id: "", name: noAreaName }]
         .map((a) => ({
           key: a.id || "none",
           title: a.name,
@@ -73,7 +87,7 @@ export function BuildOrderView(props: Props) {
     const done = visible.filter((n) => n.isDone);
     if (done.length) cols.push({ key: "done", title: "Done", items: sort(done) });
     return cols;
-  }, [graph, isVisible, arrange, areas, people]);
+  }, [graph, isVisible, arrange, areas, noAreaName, people]);
 
   const selected = selectedId ? graph.nodes.get(selectedId) : undefined;
   const { up, down, related } = useMemo(() => {

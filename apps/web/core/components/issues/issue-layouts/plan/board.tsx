@@ -18,7 +18,7 @@ import { DEFAULT_ITEM_HOURS, DEFAULT_WEEK_HOURS, NO_OWNER, dateToWeeks, schedule
 import { OverviewView } from "./overview";
 import { PlanPeek } from "./peek";
 import { ScheduleView } from "./schedule";
-import { usePlanData } from "./use-plan-data";
+import { AREA_NOUN, usePlanData } from "./use-plan-data";
 import { usePlanHours } from "./use-plan-hours";
 
 export type TPlanView = "overview" | "order" | "schedule";
@@ -69,7 +69,9 @@ type Props = {
 export const PlanBoard = observer(function PlanBoard(props: Props) {
   const { workspaceSlug, issueIds, issueMap, areaBy, isLoadingMore } = props;
   const data = usePlanData({ workspaceSlug, issueIds, issueMap, areaBy });
-  const { graph, areas, people } = data;
+  const { graph, areas, areaKind, people } = data;
+  const noAreaName = `No ${AREA_NOUN[areaKind]}`;
+  const areaButtonLabel = AREA_NOUN[areaKind].replace(/ .*/, "").replace(/^./, (c) => c.toUpperCase());
   const { itemHours, personHours, setItemHours, setPersonHours } = usePlanHours(workspaceSlug);
   const { setPeekIssue, peekIssue } = useIssueDetail();
 
@@ -178,7 +180,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
   const openCount = useMemo(() => [...graph.nodes.values()].filter((n) => !n.isDone).length, [graph]);
   const filterLabel = filter
     ? filter.startsWith("area:")
-      ? (areaById.get(filter.slice(5))?.name ?? "No area")
+      ? (areaById.get(filter.slice(5))?.name ?? noAreaName)
       : FILTER_LABELS[filter as keyof typeof FILTER_LABELS]
     : null;
 
@@ -243,7 +245,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
                       : "text-tertiary hover:text-secondary"
                   )}
                 >
-                  {label}
+                  {key === "area" ? areaButtonLabel : label}
                 </button>
               ))}
             </div>
@@ -318,6 +320,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
             <OverviewView
               {...shared}
               areas={areas}
+              areaKind={areaKind}
               onFilter={applyFilter}
               onOpenItem={openFromOverview}
               onGoTo={changeView}
@@ -325,7 +328,9 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
               onRetry={data.retryRelations}
             />
           )}
-          {view === "order" && <BuildOrderView {...shared} arrange={arrange} onSelect={select} areas={areas} />}
+          {view === "order" && (
+            <BuildOrderView {...shared} arrange={arrange} onSelect={select} areas={areas} noAreaName={noAreaName} />
+          )}
           {view === "schedule" && (
             <ScheduleView {...shared} onSelect={select} setPersonHours={setPersonHours} personHours={personHours} />
           )}

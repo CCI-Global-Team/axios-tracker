@@ -11,10 +11,12 @@ import type { TPlanFilter, TPlanShared, TPlanView } from "./board";
 import type { TPlanNode } from "./model";
 import { NO_OWNER, longestChain, statusLabel, weeksToDate } from "./model";
 import { AreaDot, Card, CardTitle, ItemKey, LinkButton, PersonAvatar } from "./parts";
-import type { TPlanArea } from "./use-plan-data";
+import type { TPlanArea, TPlanAreaKind } from "./use-plan-data";
+import { AREA_NOUN } from "./use-plan-data";
 
 type Props = TPlanShared & {
   areas: TPlanArea[];
+  areaKind: TPlanAreaKind;
   onFilter: (f: TPlanFilter | null) => void;
   onOpenItem: (id: string) => void;
   onGoTo: (v: TPlanView) => void;
@@ -33,7 +35,7 @@ export const formatDay = (d: Date, withYear = false) =>
   d.toLocaleDateString(undefined, { day: "numeric", month: "short", ...(withYear ? { year: "numeric" } : {}) });
 
 export function OverviewView(props: Props) {
-  const { graph, areas, areaById, personById, plan, origin, now, onFilter, onOpenItem, onGoTo } = props;
+  const { graph, areas, areaKind, areaById, personById, plan, origin, now, onFilter, onOpenItem, onGoTo } = props;
   const nodes = useMemo(() => [...graph.nodes.values()], [graph]);
   const open = useMemo(() => nodes.filter((n) => !n.isDone), [nodes]);
   const count = (f: (n: TPlanNode) => boolean) => open.filter(f).length;
@@ -183,7 +185,7 @@ export function OverviewView(props: Props) {
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <Card>
           <CardTitle
-            title="Progress by area"
+            title={`Progress by ${AREA_NOUN[areaKind]}`}
             action={<LinkButton onClick={() => onGoTo("order")}>Open build order</LinkButton>}
           />
           {areaRows.length ? (
@@ -193,13 +195,13 @@ export function OverviewView(props: Props) {
                   key={r.id || "none"}
                   type="button"
                   onClick={() => onFilter(`area:${r.id}`)}
-                  aria-label={`${r.area?.name ?? "No area"}: ${r.c.done} of ${r.total} done`}
+                  aria-label={`${r.area?.name ?? `No ${AREA_NOUN[areaKind]}`}: ${r.c.done} of ${r.total} done`}
                   className="grid grid-cols-[minmax(0,9.5rem)_1fr_auto] items-center gap-x-3 gap-y-1.5 rounded-sm py-1.5 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-sm:min-h-11 max-sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,14rem)_1fr_auto]"
                 >
                   <span className="flex min-w-0 items-center gap-2 max-sm:col-start-1 max-sm:row-start-1">
                     <AreaDot area={r.area} />
                     <span className={cn("truncate", r.id ? "text-secondary" : "text-tertiary")}>
-                      {r.area?.name ?? "No area"}
+                      {r.area?.name ?? `No ${AREA_NOUN[areaKind]}`}
                     </span>
                   </span>
                   <span className="flex h-2.5 overflow-hidden rounded-[3px] bg-layer-2 max-sm:col-span-2 max-sm:col-start-1 max-sm:row-start-2">
@@ -229,7 +231,7 @@ export function OverviewView(props: Props) {
               </div>
             </div>
           ) : (
-            <Empty text="Nothing open in any area." />
+            <Empty text={`Nothing open in any ${AREA_NOUN[areaKind]}.`} />
           )}
         </Card>
 

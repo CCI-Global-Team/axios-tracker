@@ -9,17 +9,20 @@ import useSWR from "swr";
 import type { TIssueMap, TMemberAvailability } from "@plane/types";
 // hooks
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
+import { useLabel } from "@/hooks/store/use-label";
 import { useMember } from "@/hooks/store/use-member";
 import { useModule } from "@/hooks/store/use-module";
 import { useProject } from "@/hooks/store/use-project";
 import { useProjectState } from "@/hooks/store/use-project-state";
 // services
+import { IssueService } from "@/services/issue/issue.service";
 import { IssueRelationService } from "@/services/issue/issue_relation.service";
 import { WorkspaceService } from "@/services/workspace.service";
 // local
 import type { TPlanItem } from "./model";
 import { buildPlanGraph } from "./model";
 
+const issueService = new IssueService();
 const relationService = new IssueRelationService();
 const workspaceService = new WorkspaceService();
 
@@ -39,6 +42,26 @@ const AREA_HUES = [
 export const NO_AREA_HUE = "#8b919c";
 
 export type TPlanArea = { id: string; name: string; hue: string };
+/** what the areas are grouped by: the scope's own grouping, or a fallback when that leaves a single area */
+export type TPlanAreaKind = "module" | "project" | "parent" | "label";
+
+/** how the area grouping reads in the UI: "Progress by label", "No label" */
+export const AREA_NOUN: Record<TPlanAreaKind, string> = {
+  module: "module",
+  project: "project",
+  parent: "parent item",
+  label: "label",
+};
+
+type TGrouping = {
+  kind: TPlanAreaKind;
+  keyOf: (issue: TIssueMap[string]) => string | null;
+  nameOf: (key: string) => string;
+};
+
+/** two or more groups, each item in at most one; a fallback must also cover at least half the items */
+const groupCount = (keys: (string | null)[]) => new Set(keys.filter(Boolean)).size;
+const covers = (keys: (string | null)[]) => keys.filter(Boolean).length * 2 >= keys.length;
 export type TPlanPerson = { id: string; name: string; avatarUrl?: string; declaredHours: number | null };
 
 export function usePlanData(args: {
@@ -53,6 +76,7 @@ export function usePlanData(args: {
   const { getModuleById, fetchWorkspaceModules } = useModule();
   const { getProjectIdentifierById, getProjectById } = useProject();
   const { getUserDetails } = useMember();
+  const { getLabelById, fetchWorkspaceLabels } = useLabel();
 
   const issues = issueIds.map((id) => issueMap[id]).filter(Boolean);
   const projectIds = [...new Set(issues.map((i) => i.project_id).filter((p): p is string => !!p))].toSorted();
@@ -66,6 +90,35 @@ export function usePlanData(args: {
     () => fetchWorkspaceModules(workspaceSlug),
     { revalidateOnFocus: false, revalidateIfStale: false }
   );
+  useSWR(workspaceSlug ? `PLAN_LABELS_${workspaceSlug}` : null, () => fetchWorkspaceLabels(workspaceSlug), {
+    revalidateOnFocus: false,
+    revalidateIfStale: false,
+  });
+  // parents outside the loaded items, so a parent grouping can show their names
+  const missingParents = [
+    ...new Map(
+      issues
+        .filter((i) => i.parent_id && !issueMap[i.parent_id])
+        .map((i) => [i.parent_id!, i.project_id ?? ""] as const)
+    ),
+  ].toSorted(([a], [b]) => a.localeCompare(b));
+  const parents = useSWR(
+    workspaceSlug && missingParents.length
+      ? `PLAN_PARENTS_${workspaceSlug}_${missingParents.map(([id]) => id).join(",")}`
+      : null,
+    async () => {
+      const byProject = new Map<string, string[]>();
+      missingParents.forEach(([id, projectId]) => byProject.set(projectId, [...(byProject.get(projectId) ?? []), id]));
+      const lists = await Promise.all(
+        [...byProject].map(([projectId, ids]) =>
+          issueService.retrieveIssues(workspaceSlug, projectId, ids).catch(() => [])
+        )
+      );
+      return new Map(lists.flat().map((p) => [p.id, p.name]));
+    },
+    { revalidateOnFocus: false }
+  );
+
   const relations = useSWR(
     workspaceSlug && projectIds.length ? `PLAN_RELATIONS_${workspaceSlug}_${projectIds.join(",")}` : null,
     () => relationService.listWorkspaceRelations(workspaceSlug, projectIds),
@@ -87,22 +140,56 @@ export function usePlanData(args: {
   );
 
   // Read observable fields on every observer render, including after unrelated React updates.
-  const { items, areas } = (() => {
+  const { items, areas, areaKind } = (() => {
+    const moduleName = (id: string) => getModuleById(id)?.name ?? "";
+    // an item with several labels goes with the one most items share, so groups stay broad
+    const labelUse = new Map<string, number>();
+    issues.forEach((i) => (i.label_ids ?? []).forEach((l) => labelUse.set(l, (labelUse.get(l) ?? 0) + 1)));
+    const labelName = (id: string) => getLabelById(id)?.name ?? "";
+
+    const primary: TGrouping =
+      areaBy === "module"
+        ? {
+            kind: "module",
+            keyOf: (i) =>
+              [...(i.module_ids ?? [])].toSorted((a, b) => moduleName(a).localeCompare(moduleName(b)))[0] ?? null,
+            nameOf: moduleName,
+          }
+        : { kind: "project", keyOf: (i) => i.project_id ?? null, nameOf: (id) => getProjectById(id)?.name ?? "" };
+    const fallbacks: TGrouping[] = [
+      {
+        kind: "parent",
+        keyOf: (i) => i.parent_id ?? null,
+        nameOf: (id) => issueMap[id]?.name ?? parents.data?.get(id) ?? "",
+      },
+      {
+        kind: "label",
+        keyOf: (i) =>
+          [...(i.label_ids ?? [])].toSorted(
+            (a, b) => (labelUse.get(b) ?? 0) - (labelUse.get(a) ?? 0) || labelName(a).localeCompare(labelName(b))
+          )[0] ?? null,
+        nameOf: labelName,
+      },
+    ];
+    const keysFor = (g: TGrouping) => issues.map((i) => g.keyOf(i));
+    const primaryKeys = keysFor(primary);
+    let chosen = { grouping: primary, keys: primaryKeys };
+    if (groupCount(primaryKeys) < 2) {
+      for (const g of fallbacks) {
+        const keys = keysFor(g);
+        if (groupCount(keys) >= 2 && covers(keys)) {
+          chosen = { grouping: g, keys };
+          break;
+        }
+      }
+    }
+
     const areaMap = new Map<string, TPlanArea>();
-    const areaOf = (id: string | null | undefined, name: () => string | undefined) => {
-      if (!id) return null;
-      if (!areaMap.has(id)) areaMap.set(id, { id, name: name() ?? "Unnamed", hue: "" });
-      return id;
-    };
-    const planItems: TPlanItem[] = issues.map((issue) => {
+    chosen.keys.forEach((id) => {
+      if (id && !areaMap.has(id)) areaMap.set(id, { id, name: chosen.grouping.nameOf(id) || "Unnamed", hue: "" });
+    });
+    const planItems: TPlanItem[] = issues.map((issue, index) => {
       const state = getStateById(issue.state_id);
-      const moduleId = [...(issue.module_ids ?? [])].toSorted((a, b) =>
-        (getModuleById(a)?.name ?? "").localeCompare(getModuleById(b)?.name ?? "")
-      )[0];
-      const areaId =
-        areaBy === "module"
-          ? areaOf(moduleId, () => getModuleById(moduleId)?.name)
-          : areaOf(issue.project_id, () => getProjectById(issue.project_id)?.name);
       return {
         id: issue.id,
         key: `${getProjectIdentifierById(issue.project_id) ?? ""}-${issue.sequence_id}`,
@@ -112,13 +199,13 @@ export function usePlanData(args: {
         stateName: state?.name ?? "",
         priority: issue.priority ?? "none",
         ownerId: [...(issue.assignee_ids ?? [])].toSorted()[0] ?? null,
-        areaId,
+        areaId: chosen.keys[index],
         isArchived: !!issue.archived_at,
       };
     });
     const sorted = [...areaMap.values()].toSorted((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     sorted.forEach((a, i) => (a.hue = AREA_HUES[i % AREA_HUES.length]));
-    return { items: planItems, areas: sorted };
+    return { items: planItems, areas: sorted, areaKind: chosen.grouping.kind };
   })();
 
   const itemsKey = JSON.stringify(items);
@@ -158,6 +245,7 @@ export function usePlanData(args: {
   return {
     graph,
     areas,
+    areaKind,
     people,
     isRelationsLoading: relations.isLoading,
     relationsError: relations.error as unknown,
