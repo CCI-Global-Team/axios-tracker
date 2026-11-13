@@ -6,6 +6,7 @@
 
 // plane imports
 import { ScrollArea } from "@plane/propel/scrollarea";
+import { useChromeAttributes } from "@/lib/use-look";
 // local imports
 import { ProjectSettingsSidebarHeader } from "./header";
 import { ProjectSettingsSidebarItemCategories } from "./item-categories";
@@ -17,16 +18,21 @@ type Props = {
 export function ProjectSettingsSidebarRoot(props: Props) {
   const { projectId } = props;
 
+  // CCI: the settings sidebar wears the same navy chrome as the app sidebar.
+  const chromeAttributes = useChromeAttributes();
+
   return (
-    <ScrollArea
-      scrollType="hover"
-      orientation="vertical"
-      size="sm"
-      rootClassName="shrink-0 animate-fade-in h-full w-[250px] bg-surface-1 border-r border-r-subtle overflow-y-scroll"
-      viewportClassName="pb-5"
-    >
-      <ProjectSettingsSidebarHeader projectId={projectId} />
-      <ProjectSettingsSidebarItemCategories projectId={projectId} />
-    </ScrollArea>
+    <div {...chromeAttributes} className="flex h-full shrink-0">
+      <ScrollArea
+        scrollType="hover"
+        orientation="vertical"
+        size="sm"
+        rootClassName="shrink-0 animate-fade-in h-full w-[250px] bg-surface-1 overflow-y-scroll"
+        viewportClassName="pb-5"
+      >
+        <ProjectSettingsSidebarHeader projectId={projectId} />
+        <ProjectSettingsSidebarItemCategories projectId={projectId} />
+      </ScrollArea>
+    </div>
   );
 }

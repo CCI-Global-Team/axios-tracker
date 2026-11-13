@@ -44,6 +44,30 @@
     --txt-link-primary-hover: oklch(0.84 0.08 255);
   }
 
+  /* Navy: CCI red is kept for the one primary button per view (bg-accent-primary) and the active tab.
+   * Every other accent (accent text and links, focus and selected borders, the selected-row tint, the
+   * calendar's today, "Load more") takes CCI blue, so red doesn't spread across secondary actions. */
+  :root:not([data-look])[data-theme="light"],
+  :root[data-look="navy"][data-theme="light"] {
+    --txt-accent-primary: oklch(0.47 0.14 258);
+    --txt-accent-secondary: oklch(0.39 0.14 258);
+    --border-accent-strong: oklch(0.55 0.15 258);
+    --border-accent-subtle: oklch(0.85 0.05 255);
+    --bg-accent-subtle: oklch(0.955 0.025 255);
+    --bg-accent-subtle-hover: oklch(0.93 0.035 255);
+    --bg-accent-subtle-active: oklch(0.9 0.045 255);
+  }
+  :root:not([data-look])[data-theme="dark"],
+  :root[data-look="navy"][data-theme="dark"] {
+    --txt-accent-primary: oklch(0.76 0.11 255);
+    --txt-accent-secondary: oklch(0.84 0.08 255);
+    --border-accent-strong: oklch(0.65 0.13 255);
+    --border-accent-subtle: oklch(0.4 0.08 258);
+    --bg-accent-subtle: oklch(0.3 0.06 258);
+    --bg-accent-subtle-hover: oklch(0.34 0.065 258);
+    --bg-accent-subtle-active: oklch(0.38 0.07 258);
+  }
+
   /* Medium priority's pale yellow nearly vanishes on white; a deeper amber keeps it legible. */
   :root[data-theme="light"] {
     --priority-medium: oklch(0.7 0.155 72);
