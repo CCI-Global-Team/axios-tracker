@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CircleCheck } from "lucide-react";
+import { CircleCheck, Flag, LocateFixed } from "lucide-react";
 import { cn } from "@plane/utils";
 import type { TPlanShared } from "./board";
 import type { TLink } from "./links";
@@ -59,6 +59,7 @@ export function ScheduleView(props: Props) {
   const { graph, areaById, personById, plan, origin, now, isVisible, selectedId, hoursOf, weekHoursOf, onSelect } =
     props;
   const gridRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const phone = usePhone();
   const NAME_W = phone ? 148 : 208;
   const PX = phone ? 84 : 112;
@@ -68,12 +69,25 @@ export function ScheduleView(props: Props) {
   const open = useMemo(() => [...graph.nodes.values()].filter((n) => !n.isDone), [graph]);
   const lanes = useMemo(() => {
     const ids = [...new Set(open.map((n) => n.ownerId ?? NO_OWNER))];
-    return ids
-      .map((id) => (Object.assign({id,person:id===NO_OWNER?undefined:personById.get(id)}, packRows(open.filter(n=>(n.ownerId??NO_OWNER)===id&&isVisible(n)),plan.slots))))
-      .toSorted((a, b) =>
-        a.id === NO_OWNER ? 1 : b.id === NO_OWNER ? -1 : (a.person?.name ?? "").localeCompare(b.person?.name ?? "")
-      );
-  }, [open, personById, isVisible, plan]);
+    return (
+      ids
+        .map((id) => {
+          const mine = open.filter((n) => (n.ownerId ?? NO_OWNER) === id);
+          const end = Math.max(0, ...mine.map((n) => plan.slots.get(n.id)?.end ?? 0));
+          const hours = mine.reduce((sum, n) => sum + hoursOf(n.id), 0);
+          const person = id === NO_OWNER ? undefined : personById.get(id);
+          return Object.assign(packRows(mine.filter(isVisible), plan.slots), { id, person, end, hours });
+        })
+        // whoever finishes last comes first; items with no owner stay at the bottom
+        .toSorted((a, b) =>
+          a.id === NO_OWNER
+            ? 1
+            : b.id === NO_OWNER
+              ? -1
+              : b.end - a.end || (a.person?.name ?? "").localeCompare(b.person?.name ?? "")
+        )
+    );
+  }, [open, personById, isVisible, plan, hoursOf]);
 
   const selected = selectedId ? graph.nodes.get(selectedId) : undefined;
   const links = useMemo<TLink[]>(
@@ -117,30 +131,51 @@ export function ScheduleView(props: Props) {
 
   return (
     <div className="flex flex-col gap-3 px-page-x pt-4 pb-10">
-      <dl className="grid grid-cols-3 gap-2.5 max-sm:grid-cols-1 sm:max-w-3xl">
-        {[
-          { label: "Everything built", value: formatDay(end, true) },
-          { label: "Finishes last", value: setter ?? "—" },
-          { label: "Left, from estimates", value: `${Math.round(totalHours).toLocaleString()} h` },
-        ].map((f) => (
-          <div key={f.label} className="rounded-lg border border-subtle bg-layer-1 px-3.5 py-2.5">
-            <dd className="truncate text-18 leading-6 font-semibold tracking-tight text-primary tabular-nums">
-              {f.value}
-            </dd>
-            <dt className="text-12 text-tertiary">{f.label}</dt>
-          </div>
-        ))}
-      </dl>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <p className="text-13 text-secondary tabular-nums">
+          Everything built <span className="text-16 font-semibold text-primary">{formatDay(end, true)}</span>
+          <span className="text-tertiary"> · </span>
+          {Math.round(totalHours).toLocaleString()} h left
+          {setter && (
+            <>
+              <span className="text-tertiary"> · </span>
+              <span className="font-medium text-primary">{setter}</span> finishes last
+            </>
+          )}
+        </p>
+        <div className="flex gap-1.5 sm:ml-auto">
+          {[
+            { label: "Today", icon: LocateFixed, at: now },
+            { label: "Finish", icon: Flag, at: plan.end },
+          ].map(({ label, icon: Icon, at }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() =>
+                scrollRef.current?.scrollTo({
+                  left: Math.max(0, at * PX - 2 * PX),
+                  behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+                })
+              }
+              className="inline-flex h-7 items-center gap-1.5 rounded-md border border-subtle bg-layer-1 px-2.5 text-12 font-medium text-secondary outline-none hover:border-strong hover:text-primary focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-sm:h-9"
+            >
+              <Icon className="size-3.5" aria-hidden />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      <div className="overflow-x-auto rounded-lg border border-subtle bg-layer-1">
+      <div ref={scrollRef} className="overflow-x-auto rounded-lg border border-subtle bg-layer-1">
         <div ref={gridRef} className="relative" style={{ width: NAME_W + W }}>
           {/* week header */}
           <div className="sticky top-0 z-[3] flex border-b border-subtle bg-layer-1">
             <div
-              className="sticky left-0 z-[4] flex shrink-0 items-end border-r border-subtle bg-layer-1 px-3 pb-1.5 text-11 font-medium text-tertiary"
+              className="sticky left-0 z-[4] flex shrink-0 items-end justify-between border-r border-subtle bg-layer-1 px-3 pb-1.5 text-11 font-medium text-tertiary"
               style={{ width: NAME_W }}
             >
-              Person · hours a week
+              <span>Person</span>
+              <span>h/wk</span>
             </div>
             {Array.from({ length: weeks }, (_, i) => (
               <div
@@ -152,6 +187,12 @@ export function ScheduleView(props: Props) {
                 <div className="text-11 text-tertiary tabular-nums">{formatDay(weeksToDate(origin, i))}</div>
               </div>
             ))}
+            <span
+              className="absolute bottom-1 z-[1] ml-1 rounded-sm bg-[var(--border-accent-strong)] px-1.5 py-px text-11 font-medium text-on-color"
+              style={{ left: NAME_W + now * PX }}
+            >
+              Today
+            </span>
           </div>
 
           {lanes.map((lane) => {
@@ -168,12 +209,19 @@ export function ScheduleView(props: Props) {
                   className="sticky left-0 z-[3] flex shrink-0 items-center gap-2 border-r border-subtle bg-layer-1 pr-2 pl-3"
                   style={{ width: NAME_W }}
                 >
-                  <PersonAvatar person={lane.person} size={20} />
-                  <span
-                    className="min-w-0 flex-1 truncate text-13 text-primary"
-                    title={lane.person?.name ?? "No owner"}
-                  >
-                    {lane.person?.name ?? "No owner"}
+                  <span className="max-md:hidden">
+                    <PersonAvatar person={lane.person} size={20} />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col" title={lane.person?.name ?? "No owner"}>
+                    <span className="truncate text-13 leading-4 text-primary">{lane.person?.name ?? "No owner"}</span>
+                    <span
+                      className={cn(
+                        "truncate text-11 leading-4 tabular-nums",
+                        lane.id === plan.setter ? "font-medium text-warning-primary" : "text-tertiary"
+                      )}
+                    >
+                      {Math.round(lane.hours)} h · {formatDay(weeksToDate(origin, lane.end))}
+                    </span>
                   </span>
                   <label
                     className="flex items-center gap-0.5"
@@ -220,30 +268,31 @@ export function ScheduleView(props: Props) {
                     const hue = areaById.get(n.areaId ?? "")?.hue ?? NO_AREA_HUE;
                     const isSel = n.id === selectedId;
                     const dim = !!selected && !isSel && !linked.has(n.id);
+                    const width = Math.max(10, (slot.end - slot.start) * PX - 3);
                     return (
                       <button
                         key={n.id}
                         type="button"
                         data-plan-id={n.id}
                         aria-pressed={isSel}
+                        aria-label={`${n.key} ${n.name}`}
                         title={`${n.key} ${n.name}`}
                         onClick={() => onSelect(n.id)}
                         className={cn(
-                          "absolute z-[1] flex h-7 items-center gap-1.5 overflow-hidden rounded-md border px-1.5 text-left text-12 whitespace-nowrap text-primary transition-[opacity,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
-                          n.kind === "wip" && "border-2",
-                          isSel && "z-[2] shadow-raised-100 ring-2 ring-[var(--txt-primary)]",
+                          "absolute z-[1] flex h-7 items-center gap-1.5 overflow-hidden rounded-md border border-l-[3px] border-subtle bg-layer-2 pr-1.5 pl-1.5 text-left text-12 whitespace-nowrap text-primary transition-[opacity,box-shadow] duration-150 outline-none hover:border-strong focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
+                          isSel && "z-[2] shadow-raised-200 ring-2 ring-[var(--border-accent-strong)]",
                           dim && "opacity-30"
                         )}
                         style={{
                           top: LANE_PAD + (lane.rowOf.get(n.id) ?? 0) * ROW_H,
                           left: slot.start * PX + 1,
-                          width: Math.max(10, (slot.end - slot.start) * PX - 3),
-                          borderColor: hue,
-                          background: `color-mix(in srgb, ${hue} 14%, var(--bg-layer-1))`,
+                          width,
+                          borderLeftColor: hue,
+                          ...(n.kind === "wip" && { background: `color-mix(in srgb, ${hue} 28%, var(--bg-layer-1))` }),
                         }}
                       >
-                        <span className="font-mono text-11 font-semibold" style={{ color: hue }}>
-                          {n.key}
+                        <span className="font-mono text-11 font-semibold text-secondary tabular-nums">
+                          {width < 90 ? n.key.slice(n.key.lastIndexOf("-") + 1) : n.key}
                         </span>
                         <span className="truncate">{n.name}</span>
                       </button>
@@ -257,7 +306,7 @@ export function ScheduleView(props: Props) {
           {/* today and the finish line */}
           <div
             aria-hidden
-            className="pointer-events-none absolute top-0 bottom-0 z-[2] w-0.5 bg-[var(--axios-brand)]"
+            className="pointer-events-none absolute top-0 bottom-0 z-[2] w-0.5 bg-[var(--border-accent-strong)]"
             style={{ left: NAME_W + now * PX }}
           />
           <div
@@ -276,10 +325,17 @@ export function ScheduleView(props: Props) {
           />
         </div>
       </div>
-      <p className="text-12 text-tertiary">
-        One item at a time per person, each starting once what it waits on is finished. Items in progress have a thick
-        border.
-      </p>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-11 text-tertiary">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-4 rounded-[3px] border border-l-[3px] border-subtle bg-layer-2" />
+          To do
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-4 rounded-[3px] border border-l-[3px] border-subtle bg-[color-mix(in_srgb,var(--txt-tertiary)_28%,var(--bg-layer-1))]" />
+          In progress
+        </span>
+        <span>One item at a time per person, in the order the links allow.</span>
+      </div>
     </div>
   );
 }

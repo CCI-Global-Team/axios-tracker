@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from "react";
-import { ArrowRight, CircleCheck, TriangleAlert } from "lucide-react";
+import { ArrowUpRight, CircleCheck, ChevronRight, TriangleAlert } from "lucide-react";
 import { cn } from "@plane/utils";
 import type { TPlanFilter, TPlanShared, TPlanView } from "./board";
 import type { TPlanNode } from "./model";
@@ -24,8 +24,8 @@ type Props = TPlanShared & {
 
 const SEGMENTS = [
   { kind: "done", label: "Done", className: "bg-success-primary" },
-  { kind: "wip", label: "In progress", className: "bg-accent-primary" },
-  { kind: "ready", label: "Can start", className: "bg-success-subtle" },
+  { kind: "wip", label: "In progress", className: "bg-[var(--border-accent-strong)]" },
+  { kind: "ready", label: "Can start", className: "bg-success-subtle-1 ring-1 ring-success-strong ring-inset" },
   { kind: "blocked", label: "Waiting", className: "bg-warning-primary" },
 ] as const;
 
@@ -45,9 +45,8 @@ export function OverviewView(props: Props) {
       filter: "blocked",
       value: count((n) => n.kind === "blocked"),
       label: "waiting on others",
-      tone: "text-warning-primary",
     },
-    { filter: "wip", value: count((n) => n.kind === "wip"), label: "in progress", tone: "text-accent-primary" },
+    { filter: "wip", value: count((n) => n.kind === "wip"), label: "in progress" },
     { filter: "noowner", value: count((n) => !n.ownerId), label: "no owner" },
     { filter: "urgent", value: count((n) => n.priority === "urgent"), label: "urgent", tone: "text-danger-primary" },
   ];
@@ -82,7 +81,7 @@ export function OverviewView(props: Props) {
         return { id, area: areaById.get(id), total: all.length, c };
       })
       .filter((r) => r.total > 0 && r.total > r.c.done)
-      .toSorted((a, b) => b.total - b.c.done - (a.total - a.c.done));
+      .toSorted((a, b) => Number(!a.id) - Number(!b.id) || b.total - b.c.done - (a.total - a.c.done));
   }, [areas, areaById, nodes]);
 
   const endDate = weeksToDate(origin, plan.end);
@@ -96,156 +95,149 @@ export function OverviewView(props: Props) {
           <TriangleAlert className="size-4 shrink-0" />
           Couldn’t load the links between work items, so nothing shows as blocked.
           <LinkButton className="ml-auto" onClick={props.onRetry}>
-            Try again
+            Reload links
           </LinkButton>
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-6">
-        {tiles.map((t) => (
+      <section
+        aria-label="Forecast"
+        className="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-subtle bg-layer-1 px-5 py-4"
+      >
+        {open.length ? (
+          <>
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="text-12 font-medium text-tertiary">Everything built by</span>
+              <span className="text-28 leading-9 font-semibold tracking-tight text-primary tabular-nums">
+                {formatDay(endDate, true)}
+              </span>
+            </div>
+            <div className="flex min-w-0 flex-col gap-1.5 text-13 text-secondary">
+              <span className="tabular-nums">
+                In about {weeksLeft} week{weeksLeft === 1 ? "" : "s"}
+              </span>
+              {setter !== null && (
+                <span className="flex min-w-0 items-center gap-2">
+                  <PersonAvatar person={setter} size={18} />
+                  <span className="truncate">
+                    {setter ? (
+                      <>
+                        <span className="font-medium text-primary">{setter.name}</span> finishes last
+                      </>
+                    ) : (
+                      "Items with no owner finish last"
+                    )}
+                  </span>
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => onGoTo("schedule")}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-subtle bg-surface-1 px-3 text-13 font-medium text-primary outline-none hover:border-strong focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-sm:h-11 max-sm:w-full max-sm:justify-center sm:ml-auto"
+            >
+              Open schedule
+              <ArrowUpRight className="size-3.5 text-tertiary" />
+            </button>
+          </>
+        ) : (
+          <Empty text="Nothing left to build." done />
+        )}
+      </section>
+
+      <div className="grid grid-cols-3 overflow-hidden rounded-lg border border-subtle bg-layer-1 xl:grid-cols-6">
+        {tiles.map((t, i) => (
           <button
             key={t.label}
             type="button"
             onClick={() => onFilter(t.filter)}
-            className="group flex flex-col items-start gap-0.5 rounded-lg border border-subtle bg-layer-1 px-3.5 py-3 text-left transition-[border-color,box-shadow] duration-150 outline-none hover:border-strong hover:shadow-raised-100 focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
+            className={cn(
+              "group flex min-h-11 flex-col items-start gap-0.5 border-subtle px-3.5 py-2.5 text-left outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] focus-visible:ring-inset",
+              i % 3 !== 0 && "border-l",
+              i >= 3 && "border-t xl:border-t-0",
+              i === 3 && "xl:border-l"
+            )}
           >
-            <span
-              className={cn("text-24 leading-8 font-semibold tracking-tight tabular-nums", t.tone ?? "text-primary")}
-            >
+            <span className={cn("text-18 leading-6 font-semibold tabular-nums", t.tone ?? "text-primary")}>
               {t.value}
             </span>
-            <span className="flex items-center gap-1 text-12 text-tertiary">
+            <span className="flex items-center gap-0.5 text-12 text-tertiary">
               {t.label}
-              <ArrowRight className="size-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100" />
+              <ChevronRight className="size-3 text-placeholder" aria-hidden />
             </span>
           </button>
         ))}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <Card>
-            <CardTitle
-              title="Progress by area"
-              action={<LinkButton onClick={() => onGoTo("order")}>Open build order</LinkButton>}
-            />
-            {areaRows.length ? (
-              <div className="flex flex-col">
-                {areaRows.map((r) => (
-                  <button
-                    key={r.id || "none"}
-                    type="button"
-                    onClick={() => onFilter(`area:${r.id}`)}
-                    className="grid grid-cols-[minmax(0,9.5rem)_1fr_3.5rem] items-center gap-3 rounded-sm py-1.5 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-sm:grid-cols-[minmax(0,7rem)_1fr_3rem]"
-                  >
-                    <span className="flex min-w-0 items-center gap-2">
-                      <AreaDot area={r.area} />
-                      <span className="truncate text-secondary">{r.area?.name ?? "No area"}</span>
+        <Card>
+          <CardTitle
+            title="Progress by area"
+            action={<LinkButton onClick={() => onGoTo("order")}>Open build order</LinkButton>}
+          />
+          {areaRows.length ? (
+            <div className="flex flex-col">
+              {areaRows.map((r) => (
+                <button
+                  key={r.id || "none"}
+                  type="button"
+                  onClick={() => onFilter(`area:${r.id}`)}
+                  aria-label={`${r.area?.name ?? "No area"}: ${r.c.done} of ${r.total} done`}
+                  className="grid grid-cols-[minmax(0,9.5rem)_1fr_auto] items-center gap-x-3 gap-y-1.5 rounded-sm py-1.5 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-sm:min-h-11 max-sm:grid-cols-[minmax(0,1fr)_auto] lg:grid-cols-[minmax(0,14rem)_1fr_auto]"
+                >
+                  <span className="flex min-w-0 items-center gap-2 max-sm:col-start-1 max-sm:row-start-1">
+                    <AreaDot area={r.area} />
+                    <span className={cn("truncate", r.id ? "text-secondary" : "text-tertiary")}>
+                      {r.area?.name ?? "No area"}
                     </span>
-                    <span className="flex h-2.5 overflow-hidden rounded-[3px] bg-layer-2">
-                      {SEGMENTS.map((s) =>
-                        r.c[s.kind] ? (
-                          <span
-                            key={s.kind}
-                            className={cn("h-full", s.className)}
-                            style={{ width: `${(r.c[s.kind] / r.total) * 100}%` }}
-                            title={`${r.c[s.kind]} ${s.label.toLowerCase()}`}
-                          />
-                        ) : null
-                      )}
-                    </span>
-                    <span className="text-right text-12 text-tertiary tabular-nums">
-                      {r.c.done}/{r.total}
-                    </span>
-                  </button>
+                  </span>
+                  <span className="flex h-2.5 overflow-hidden rounded-[3px] bg-layer-2 max-sm:col-span-2 max-sm:col-start-1 max-sm:row-start-2">
+                    {SEGMENTS.map((s) =>
+                      r.c[s.kind] ? (
+                        <span
+                          key={s.kind}
+                          className={cn("h-full", s.className)}
+                          style={{ width: `${(r.c[s.kind] / r.total) * 100}%` }}
+                          title={`${r.c[s.kind]} ${s.label.toLowerCase()}`}
+                        />
+                      ) : null
+                    )}
+                  </span>
+                  <span className="text-right text-12 whitespace-nowrap text-tertiary tabular-nums max-sm:col-start-2 max-sm:row-start-1">
+                    {r.c.done} of {r.total} done
+                  </span>
+                </button>
+              ))}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-11 text-tertiary">
+                {SEGMENTS.map((s) => (
+                  <span key={s.kind} className="inline-flex items-center gap-1.5">
+                    <span className={cn("size-2.5 rounded-[2px]", s.className)} />
+                    {s.label}
+                  </span>
                 ))}
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-11 text-tertiary">
-                  {SEGMENTS.map((s) => (
-                    <span key={s.kind} className="inline-flex items-center gap-1.5">
-                      <span className={cn("size-2.5 rounded-[2px]", s.className)} />
-                      {s.label}
-                    </span>
-                  ))}
-                </div>
               </div>
-            ) : (
-              <Empty text="Nothing open in any area." />
-            )}
-          </Card>
+            </div>
+          ) : (
+            <Empty text="Nothing open in any area." />
+          )}
+        </Card>
 
-          <Card>
-            <CardTitle
-              title="Longest chain"
-              action={
-                chain.length ? <span className="text-12 text-tertiary tabular-nums">{chain.length} steps</span> : null
-              }
-            />
-            {chain.length ? (
-              <ol className="flex flex-wrap items-center gap-x-1 gap-y-1.5">
-                {chain.map((id, i) => {
-                  const n = graph.nodes.get(id) as TPlanNode;
-                  return (
-                    <li key={id} className="flex items-center gap-1">
-                      {i > 0 && <ArrowRight className="size-3 text-placeholder" aria-hidden />}
-                      <button
-                        type="button"
-                        title={n.name}
-                        onClick={() => onOpenItem(id)}
-                        className="font-mono rounded-sm border border-subtle bg-surface-1 px-1.5 py-0.5 text-11 font-medium text-secondary tabular-nums outline-none hover:border-strong hover:text-primary focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
-                      >
-                        {n.key}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ol>
-            ) : (
-              <Empty text="No open item waits on another." />
-            )}
-          </Card>
-        </div>
-
-        <div className="flex min-w-0 flex-col gap-4">
-          <Card>
-            <CardTitle
-              title="Forecast"
-              action={<LinkButton onClick={() => onGoTo("schedule")}>Open schedule</LinkButton>}
-            />
-            {open.length ? (
-              <>
-                <div className="text-20 leading-7 font-semibold tracking-tight text-primary">
-                  {formatDay(endDate, true)}
-                </div>
-                <p className="mt-1 text-12 text-tertiary">
-                  Everything built in about {weeksLeft} week{weeksLeft === 1 ? "" : "s"}, at 8 h an item unless set.
-                </p>
-                {setter !== null && (
-                  <div className="mt-3 flex items-center gap-2 text-13 text-secondary">
-                    <PersonAvatar person={setter} size={20} />
-                    <span className="truncate">
-                      {setter ? (
-                        <>
-                          <span className="font-medium text-primary">{setter.name}</span> finishes last
-                        </>
-                      ) : (
-                        "Items with no owner finish last"
-                      )}
-                    </span>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Empty text="Nothing left to build." done />
-            )}
-          </Card>
-
+        <div className="grid min-w-0 content-start gap-4 md:grid-cols-2 lg:grid-cols-1">
           <Card>
             <CardTitle title="Blocking the most" />
             {blockingMost.length ? (
               <ItemList
                 nodes={blockingMost}
                 areaById={areaById}
-                right={(n) => `${n.downstreamOpen} waiting`}
+                right={(n, i) =>
+                  i === 0 ? (
+                    <span className="rounded-full bg-warning-subtle px-2 py-0.5 text-11 font-medium text-warning-primary">
+                      {n.downstreamOpen} waiting
+                    </span>
+                  ) : (
+                    `${n.downstreamOpen} waiting`
+                  )
+                }
                 onOpenItem={onOpenItem}
               />
             ) : (
@@ -268,6 +260,38 @@ export function OverviewView(props: Props) {
               <Empty text="Everything open has an owner." done />
             )}
           </Card>
+
+          <Card className="md:col-span-2 lg:col-span-1">
+            <CardTitle
+              title="Longest chain"
+              action={
+                chain.length ? <span className="text-12 text-tertiary tabular-nums">{chain.length} steps</span> : null
+              }
+            />
+            {chain.length ? (
+              <ol className="-mx-1 flex flex-col">
+                {chain.map((id, i) => {
+                  const n = graph.nodes.get(id) as TPlanNode;
+                  return (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        onClick={() => onOpenItem(id)}
+                        className="grid w-full grid-cols-[1.25rem_auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-sm px-1 py-1.5 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-md:min-h-11"
+                      >
+                        <span className="text-right text-11 text-placeholder tabular-nums">{i + 1}</span>
+                        <ItemKey node={n} area={areaById.get(n.areaId ?? "")} />
+                        <span className="truncate text-primary">{n.name}</span>
+                        <PersonAvatar person={n.ownerId ? personById.get(n.ownerId) : undefined} size={18} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            ) : (
+              <Empty text="No open item waits on another." />
+            )}
+          </Card>
         </div>
       </div>
     </div>
@@ -277,21 +301,21 @@ export function OverviewView(props: Props) {
 function ItemList(props: {
   nodes: TPlanNode[];
   areaById: TPlanShared["areaById"];
-  right: (n: TPlanNode) => string;
+  right: (n: TPlanNode, i: number) => React.ReactNode;
   onOpenItem: (id: string) => void;
 }) {
   return (
     <ul className="-mx-1 flex flex-col divide-y divide-subtle">
-      {props.nodes.map((n) => (
+      {props.nodes.map((n, i) => (
         <li key={n.id}>
           <button
             type="button"
             onClick={() => props.onOpenItem(n.id)}
-            className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-sm px-1 py-2 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
+            className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-sm px-1 py-2 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-md:min-h-11"
           >
             <ItemKey node={n} area={props.areaById.get(n.areaId ?? "")} />
             <span className="truncate text-primary">{n.name}</span>
-            <span className="text-12 whitespace-nowrap text-tertiary tabular-nums">{props.right(n)}</span>
+            <span className="text-12 whitespace-nowrap text-tertiary tabular-nums">{props.right(n, i)}</span>
           </button>
         </li>
       ))}

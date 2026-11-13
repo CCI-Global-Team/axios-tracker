@@ -12,7 +12,7 @@ import type { TPlanArea, TPlanPerson } from "./use-plan-data";
 import { NO_AREA_HUE } from "./use-plan-data";
 
 export const KIND_PILL: Record<TPlanKind, string> = {
-  ready: "bg-success-subtle text-success-primary",
+  ready: "bg-success-subtle-1 text-success-primary",
   blocked: "bg-warning-subtle text-warning-primary",
   wip: "bg-accent-subtle text-accent-primary",
   done: "bg-layer-2 text-tertiary",

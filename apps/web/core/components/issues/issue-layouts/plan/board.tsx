@@ -189,6 +189,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
     origin,
     now,
     hoursOf,
+    itemHours,
     weekHoursOf,
     isVisible,
     selectedId,
@@ -198,7 +199,11 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
     <div className="flex h-full w-full flex-col overflow-hidden bg-surface-1">
       {/* plan bar */}
       <div className="flex flex-shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-subtle px-page-x py-2.5">
-        <div role="tablist" aria-label="Plan view" className="inline-flex rounded-md bg-layer-2 p-0.5">
+        <div
+          role="tablist"
+          aria-label="Plan view"
+          className="inline-flex rounded-md bg-layer-2 p-0.5 max-sm:grid max-sm:w-full max-sm:grid-cols-3"
+        >
           {VIEWS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
@@ -207,14 +212,14 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
               aria-selected={view === key}
               onClick={() => changeView(key)}
               className={cn(
-                "flex h-7 items-center gap-1.5 rounded-sm px-2.5 text-13 whitespace-nowrap transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
+                "flex h-7 items-center justify-center gap-1.5 rounded-sm px-2.5 text-13 whitespace-nowrap transition-[background-color,color,box-shadow] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-sm:h-10",
                 view === key
                   ? "bg-layer-1 font-medium text-primary shadow-raised-100"
                   : "text-tertiary hover:text-secondary"
               )}
             >
               <Icon className="size-3.5 shrink-0" strokeWidth={2} />
-              <span className="max-sm:sr-only">{label}</span>
+              <span>{label}</span>
             </button>
           ))}
         </div>
@@ -230,7 +235,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
                   aria-pressed={arrange === key}
                   onClick={() => setArrange(key)}
                   className={cn(
-                    "h-6 rounded-sm px-2 text-12 transition-[background-color,color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
+                    "h-6 rounded-sm px-2 text-12 transition-[background-color,color] duration-150 outline-none focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-sm:h-9 max-sm:px-3",
                     arrange === key
                       ? "bg-layer-1 font-medium text-primary shadow-raised-100"
                       : "text-tertiary hover:text-secondary"
@@ -255,7 +260,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
           />
         </label>
 
-        <label className="inline-flex cursor-pointer items-center gap-1.5 text-12 text-secondary select-none">
+        <label className="inline-flex cursor-pointer items-center gap-1.5 text-12 text-secondary select-none max-sm:min-h-9">
           <input
             type="checkbox"
             checked={showDone}
@@ -279,9 +284,17 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
           </span>
         )}
 
-        <span className="ml-auto text-12 text-tertiary tabular-nums max-lg:hidden">
-          {openCount} open · {graph.blockedByLinks} blocked-by links
-          {isLoadingMore && " · loading more…"}
+        <span className="ml-auto text-12 text-tertiary tabular-nums" aria-live="polite">
+          <span className="max-lg:hidden">
+            {openCount} open · {graph.blockedByLinks} blocked-by links
+          </span>
+          {isLoadingMore && (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="max-lg:hidden"> · </span>
+              <span className="size-1.5 rounded-full bg-[var(--border-accent-strong)] motion-safe:animate-pulse" />
+              Counting {graph.nodes.size} so far…
+            </span>
+          )}
         </span>
       </div>
 
@@ -333,6 +346,8 @@ export type TPlanShared = {
   origin: Date;
   now: number;
   hoursOf: (id: string) => number;
+  /** Hours set by hand; items missing here use the default guess. */
+  itemHours: Record<string, number>;
   weekHoursOf: (ownerId: string) => number;
   isVisible: (n: TPlanNode) => boolean;
   selectedId: string | null;

@@ -86,7 +86,7 @@ export function PlanLinks(props: {
   return (
     <svg
       aria-hidden
-      className="pointer-events-none absolute top-0 left-0 z-[2] overflow-visible"
+      className="pointer-events-none absolute top-0 left-0 z-0 overflow-visible"
       width={size.w}
       height={size.h}
     >
@@ -112,7 +112,8 @@ export function PlanLinks(props: {
           d={p.d}
           fill="none"
           stroke={p.dir === "up" ? UP_COLOUR : DOWN_COLOUR}
-          strokeWidth={1.6}
+          strokeWidth={1.25}
+          strokeOpacity={0.75}
           markerEnd={`url(#plan-arrow-${p.dir})`}
           className="motion-safe:animate-[plan-link-in_200ms_ease-out]"
         />

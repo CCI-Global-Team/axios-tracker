@@ -4,8 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useMemo, useRef } from "react";
-import { SearchX } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { GitBranch, SearchX } from "lucide-react";
 import { cn } from "@plane/utils";
 import type { TPlanArrange, TPlanShared } from "./board";
 import type { TLink } from "./links";
@@ -21,11 +21,15 @@ type Props = TPlanShared & {
   onSelect: (id: string | null) => void;
 };
 
-type TColumn = { key: string; title: string; hint?: string; items: TPlanNode[] };
+type TColumn = { key: string; title: string; items: TPlanNode[] };
+
+/** Long columns show this many cards until expanded; picked items and their chain always show. */
+const COLUMN_CAP = 30;
 
 export function BuildOrderView(props: Props) {
-  const { graph, areas, areaById, personById, people, arrange, isVisible, selectedId, hoursOf, onSelect } = props;
+  const { graph, areas, areaById, personById, people, arrange, isVisible, selectedId, itemHours, onSelect } = props;
   const boardRef = useRef<HTMLDivElement>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   const columns = useMemo<TColumn[]>(() => {
     const visible = [...graph.nodes.values()].filter(isVisible);
@@ -62,8 +66,7 @@ export function BuildOrderView(props: Props) {
       if (!items.length) continue;
       cols.push({
         key: `step-${d}`,
-        title: d === 0 ? "Nothing in the way" : `Step ${d + 1}`,
-        hint: d === 0 ? "No open item blocks these" : `Waits on ${d} step${d > 1 ? "s" : ""} before it`,
+        title: d === 0 ? "Nothing in the way" : `After ${d} step${d > 1 ? "s" : ""}`,
         items: sort(items),
       });
     }
@@ -92,7 +95,10 @@ export function BuildOrderView(props: Props) {
         : [],
     [selected]
   );
-  const layoutKey = useMemo(() => columns.map((c) => `${c.key}:${c.items.length}`).join("|"), [columns]);
+  const layoutKey = useMemo(
+    () => `${columns.map((c) => `${c.key}:${c.items.length}`).join("|")}#${[...expanded].join(",")}`,
+    [columns, expanded]
+  );
 
   useEffect(() => {
     if (!selectedId) return;
@@ -109,42 +115,48 @@ export function BuildOrderView(props: Props) {
       <div className="flex flex-col items-center justify-center gap-2 py-24 text-center">
         <SearchX className="size-8 text-placeholder" strokeWidth={1.5} />
         <p className="text-13 text-tertiary">No work items match.</p>
+        <p className="text-12 text-placeholder">Try another search, or turn on Show done.</p>
       </div>
     );
   }
 
   return (
     <div className="flex min-h-full flex-col">
-      <div className="flex flex-wrap gap-x-4 gap-y-1 px-page-x pt-3 text-11 text-tertiary">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] border border-warning-strong bg-warning-subtle" />
-          Has to happen first
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] border border-accent-strong bg-accent-subtle" />
-          Waits on the picked item
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[3px] border border-dashed border-strong" />
-          Related
-        </span>
+      <div className="flex min-h-7 flex-wrap items-center gap-x-4 gap-y-1 px-page-x pt-3 text-11 text-tertiary">
+        {selected ? (
+          <>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rounded-[3px] border border-warning-strong bg-warning-subtle" />
+              Has to happen first
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rounded-[3px] border border-accent-strong bg-accent-subtle" />
+              Waits on {selected.key}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rounded-[3px] border border-dashed border-strong" />
+              Related
+            </span>
+          </>
+        ) : (
+          <span>Pick a card to see what it waits on and what waits on it.</span>
+        )}
       </div>
-      <div className="overflow-x-auto px-page-x pt-2 pb-8">
+      <div className="overflow-x-auto px-page-x pt-2 pb-8 max-sm:snap-x max-sm:snap-mandatory max-sm:scroll-px-4">
         <div ref={boardRef} className="relative flex w-max items-start gap-3">
           {columns.map((col) => (
             <section
               key={col.key}
               aria-label={col.title}
-              className="flex w-[264px] shrink-0 flex-col gap-1.5 rounded-lg bg-layer-transparent-hover p-2 max-sm:w-[78vw]"
+              className="flex w-[264px] shrink-0 snap-start flex-col gap-1.5 rounded-lg bg-layer-transparent-hover p-2 max-sm:w-[78vw]"
             >
               <header className="px-1 pt-0.5 pb-1.5">
                 <h2 className="flex items-baseline justify-between gap-2 text-13 font-semibold text-primary">
                   <span className="truncate">{col.title}</span>
                   <span className="text-12 font-medium text-tertiary tabular-nums">{col.items.length}</span>
                 </h2>
-                {col.hint && <p className="mt-0.5 text-11 text-tertiary">{col.hint}</p>}
               </header>
-              {col.items.map((n) => {
+              {col.items.map((n, index) => {
                 const role = !selected
                   ? null
                   : n.id === selected.id
@@ -156,6 +168,8 @@ export function BuildOrderView(props: Props) {
                         : related.has(n.id)
                           ? "rel"
                           : "dim";
+                const isCapped = index >= COLUMN_CAP && !expanded.has(col.key) && (!role || role === "dim");
+                if (isCapped) return null;
                 const downOpen = n.blocks.filter((b) => {
                   const x = graph.nodes.get(b);
                   return x && !x.isDone;
@@ -174,15 +188,15 @@ export function BuildOrderView(props: Props) {
                       n.isDone && !role && "opacity-60",
                       role === "dim" && "opacity-35",
                       role === "sel" &&
-                        "border-[var(--txt-primary)] shadow-raised-100 ring-1 ring-[var(--txt-primary)]",
+                        "border-[var(--border-accent-strong)] shadow-raised-200 ring-2 ring-[var(--border-accent-strong)]",
                       role === "up" && "border-warning-strong bg-warning-subtle",
-                      role === "down" && "border-accent-strong bg-accent-subtle",
+                      role === "down" && "border-accent-subtle bg-accent-subtle",
                       role === "rel" && "border-dashed border-strong"
                     )}
                   >
                     <span className="flex items-center justify-between gap-2">
                       <ItemKey node={n} area={areaById.get(n.areaId ?? "")} />
-                      <StatusPill node={n} />
+                      {!(arrange === "step" && n.kind === "ready") && <StatusPill node={n} />}
                     </span>
                     <span
                       className={cn(
@@ -198,14 +212,28 @@ export function BuildOrderView(props: Props) {
                           Urgent
                         </span>
                       )}
-                      {downOpen > 0 && <span className="tabular-nums">Blocks {downOpen}</span>}
+                      {downOpen > 0 && (
+                        <span className="inline-flex items-center gap-1 text-12 font-medium text-secondary tabular-nums">
+                          <GitBranch className="size-3" aria-hidden />
+                          Blocks {downOpen}
+                        </span>
+                      )}
                       <span className="flex-1" />
-                      <span className="tabular-nums">{hoursOf(n.id)} h</span>
+                      {itemHours[n.id] !== undefined && <span className="tabular-nums">{itemHours[n.id]} h</span>}
                       <PersonAvatar person={n.ownerId ? personById.get(n.ownerId) : undefined} />
                     </span>
                   </button>
                 );
               })}
+              {col.items.length > COLUMN_CAP && !expanded.has(col.key) && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((prev) => new Set(prev).add(col.key))}
+                  className="h-9 rounded-md text-12 font-medium text-accent-primary outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
+                >
+                  Show {col.items.length - COLUMN_CAP} more
+                </button>
+              )}
             </section>
           ))}
           <PlanLinks containerRef={boardRef} links={links} anchorY="top" layoutKey={layoutKey} />
