@@ -4,13 +4,30 @@
  * See the LICENSE file for details.
  */
 
+import { useEffect, useState } from "react";
 import { ISSUE_LAYOUTS } from "@plane/constants";
 import { useTranslation } from "@plane/i18n";
 import { Button } from "@plane/propel/button";
 import { ChevronDownIcon } from "@plane/propel/icons";
-import type { EIssueLayoutTypes } from "@plane/types";
+import { EIssueLayoutTypes } from "@plane/types";
 import { CustomMenu } from "@plane/ui";
 import { IssueLayoutIcon } from "../../layout-icon";
+
+// CCI: Table and Timeline need width; on a phone the menu offers List, Board and Calendar only.
+const WIDE_ONLY_LAYOUTS = new Set([EIssueLayoutTypes.SPREADSHEET, EIssueLayoutTypes.GANTT]);
+const PHONE_QUERY = "(max-width: 767px)";
+
+function useIsPhoneWidth() {
+  const [isPhone, setIsPhone] = useState(() => typeof window !== "undefined" && window.matchMedia(PHONE_QUERY).matches);
+  useEffect(() => {
+    const media = window.matchMedia(PHONE_QUERY);
+    const update = () => setIsPhone(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  return isPhone;
+}
 
 export function MobileLayoutSelection({
   layouts,
@@ -23,6 +40,7 @@ export function MobileLayoutSelection({
   isMobile?: boolean;
 }) {
   const { t } = useTranslation();
+  const isPhone = useIsPhoneWidth();
   return (
     <CustomMenu
       maxHeight={"md"}
@@ -44,18 +62,20 @@ export function MobileLayoutSelection({
       customButtonClassName="flex flex-grow justify-center text-secondary text-13"
       closeOnSelect
     >
-      {ISSUE_LAYOUTS.filter((l) => layouts.includes(l.key)).map((layout) => (
-        <CustomMenu.MenuItem
-          key={layout.key}
-          onClick={() => {
-            onChange(layout.key);
-          }}
-          className="flex items-center gap-2"
-        >
-          <IssueLayoutIcon layout={layout.key} className="h-3 w-3" />
-          <div className="text-tertiary">{t(layout.i18n_label)}</div>
-        </CustomMenu.MenuItem>
-      ))}
+      {ISSUE_LAYOUTS.filter((l) => layouts.includes(l.key) && !(isPhone && WIDE_ONLY_LAYOUTS.has(l.key))).map(
+        (layout) => (
+          <CustomMenu.MenuItem
+            key={layout.key}
+            onClick={() => {
+              onChange(layout.key);
+            }}
+            className="flex items-center gap-2"
+          >
+            <IssueLayoutIcon layout={layout.key} className="h-3 w-3" />
+            <div className="text-tertiary">{t(layout.i18n_label)}</div>
+          </CustomMenu.MenuItem>
+        )
+      )}
     </CustomMenu>
   );
 }

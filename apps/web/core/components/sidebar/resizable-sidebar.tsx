@@ -6,6 +6,7 @@
 
 import type { Dispatch, ReactElement, SetStateAction } from "react";
 import React, { useCallback, useEffect, useState, useRef } from "react";
+import { usePathname } from "next/navigation";
 // helpers
 import { usePlatformOS } from "@plane/hooks";
 import { cn } from "@plane/utils";
@@ -72,6 +73,13 @@ export function ResizableSidebar({
     return () => query.removeEventListener("change", update);
   }, []);
   const isMobile = isMobileOS || isNarrow;
+  // CCI: on a phone the overlay starts closed and closes after each navigation, so a page never
+  // opens hidden behind it.
+  const pathname = usePathname();
+  useEffect(() => {
+    if (isMobile) toggleCollapsedProp(true);
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- react to width and route changes only
+  }, [isMobile, pathname]);
   // handlers
   const setShowPeek = useCallback(
     (value: boolean) => {

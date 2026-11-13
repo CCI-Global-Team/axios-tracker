@@ -44,7 +44,7 @@ export function RecentProject(props: BlockProps) {
         </div>
       }
       appendTitleElement={
-        <div className="flex-shrink-0 text-11 font-medium text-placeholder">
+        <div className="hidden flex-shrink-0 text-12 text-tertiary tabular-nums sm:block">
           {calculateTimeAgo(activity.visited_at)}
         </div>
       }

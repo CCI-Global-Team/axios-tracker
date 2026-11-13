@@ -92,7 +92,9 @@ export const RecentIssue = observer(function RecentIssue(props: BlockProps) {
         </div>
       }
       appendTitleElement={
-        <div className="flex-shrink-0 text-12 text-tertiary tabular-nums">{calculateTimeAgo(activity.visited_at)}</div>
+        <div className="hidden flex-shrink-0 text-12 text-tertiary tabular-nums sm:block">
+          {calculateTimeAgo(activity.visited_at)}
+        </div>
       }
       quickActionElement={
         <div className="flex gap-4">
