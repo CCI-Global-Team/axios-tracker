@@ -15,14 +15,26 @@ type TBox = { l: number; r: number; y: number; cx: number };
 /** The element for a work item inside the container is marked `data-plan-id`. */
 const findEl = (root: HTMLElement, id: string) => root.querySelector<HTMLElement>(`[data-plan-id="${id}"]`);
 
-function box(el: HTMLElement, base: DOMRect, anchorY: "top" | "middle"): TBox {
+type TRect = { l: number; r: number; t: number; b: number; y: number; cx: number };
+
+function rect(el: HTMLElement, base: DOMRect, anchorY: "top" | "middle"): TRect {
   const r = el.getBoundingClientRect();
+  const t = r.top - base.top;
   return {
     l: r.left - base.left,
     r: r.right - base.left,
-    y: r.top - base.top + (anchorY === "top" ? Math.min(20, r.height / 2) : r.height / 2),
+    t,
+    b: t + r.height,
+    y: t + (anchorY === "top" ? Math.min(20, r.height / 2) : r.height / 2),
     cx: r.left - base.left + r.width / 2,
   };
+}
+
+/** Several links on one card fan out along its edge, in the order of the cards at their other ends. */
+const FAN = 7;
+function fanned(at: TRect, index: number, count: number): TBox {
+  const y = at.y + (index - (count - 1) / 2) * FAN;
+  return { l: at.l, r: at.r, cx: at.cx, y: Math.min(at.b - 6, Math.max(at.t + 6, y)) };
 }
 
 function curve(a: TBox, z: TBox): string {
@@ -49,8 +61,10 @@ export function PlanLinks(props: {
   anchorY: "top" | "middle";
   /** changes whenever the laid-out items change */
   layoutKey: string;
+  /** draw over the items (cards several columns apart) rather than under them (schedule bars) */
+  above?: boolean;
 }) {
-  const { containerRef, links, anchorY, layoutKey } = props;
+  const { containerRef, links, anchorY, layoutKey, above } = props;
   const [paths, setPaths] = useState<TPath[]>([]);
   const [size, setSize] = useState({ w: 0, h: 0 });
 
@@ -62,17 +76,32 @@ export function PlanLinks(props: {
     }
     const measure = () => {
       const base = root.getBoundingClientRect();
-      const next: TPath[] = [];
-      for (const link of links) {
-        const a = findEl(root, link.from);
-        const z = findEl(root, link.to);
-        if (!a || !z) continue;
-        next.push({
-          d: curve(box(a, base, anchorY), box(z, base, anchorY)),
-          dir: link.dir,
-          key: `${link.from}>${link.to}`,
-        });
-      }
+      const rects = new Map<string, TRect>();
+      const rectOf = (id: string) => {
+        if (!rects.has(id)) {
+          const el = findEl(root, id);
+          if (el) rects.set(id, rect(el, base, anchorY));
+        }
+        return rects.get(id);
+      };
+      const drawn = links.filter((l) => rectOf(l.from) && rectOf(l.to));
+      // the links leaving and arriving at each card, sorted by where the other end sits
+      const ends = new Map<string, string[]>();
+      const add = (id: string, other: string) => ends.set(id, [...(ends.get(id) ?? []), other]);
+      drawn.forEach((l) => {
+        add(l.from, l.to);
+        add(l.to, l.from);
+      });
+      ends.forEach((others) => others.sort((x, y) => rectOf(x)!.y - rectOf(y)!.y));
+      const endBox = (id: string, other: string) => {
+        const others = ends.get(id)!;
+        return fanned(rectOf(id)!, others.indexOf(other), others.length);
+      };
+      const next: TPath[] = drawn.map((link) => ({
+        d: curve(endBox(link.from, link.to), endBox(link.to, link.from)),
+        dir: link.dir,
+        key: `${link.from}>${link.to}`,
+      }));
       setPaths(next);
       setSize({ w: root.scrollWidth, h: root.scrollHeight });
     };
@@ -86,7 +115,7 @@ export function PlanLinks(props: {
   return (
     <svg
       aria-hidden
-      className="pointer-events-none absolute top-0 left-0 z-0 overflow-visible"
+      className={`pointer-events-none absolute top-0 left-0 overflow-visible ${above ? "z-[2]" : "z-0"}`}
       width={size.w}
       height={size.h}
     >

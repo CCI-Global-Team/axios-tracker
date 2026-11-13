@@ -157,7 +157,7 @@ export function BuildOrderView(props: Props) {
         )}
       </div>
       <div className="overflow-x-auto px-page-x pt-2 pb-8 max-sm:snap-x max-sm:snap-mandatory max-sm:scroll-px-4">
-        <div ref={boardRef} className="relative flex w-max items-start gap-3">
+        <div ref={boardRef} className="relative flex w-max items-start gap-3 sm:gap-8">
           {columns.map((col) => (
             <section
               key={col.key}
@@ -250,7 +250,7 @@ export function BuildOrderView(props: Props) {
               )}
             </section>
           ))}
-          <PlanLinks containerRef={boardRef} links={links} anchorY="top" layoutKey={layoutKey} />
+          <PlanLinks containerRef={boardRef} links={links} anchorY="top" layoutKey={layoutKey} above />
         </div>
       </div>
     </div>

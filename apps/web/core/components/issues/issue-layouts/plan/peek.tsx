@@ -66,7 +66,7 @@ export function PlanPeek(props: Props) {
         className={cn(
           "z-[15] flex flex-col overflow-y-auto border-subtle bg-layer-1",
           // desktop: a panel beside the board; tablet: the same panel over the board's right edge
-          "md:w-[340px] md:shrink-0 md:border-l lg:w-[360px]",
+          "md:w-[340px] md:shrink-0 md:border-l lg:relative lg:w-[360px]",
           "md:max-lg:absolute md:max-lg:inset-y-0 md:max-lg:right-0 md:max-lg:shadow-raised-200",
           // phone: a bottom sheet
           "max-md:fixed max-md:inset-x-0 max-md:bottom-0 max-md:max-h-[78vh] max-md:rounded-t-xl max-md:border-t max-md:pb-[env(safe-area-inset-bottom)] max-md:shadow-raised-200",
