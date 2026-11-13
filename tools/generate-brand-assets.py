@@ -166,6 +166,74 @@ def gradient_mark_svg(w, h, pad, stops, mid):
     )
 
 
+# ---------------------------------------------------------------- lockups (variant D, "the chain, engineered")
+#
+# Each form in each colourway, on a transparent ground, so it can be dropped onto the ground it names.
+# Geometry matches PlaneLockup (horizontal) and the share card (stacked) in packages/propel.
+
+NAVY = "#1A2340"          # CCI navy: the wordmark on light grounds, and the ground the reversed set is for
+RED_ON_DARK = "#FF4B4B"   # --axios-brand in dark mode
+ACCENT_ON_RED = "#FF3B3B" # the A's cut stays visible against the red gradient
+CHROME = (("0", "#F4F6F9"), (".3", "#D3D8E0"), (".5", "#9BA3B2"), (".7", "#E2E6EC"), ("1", "#AEB5C2"))
+
+# (name, chain, wordmark, accent, use)
+COLOURWAYS = (
+    ("color", RED, NAVY, RED, "white and light grounds"),
+    ("reversed", RED_ON_DARK, "#fff", RED_ON_DARK, "CCI navy and other dark grounds"),
+    ("white", "#fff", "#fff", ACCENT_ON_RED, "CCI red and photographs"),
+    ("chrome", "url(#chrome)", "url(#chrome)", RED_ON_DARK, "the metallic finish, on navy or red; 48px and up"),
+)
+
+H_CAP = 28.3                       # the wordmark's cap height next to the chain, in mark units
+H_GAP = 21.4
+H_W = MARK_W + H_GAP + WORDMARK_W * H_CAP / 100 + 1
+S_CAP = 62 / ((WORDMARK_W * 0.62) / MARK_W)   # stacked: the share card's proportions, in mark units
+S_GAP = 26 / ((WORDMARK_W * 0.62) / MARK_W)
+
+
+def chrome_def(w, h):
+    g = "".join(f'<stop offset="{o}" stop-color="{c}"/>' for o, c in CHROME)
+    return (f'<defs><linearGradient id="chrome" gradientUnits="userSpaceOnUse" x1="0" y1="0" '
+            f'x2="{w:.1f}" y2="{h:.1f}">{g}</linearGradient></defs>')
+
+
+def lockup_svg(form, chain, word, accent):
+    if form == "mark":
+        w, h, body = MARK_W, MARK_H, mark(chain, "lm")
+    elif form == "wordmark":
+        w, h, body = WORDMARK_W, 100, wordmark(word, accent, "lx")
+    elif form == "horizontal":
+        w, h = H_W, MARK_H
+        y = (MARK_H - H_CAP) / 2
+        body = (mark(chain, "lm") + f'<g transform="translate({MARK_W + H_GAP:.2f} {y:.2f}) scale({H_CAP / 100})">'
+                f'{wordmark(word, accent, "lx")}</g>')
+    else:  # stacked: AXIOS over the chain, both the same width
+        w, h = MARK_W, S_CAP + S_GAP + MARK_H
+        body = (f'<g transform="scale({S_CAP / 100:.5f})">{wordmark(word, accent, "lx")}</g>'
+                f'<g transform="translate(0 {S_CAP + S_GAP:.2f})">{mark(chain, "lm")}</g>')
+    pad = 2
+    defs = chrome_def(w, h) if "chrome" in chain + word else ""
+    return ('<?xml version="1.0" encoding="UTF-8"?>\n'
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{-pad} {-pad} {w + 2 * pad:.1f} {h + 2 * pad:.1f}" '
+            f'role="img" aria-label="Axios">{defs}{body}</svg>'), w + 2 * pad, h + 2 * pad
+
+
+def write_lockups(chrome, brand, profile):
+    out = brand / "lockups"
+    out.mkdir(exist_ok=True)
+    count = 0
+    for form in ("horizontal", "stacked", "wordmark", "mark"):
+        for name, chain, word, accent, _ in COLOURWAYS:
+            svg, w, h = lockup_svg(form, chain, word, accent)
+            stem = f"axios-{form}-{name}"
+            (out / f"{stem}.svg").write_text(svg, encoding="utf-8")
+            px = 1600 if form != "mark" else 1200
+            shoot(chrome, svg.replace("<svg ", f'<svg width="{px}" height="{round(px * h / w)}" ', 1),
+                  out / f"{stem}.png", px, profile, round(px * h / w))
+            count += 1
+    print(f"  {count} lockup files (svg + png) in docs/brand/lockups/")
+
+
 # ---------------------------------------------------------------- rasterising
 
 def find_chrome():
@@ -235,6 +303,7 @@ def verify(brand):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--install", action="store_true", help="also copy into apps/*/")
+    ap.add_argument("--lockups", action="store_true", help="only write docs/brand/lockups/, leaving the icons as they are")
     args = ap.parse_args()
 
     root = pathlib.Path(__file__).resolve().parent.parent
@@ -245,6 +314,10 @@ def main():
     chrome = find_chrome()
     profile = tempfile.mkdtemp(prefix="axios-brand-")
     print(f"chain {MARK_W}x{MARK_H}  stroke {STROKE} (small {SMALL_STROKE})")
+    write_lockups(chrome, brand, profile)
+    if args.lockups:
+        shutil.rmtree(profile, ignore_errors=True)
+        return
 
     # vector sources
     (brand / "axios-mark.svg").write_text(bare_svg("currentColor"), encoding="utf-8")
@@ -301,6 +374,8 @@ def main():
         shutil.copy(brand / "axios-maskable-192.png", icons / "icon-192x192-maskable.png")
         shutil.copy(brand / "axios-maskable-512.png", icons / "icon-512x512-maskable.png")
         shutil.copy(brand / "axios-og-1200x630.png", root / "apps" / "web" / "app" / "assets" / "og-image.png")
+        # the card for shared work-item links (apps/api points at /og/axios-card.png)
+        shutil.copy(brand / "axios-og-1200x630.png", root / "apps" / "web" / "public" / "og" / "axios-card.png")
         for name in ("gradient-logo.png", "gradient-bg-logo.png"):
             shutil.copy(brand / name, root / "apps" / "web" / "app" / "assets" / "auth" / name)
         shutil.copy(brand / "axios-icon-1024x1024.png",
