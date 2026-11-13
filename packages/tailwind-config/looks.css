@@ -23,6 +23,10 @@
     --neutral-1100: oklch(0.87 0.014 261);
     --neutral-1200: oklch(0.955 0.006 261);
     --neutral-white: oklch(0.985 0.002 261);
+    /* Text on navy reads near-white; the dark ramp's secondary greys looked dimmed here. */
+    --txt-secondary: oklch(0.93 0.01 261);
+    --txt-tertiary: oklch(0.84 0.018 261);
+    --txt-placeholder: oklch(0.76 0.026 261);
   }
   :root:not([data-look]) [data-chrome-canvas],
   :root[data-look="navy"] [data-chrome-canvas] {
@@ -43,6 +47,9 @@
   /* Medium priority's pale yellow nearly vanishes on white; a deeper amber keeps it legible. */
   :root[data-theme="light"] {
     --priority-medium: oklch(0.7 0.155 72);
+    /* Muted text one step darker than the base ramp, so metadata reads as text rather than grey. */
+    --txt-tertiary: oklch(0.47 0.029 262);
+    --txt-placeholder: oklch(0.56 0.025 262);
   }
 
   /* ---------- Quiet Ink: near-monochrome, ink primary actions ---------- */

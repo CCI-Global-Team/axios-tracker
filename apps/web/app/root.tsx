@@ -161,7 +161,7 @@ export function HydrateFallback() {
     // CCI: centred with inline styles, because this can paint before globals.css has loaded; with classes alone
     // the loader shows in the top-left corner and then jumps to the middle when the stylesheet lands.
     <div
-      className="relative flex h-screen w-full items-center justify-center bg-canvas"
+      className="relative flex h-screen w-full items-center justify-center bg-surface-1"
       style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100vh" }}
     >
       <LogoSpinner />
