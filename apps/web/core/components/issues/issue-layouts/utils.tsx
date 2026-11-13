@@ -383,7 +383,7 @@ export const highlightIssueOnDrop = (
     const sourceElement = document.getElementById(sourceElementId);
     sourceElement?.classList?.add(shouldHighLightWithLine ? HIGHLIGHT_WITH_LINE : HIGHLIGHT_CLASS);
     if (shouldScrollIntoView && sourceElement)
-      await scrollIntoView(sourceElement, { behavior: "smooth", block: "center", duration: 1500 });
+      await scrollIntoView(sourceElement, { behavior: "smooth", block: "center", duration: 300 });
   }, 200);
 };
 

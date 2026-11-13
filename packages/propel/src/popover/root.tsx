@@ -8,6 +8,8 @@ import { memo, useMemo } from "react";
 import { Popover as BasePopover } from "@base-ui-components/react/popover";
 import type { TPlacement, TSide, TAlign } from "../utils/placement";
 import { convertPlacementToSideAndAlign } from "../utils/placement";
+import { cn } from "../utils/classname";
+import { POPUP_MOTION } from "../utils/motion";
 
 export interface PopoverContentProps extends React.ComponentProps<typeof BasePopover.Popup> {
   placement?: TPlacement;
@@ -42,7 +44,7 @@ const PopoverContent = memo(function PopoverContent({
   return (
     <PopoverPortal container={containerRef?.current}>
       <PopoverPositioner side={finalSide} sideOffset={sideOffset} align={finalAlign} className={positionerClassName}>
-        <BasePopover.Popup data-slot="popover-content" className={className} {...props}>
+        <BasePopover.Popup data-slot="popover-content" className={cn(POPUP_MOTION, className)} {...props}>
           {children}
         </BasePopover.Popup>
       </PopoverPositioner>

@@ -6,3 +6,4 @@
 
 export * from "./classname";
 export * from "./placement";
+export * from "./motion";

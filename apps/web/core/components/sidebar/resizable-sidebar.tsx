@@ -202,22 +202,31 @@ export function ResizableSidebar({
     <>
       {/* CCI: a scrim behind the overlaid sidebar on narrow screens. It swallows the tap; the sidebar's
           outside-click handler closes it. */}
-      {isMobile && !isCollapsed && <div aria-hidden className="fixed inset-0 z-[19] bg-black/30" />}
+      {isMobile && !isCollapsed && (
+        <div aria-hidden className="fixed inset-0 z-[19] bg-black/30 motion-safe:animate-fade-in" />
+      )}
       {/* Main Sidebar */}
       <div
         id="main-sidebar"
         {...panelAttributes}
         className={cn(
           "z-20 h-full bg-surface-1", // CCI: navy against the white work area needs no divider
-          !isResizing && "transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-0 translate-x-[-100%] opacity-0" : "translate-x-0 opacity-100",
+          // CCI: on phones the overlay slides (transform only); on desktop the width snaps, so the work area
+          // reflows once instead of on every frame.
+          isMobile &&
+            (isCollapsed
+              ? "transition-[translate,opacity] duration-180 ease-exit"
+              : "transition-[translate,opacity] duration-240 ease-out-strong"),
+          isCollapsed ? "translate-x-[-100%] opacity-0" : "translate-x-0 opacity-100",
+          isCollapsed && !isMobile && "w-0",
+          isMobile && isCollapsed && "pointer-events-none",
           isMobile && "absolute",
           className
         )}
         style={{
-          width: `${isCollapsed ? 0 : width}px`,
-          minWidth: `${isCollapsed ? 0 : width}px`,
-          maxWidth: `${isCollapsed ? 0 : width}px`,
+          width: `${isCollapsed && !isMobile ? 0 : width}px`,
+          minWidth: `${isCollapsed && !isMobile ? 0 : width}px`,
+          maxWidth: `${isCollapsed && !isMobile ? 0 : width}px`,
         }}
         role="complementary"
         aria-label="Main sidebar"
@@ -251,7 +260,7 @@ export function ResizableSidebar({
       <div
         className={cn(
           "shadow-sm absolute left-0 z-20 h-full bg-surface-1",
-          !isResizing && "transition-all duration-300 ease-in-out",
+          !isResizing && "transition-[translate,opacity] duration-180 ease-out-strong",
           isCollapsed && showPeek ? "translate-x-0 opacity-100" : "translate-x-[-100%] opacity-0",
           "pointer-events-none",
           isCollapsed && showPeek && "pointer-events-auto",

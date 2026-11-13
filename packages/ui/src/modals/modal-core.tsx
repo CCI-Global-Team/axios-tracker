@@ -30,34 +30,34 @@ export function ModalCore(props: Props) {
   } = props;
 
   return (
-    <Transition.Root show={isOpen} as={Fragment}>
+    <Transition.Root show={isOpen} as={Fragment} appear>
       <Dialog as="div" className="relative z-30" onClose={() => handleClose && handleClose()}>
         <Transition.Child
           as={Fragment}
-          enter="ease-out duration-300"
+          enter="transition-opacity duration-180 ease-out-strong"
           enterFrom="opacity-0"
           enterTo="opacity-100"
-          leave="ease-in duration-200"
+          leave="transition-opacity duration-120 ease-exit"
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-backdrop transition-opacity" />
+          <div className="fixed inset-0 bg-backdrop" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-30 overflow-y-auto">
           <div className={position}>
             <Transition.Child
               as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              enter="transition-[opacity,translate,scale] duration-200 ease-out-strong"
+              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-97"
               enterTo="opacity-100 translate-y-0 sm:scale-100"
-              leave="ease-in duration-200"
+              leave="transition-[opacity,translate,scale] duration-140 ease-exit"
               leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-97"
             >
               <Dialog.Panel
                 className={cn(
-                  "relative w-full transform rounded-lg bg-surface-1 text-left shadow-raised-200 transition-all",
+                  "relative w-full transform rounded-lg bg-surface-1 text-left shadow-raised-200",
                   width,
                   className
                 )}

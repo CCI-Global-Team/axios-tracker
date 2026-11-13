@@ -7,6 +7,7 @@
 import { useEffect, useRef } from "react";
 import { BProgress } from "@bprogress/core";
 import { useNavigation } from "react-router";
+// oxlint-disable-next-line import/no-unassigned-import -- side-effect stylesheet import
 import "@bprogress/core/css";
 
 /**
@@ -37,11 +38,12 @@ interface ProgressConfig {
 const PROGRESS_CONFIG: Readonly<ProgressConfig> = {
   showSpinner: false,
   minimum: 0.1,
-  speed: 400,
+  speed: 200,
   trickleSpeed: 800,
   easing: "ease",
   trickle: true,
-  delay: 0,
+  // CCI: quick navigations finish before the bar would show, so it no longer flashes on every click.
+  delay: 150,
 } as const;
 
 /**

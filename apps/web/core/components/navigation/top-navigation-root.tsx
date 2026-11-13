@@ -48,7 +48,7 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
   return (
     <div
       {...chromeAttributes}
-      className={cn("z-[27] flex min-h-10 w-full items-center bg-canvas px-3.5 transition-all duration-300", {
+      className={cn("z-[27] flex min-h-10 w-full items-center bg-canvas px-3.5", {
         "px-2": !showLabel,
       })}
     >

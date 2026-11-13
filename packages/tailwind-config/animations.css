@@ -1,4 +1,32 @@
 @theme {
+  /* CCI motion tokens. Enter with ease-out-strong, leave faster with ease-exit; 120 / 180 / 240 ms. */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Panels entering: the side peek slides a little from the right; centred panels grow slightly. */
+  --animate-peek-in: peek-in 0.22s var(--ease-out-strong) both;
+  @keyframes peek-in {
+    from {
+      opacity: 0;
+      translate: 24px 0;
+    }
+  }
+  --animate-pop-in: pop-in 0.2s var(--ease-out-strong) both;
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      scale: 0.97;
+    }
+  }
+
+  /* A row that was just dropped or added: one accent wash that fades out. */
+  --animate-row-flash: row-flash 0.6s var(--ease-out-strong) both;
+  @keyframes row-flash {
+    from {
+      background-color: var(--bg-accent-subtle);
+    }
+  }
+
   /* slide up */
   --animate-slide-up: slide-up 0.3s ease-out forwards;
   @keyframes slide-up {
@@ -84,5 +112,18 @@
     100% {
       opacity: 1;
     }
+  }
+}
+
+/* CCI: reduced motion. Transitions and one-shot animations finish at once; loops stop, except spinners,
+   which would otherwise freeze and look broken. The brand loader has its own reduced-motion rules. */
+@media (prefers-reduced-motion: reduce) {
+  *:not(.animate-spin),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

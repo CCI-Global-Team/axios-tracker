@@ -36,7 +36,7 @@ export const AppRailRoot = observer(() => {
   return (
     <div
       {...chromeAttributes}
-      className="z-[26] h-full flex-shrink-0 bg-canvas transition-all duration-300 ease-in-out"
+      className="z-[26] h-full flex-shrink-0 bg-canvas"
       style={{
         width: railWidth,
         display: "block",

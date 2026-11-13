@@ -58,7 +58,7 @@ export const SidebarWrapper = observer(function SidebarWrapper(props: TSidebarWr
   return (
     <>
       <CustomizeNavigationDialog isOpen={isCustomizeNavDialogOpen} onClose={() => setIsCustomizeNavDialogOpen(false)} />
-      <div ref={ref} className="flex h-full w-full animate-fade-in flex-col">
+      <div ref={ref} className="flex h-full w-full flex-col">
         {/* CCI: no title row. The new-work-item action shares one row with the customise and collapse buttons. */}
         <div className="flex items-center gap-1 px-3">
           <div className="min-w-0 flex-1">{quickActions}</div>

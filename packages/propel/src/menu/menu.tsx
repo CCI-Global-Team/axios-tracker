@@ -9,6 +9,7 @@ import { Menu as BaseMenu } from "@base-ui-components/react/menu";
 import { MoreHorizontal } from "lucide-react";
 import { ChevronDownIcon, ChevronRightIcon } from "../icons";
 import { cn } from "../utils/classname";
+import { POPUP_MOTION } from "../utils/motion";
 import type { TMenuProps, TSubMenuProps, TMenuItemProps } from "./types";
 
 // Context for main menu to communicate with submenus
@@ -35,7 +36,7 @@ function SubMenu(props: TSubMenuProps) {
       </BaseMenu.SubmenuTrigger>
       <BaseMenu.Portal>
         <BaseMenu.Positioner className={""} alignOffset={-4} sideOffset={-4}>
-          <BaseMenu.Popup className={className}>{children} </BaseMenu.Popup>
+          <BaseMenu.Popup className={cn(POPUP_MOTION, className)}>{children} </BaseMenu.Popup>
         </BaseMenu.Positioner>
       </BaseMenu.Portal>
     </BaseMenu.SubmenuRoot>
@@ -186,6 +187,7 @@ function Menu(props: TMenuProps) {
           <BaseMenu.Popup
             tabIndex={tabIndex}
             className={cn(
+              POPUP_MOTION,
               "my-1 min-w-[12rem] overflow-y-scroll rounded-md border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 text-11 whitespace-nowrap shadow-raised-200 focus:outline-none",
               {
                 "max-h-60": maxHeight === "lg",
@@ -197,6 +199,7 @@ function Menu(props: TMenuProps) {
             )}
             data-main-menu="true"
           >
+            {/* oxlint-disable-next-line react/jsx-no-constructed-context-values -- upstream; both are stable callbacks */}
             <MenuContext.Provider value={{ closeAllSubmenus, registerSubmenu }}>{children}</MenuContext.Provider>
           </BaseMenu.Popup>
         </BaseMenu.Positioner>

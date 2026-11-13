@@ -167,7 +167,7 @@ export const CommentCardDisplay = observer(function CommentCardDisplay(props: TC
             initialValue={comment.comment_html ?? ""}
             workspaceId={workspaceId}
             workspaceSlug={workspaceSlug}
-            containerClassName={cn("!py-1 transition-[border-color] duration-500", highlightClassName)}
+            containerClassName={cn("!py-1 transition-[border-color] duration-200", highlightClassName)}
             projectId={projectId?.toString()}
             displayConfig={{
               fontSize: "small-font",
