@@ -12,6 +12,7 @@ import {
   TimelineLayoutIcon,
 } from "@plane/propel/icons";
 import type { ISvgIcons } from "@plane/propel/icons";
+import { Waypoints } from "lucide-react";
 import { EIssueLayoutTypes } from "@plane/types";
 
 export function IssueLayoutIcon({
@@ -35,6 +36,10 @@ export function IssueLayoutIcon({
       return <SheetLayoutIcon {...iconProps} />;
     case EIssueLayoutTypes.GANTT:
       return <TimelineLayoutIcon {...iconProps} />;
+    case EIssueLayoutTypes.PLAN:
+      return (
+        <Waypoints {...(size ? { size } : {})} className={props.className} strokeWidth={props.strokeWidth ?? 1.75} />
+      );
     default:
       return null;
   }

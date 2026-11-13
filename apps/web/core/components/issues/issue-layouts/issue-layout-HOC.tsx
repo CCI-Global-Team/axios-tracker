@@ -13,6 +13,7 @@ import { CalendarLayoutLoader } from "@/components/ui/loader/layouts/calendar-la
 import { GanttLayoutLoader } from "@/components/ui/loader/layouts/gantt-layout-loader";
 import { KanbanLayoutLoader } from "@/components/ui/loader/layouts/kanban-layout-loader";
 import { ListLayoutLoader } from "@/components/ui/loader/layouts/list-layout-loader";
+import { PlanLayoutLoader } from "@/components/ui/loader/layouts/plan-layout-loader";
 import { SpreadsheetLayoutLoader } from "@/components/ui/loader/layouts/spreadsheet-layout-loader";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
@@ -33,6 +34,8 @@ export function ActiveLoader(props: { layout: EIssueLayoutTypes }) {
       return <CalendarLayoutLoader />;
     case EIssueLayoutTypes.GANTT:
       return <GanttLayoutLoader />;
+    case EIssueLayoutTypes.PLAN:
+      return <PlanLayoutLoader />;
     default:
       return null;
   }

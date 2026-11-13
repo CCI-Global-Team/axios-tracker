@@ -14,12 +14,7 @@ import { useTranslation } from "@plane/i18n";
 // icons
 import { ChevronDownIcon } from "@plane/propel/icons";
 // types
-import type {
-  IIssueDisplayFilterOptions,
-  IIssueDisplayProperties,
-  TIssueLayouts,
-  EIssueLayoutTypes,
-} from "@plane/types";
+import type { IIssueDisplayFilterOptions, IIssueDisplayProperties, EIssueLayoutTypes } from "@plane/types";
 import { EIssuesStoreType } from "@plane/types";
 // ui
 import { CustomMenu } from "@plane/ui";
@@ -42,13 +37,13 @@ export const ProfileIssuesMobileHeader = observer(function ProfileIssuesMobileHe
   const activeLayout = issueFilters?.displayFilters?.layout;
 
   const handleLayoutChange = useCallback(
-    (layout: TIssueLayouts) => {
+    (layout: EIssueLayoutTypes) => {
       if (!workspaceSlug || !userId) return;
       updateFilters(
         workspaceSlug.toString(),
         undefined,
         EIssueFilterType.DISPLAY_FILTERS,
-        { layout: layout as EIssueLayoutTypes | undefined },
+        { layout },
         userId.toString()
       );
     },
@@ -98,17 +93,23 @@ export const ProfileIssuesMobileHeader = observer(function ProfileIssuesMobileHe
         customButtonClassName="flex flex-center text-secondary text-13"
         closeOnSelect
       >
-        {ISSUE_LAYOUTS.map((layout, index) => {
-          if (layout.key === "spreadsheet" || layout.key === "gantt_chart" || layout.key === "calendar") return;
+        {ISSUE_LAYOUTS.map((layout) => {
+          if (
+            layout.key === "spreadsheet" ||
+            layout.key === "gantt_chart" ||
+            layout.key === "calendar" ||
+            layout.key === "plan"
+          )
+            return;
           return (
             <CustomMenu.MenuItem
-              key={index}
+              key={layout.key}
               onClick={() => {
-                handleLayoutChange(ISSUE_LAYOUTS[index].key);
+                handleLayoutChange(layout.key);
               }}
               className="flex items-center gap-2"
             >
-              <IssueLayoutIcon layout={ISSUE_LAYOUTS[index].key} className="h-3 w-3" />
+              <IssueLayoutIcon layout={layout.key} className="h-3 w-3" />
               <div className="text-tertiary">{t(layout.i18n_title)}</div>
             </CustomMenu.MenuItem>
           );

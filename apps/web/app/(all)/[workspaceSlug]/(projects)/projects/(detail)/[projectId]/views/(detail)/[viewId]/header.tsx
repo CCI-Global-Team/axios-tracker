@@ -174,6 +174,7 @@ export const ProjectViewIssuesHeader = observer(function ProjectViewIssuesHeader
                 EIssueLayoutTypes.CALENDAR,
                 EIssueLayoutTypes.SPREADSHEET,
                 EIssueLayoutTypes.GANTT,
+                EIssueLayoutTypes.PLAN,
               ]}
               onChange={(layout) => handleLayoutChange(layout)}
               selectedLayout={activeLayout}

@@ -18,6 +18,8 @@ export enum EIssueLayoutTypes {
   CALENDAR = "calendar",
   GANTT = "gantt_chart",
   SPREADSHEET = "spreadsheet",
+  /** CCI: dependency board — overview, build order and schedule */
+  PLAN = "plan",
 }
 
 export enum EIssueServiceType {

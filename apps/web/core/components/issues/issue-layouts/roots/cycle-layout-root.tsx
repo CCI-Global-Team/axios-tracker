@@ -25,6 +25,7 @@ import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 import { IssuePeekOverview } from "../../peek-overview";
 import { CycleCalendarLayout } from "../calendar/roots/cycle-root";
 import { BaseGanttRoot } from "../gantt";
+import { BasePlanRoot } from "../plan/root";
 import { CycleKanBanLayout } from "../kanban/roots/cycle-root";
 import { CycleListLayout } from "../list/roots/cycle-root";
 import { CycleSpreadsheetLayout } from "../spreadsheet/roots/cycle-root";
@@ -43,6 +44,8 @@ function CycleIssueLayout(props: {
       return <CycleCalendarLayout />;
     case EIssueLayoutTypes.GANTT:
       return <BaseGanttRoot viewId={props.cycleId} isCompletedCycle={props.isCompletedCycle} />;
+    case EIssueLayoutTypes.PLAN:
+      return <BasePlanRoot viewId={props.cycleId} />;
     case EIssueLayoutTypes.SPREADSHEET:
       return <CycleSpreadsheetLayout />;
     default:
