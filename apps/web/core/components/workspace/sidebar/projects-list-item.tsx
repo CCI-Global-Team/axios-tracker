@@ -58,6 +58,16 @@ type Props = {
   renderInExtendedSidebar?: boolean;
 };
 
+// CCI (Direction A): projects in the sidebar are marked by a colour square, stable per project, instead of
+// their emoji or icon, so the list reads as one quiet column on the navy ground.
+const PROJECT_DOT_HUES = [25, 250, 140, 300, 60, 200, 340, 100];
+function ProjectDot({ seed }: { seed: string }) {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  const hue = PROJECT_DOT_HUES[Math.abs(hash) % PROJECT_DOT_HUES.length];
+  return <span aria-hidden className="size-[9px] rounded-[3px]" style={{ background: `oklch(0.64 0.14 ${hue})` }} />;
+}
+
 export const SidebarProjectsListItem = observer(function SidebarProjectsListItem(props: Props) {
   const {
     projectId,
@@ -339,14 +349,14 @@ export const SidebarProjectsListItem = observer(function SidebarProjectsListItem
                     }
                   >
                     <div className="grid size-4 flex-shrink-0 place-items-center">
-                      <Logo logo={project.logo_props} size={16} />
+                      <ProjectDot seed={project.identifier ?? project.id} />
                     </div>
                     <p className="truncate text-13 font-medium text-secondary">{project.name}</p>
                   </Disclosure.Button>
                 ) : (
                   <div className="flex w-full flex-grow items-center gap-1.5 text-left select-none">
                     <div className="grid size-4 flex-shrink-0 place-items-center">
-                      <Logo logo={project.logo_props} size={16} />
+                      <ProjectDot seed={project.identifier ?? project.id} />
                     </div>
                     <p className="truncate text-13 font-medium text-secondary">{project.name}</p>
                   </div>

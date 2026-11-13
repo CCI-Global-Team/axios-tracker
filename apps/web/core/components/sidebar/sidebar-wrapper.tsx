@@ -59,25 +59,17 @@ export const SidebarWrapper = observer(function SidebarWrapper(props: TSidebarWr
     <>
       <CustomizeNavigationDialog isOpen={isCustomizeNavDialogOpen} onClose={() => setIsCustomizeNavDialogOpen(false)} />
       <div ref={ref} className="flex h-full w-full animate-fade-in flex-col">
-        <div className="flex flex-col gap-3 px-3">
-          {/* Workspace switcher and settings */}
-
-          <div className="flex items-center justify-between gap-2 px-2">
-            <span className="pt-1 text-16 font-medium text-primary">{title}</span>
-            <div className="flex items-center gap-2">
-              {title === "Projects" && (
-                <IconButton
-                  size="base"
-                  variant="ghost"
-                  icon={PreferencesIcon}
-                  onClick={() => setIsCustomizeNavDialogOpen(true)}
-                />
-              )}
-              <AppSidebarToggleButton />
-            </div>
-          </div>
-          {/* Quick actions */}
-          {quickActions}
+        {/* CCI: no title row. The new-work-item action shares one row with the customise and collapse buttons. */}
+        <div className="flex items-center gap-1 px-3">
+          <div className="min-w-0 flex-1">{quickActions}</div>
+          <IconButton
+            size="base"
+            variant="ghost"
+            icon={PreferencesIcon}
+            onClick={() => setIsCustomizeNavDialogOpen(true)}
+            aria-label={title ? `Customize ${title.toLowerCase()} navigation` : "Customize navigation"}
+          />
+          <AppSidebarToggleButton />
         </div>
 
         <ScrollArea

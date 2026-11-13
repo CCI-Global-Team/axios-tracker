@@ -91,7 +91,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         icon: CycleIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
         shouldRender: project?.cycle_view ?? false,
-        sortOrder: 2,
+        sortOrder: 5,
       },
       {
         i18n_key: "sidebar.modules",
@@ -101,7 +101,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         icon: ModuleIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
         shouldRender: project?.module_view ?? false,
-        sortOrder: 3,
+        sortOrder: 6,
       },
       // CCI: Releases (GAM-400)
       {
@@ -112,7 +112,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         icon: Rocket,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
         shouldRender: project?.release_view ?? false,
-        sortOrder: 3.5,
+        sortOrder: 3,
       },
       {
         i18n_key: "sidebar.views",
@@ -122,7 +122,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         icon: ViewsIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
         shouldRender: project?.issue_views_view ?? false,
-        sortOrder: 4,
+        sortOrder: 7,
       },
       {
         i18n_key: "sidebar.pages",
@@ -132,7 +132,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         icon: PageIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
         shouldRender: project?.page_view ?? false,
-        sortOrder: 5,
+        sortOrder: 4,
       },
       {
         i18n_key: "sidebar.intake",
@@ -142,7 +142,7 @@ export const ProjectNavigation = observer(function ProjectNavigation(props: TPro
         icon: IntakeIcon,
         access: [EUserPermissions.ADMIN, EUserPermissions.MEMBER, EUserPermissions.GUEST],
         shouldRender: project?.inbox_view ?? false,
-        sortOrder: 6,
+        sortOrder: 2,
       },
     ],
     [project]

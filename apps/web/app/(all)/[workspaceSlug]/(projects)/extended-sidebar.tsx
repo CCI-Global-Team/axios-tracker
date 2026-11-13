@@ -8,7 +8,11 @@ import { useCallback, useMemo, useRef } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 // plane imports
-import { WORKSPACE_SIDEBAR_DYNAMIC_NAVIGATION_ITEMS_LINKS, EUserPermissionsLevel } from "@plane/constants";
+import {
+  WORKSPACE_SIDEBAR_DYNAMIC_NAVIGATION_ITEMS_LINKS,
+  WORKSPACE_SIDEBAR_STATIC_NAVIGATION_ITEMS,
+  EUserPermissionsLevel,
+} from "@plane/constants";
 import type { EUserWorkspaceRoles } from "@plane/types";
 // hooks
 import { useAppTheme } from "@/hooks/store/use-app-theme";
@@ -127,6 +131,18 @@ export const ExtendedAppSidebar = observer(function ExtendedAppSidebar() {
       handleClose={handleClose}
       excludedElementId="extended-sidebar-toggle"
     >
+      {/* CCI: Projects, Drafts and Stickies live here rather than in the main sidebar. */}
+      {(["projects", "drafts", "stickies"] as const).map((key) => (
+        <ExtendedSidebarItem
+          key={key}
+          item={WORKSPACE_SIDEBAR_STATIC_NAVIGATION_ITEMS[key]}
+          isLastChild={false}
+          disableDrag
+          disableDrop
+          hidePin
+        />
+      ))}
+      <div className="my-1 border-t border-subtle" aria-hidden />
       {sortedNavigationItems.map((item, index) => (
         <ExtendedSidebarItem
           key={item.key}
