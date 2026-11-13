@@ -7,49 +7,61 @@
 import * as React from "react";
 
 import type { ISvgIcons } from "../type";
+import {
+  AXIOS_MARK_H,
+  AXIOS_MARK_W,
+  AXIOS_RED,
+  ChainArt,
+  CrossingMask,
+  WORDMARK_H,
+  WordmarkArt,
+  useSvgId,
+} from "./axios-art";
 
-// Component name is upstream Plane's; the artwork drawn here is CCI's Axios mark (see docs/brand/axios-mark.svg),
-// with "Axios" set as live text per docs/brand/README.md rather than as a path.
-// The default width/height carry the lockup's real aspect ratio, because most call sites size it with a height
-// class and `w-auto` — a wrong intrinsic ratio there silently stretches the mark rather than erroring.
-export function PlaneLockup({ width = "175", height = "53", className, color = "currentColor" }: ISvgIcons) {
+// The horizontal lockup: the chain, then AXIOS on the chain's centre line. The wordmark's cap height is
+// three quarters of the chain's height, and the gap between them is about one loop radius.
+const CAP = 28.3;
+const SCALE = CAP / WORDMARK_H;
+const GAP = 21.4;
+const WM_X = AXIOS_MARK_W + GAP;
+const WM_Y = (AXIOS_MARK_H - CAP) / 2;
+const W = WM_X + 513.2 * SCALE + 1;
+
+interface PlaneLockupProps extends ISvgIcons {
+  /** Colour of the chain and the A's crossbar. Defaults to the brand red; pass "currentColor" on a coloured ground. */
+  accent?: string;
+}
+
+// Component name is upstream Plane's; the artwork is CCI's Axios lockup (see docs/brand/README.md).
+// The default size carries the lockup's real aspect ratio, because most call sites size it with a height class and
+// `w-auto`; a wrong intrinsic ratio there letterboxes the art.
+export function PlaneLockup({
+  width = String(Math.round((W * 20) / AXIOS_MARK_H)),
+  height = "20",
+  className,
+  color = "currentColor",
+  accent = AXIOS_RED,
+}: PlaneLockupProps) {
+  const maskId = useSvgId("axios-lockup");
+  const clipId = useSvgId("axios-lockup-x");
   return (
     <svg
       width={width}
       height={height}
-      viewBox="0 0 175 53"
+      viewBox={`0 0 ${W.toFixed(1)} ${AXIOS_MARK_H}`}
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      role="img"
+      aria-label="Axios"
     >
       <defs>
-        <mask id="axios-lockup-weave" maskUnits="userSpaceOnUse" x="0" y="0" width="100" height="100">
-          <rect width="100" height="100" fill="#fff" />
-          <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke="#000" strokeWidth="17" strokeLinecap="round" />
-        </mask>
+        <CrossingMask id={maskId} />
       </defs>
-      <svg x="0" y="0" width="59.7" height="53" viewBox="14.5 18.5 71 63" fill="none">
-        <path
-          d="M20,24 C44,24 56,76 80,76"
-          fill="none"
-          stroke={color}
-          strokeWidth="11"
-          strokeLinecap="round"
-          mask="url(#axios-lockup-weave)"
-        />
-        <path d="M20,76 C44,76 56,24 80,24" fill="none" stroke={color} strokeWidth="11" strokeLinecap="round" />
-      </svg>
-      <text
-        x="75"
-        y="26.5"
-        dominantBaseline="central"
-        fontSize="30"
-        fontWeight="600"
-        letterSpacing="-0.5"
-        fill={color}
-      >
-        Axios
-      </text>
+      <ChainArt color={accent} maskId={maskId} />
+      <g transform={`translate(${WM_X} ${WM_Y.toFixed(2)}) scale(${SCALE})`}>
+        <WordmarkArt color={color} accent={accent} clipId={clipId} />
+      </g>
     </svg>
   );
 }

@@ -5,21 +5,12 @@
  */
 
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { AxiosLoader } from "@plane/propel/icons";
 
 /**
- * CCI: the Axios mark drawing itself, replacing upstream's pair of animated GIFs.
- *
- * Inline SVG rather than <img src="...svg">: SMIL is effectively frozen inside an <img>, and a GIF
- * cannot follow the theme or scale cleanly. Drawn inline, the mark inherits currentColor, so one
- * component serves light and dark and the dark/light asset pair is no longer needed.
- *
- * The two ribbons draw and retract half a cycle apart, so the crossing keeps forming and releasing —
- * the weave expressed as motion instead of as a masked gap.
+ * CCI: the Axios chain drawing itself (the artwork lives in @plane/propel's AxiosLoader), replacing
+ * upstream's pair of animated GIFs. Inline SVG so it follows the theme and scales cleanly.
  */
-
-// Both ribbons are the same length; hard-coded so the dash animation needs no measurement at runtime.
-const PATH_LENGTH = 82.41;
-const CYCLE_SECONDS = 2;
 
 /*
  * A page load passes through several loaders in turn (root, instance, auth, workspace). Each one is a
@@ -56,12 +47,6 @@ export function LogoSpinner() {
   return (
     <div ref={ref} className="axios-loader flex items-center justify-center">
       <style>{`
-        @keyframes axios-loader-draw {
-          0%   { stroke-dashoffset: ${PATH_LENGTH}; }
-          42%  { stroke-dashoffset: 0; }
-          58%  { stroke-dashoffset: 0; }
-          100% { stroke-dashoffset: -${PATH_LENGTH}; }
-        }
         @keyframes axios-loader-in {
           from { opacity: 0; transform: scale(0.96); }
           to   { opacity: 1; transform: none; }
@@ -69,45 +54,11 @@ export function LogoSpinner() {
         .axios-loader {
           animation: axios-loader-in 240ms cubic-bezier(.23,1,.32,1) 160ms both;
         }
-        .axios-loader__ribbon {
-          stroke-dasharray: ${PATH_LENGTH};
-          stroke-dashoffset: ${PATH_LENGTH};
-          animation: axios-loader-draw ${CYCLE_SECONDS}s cubic-bezier(.45,.05,.35,1) infinite;
-        }
-        .axios-loader__ribbon--second { animation-delay: -${CYCLE_SECONDS / 2}s; }
         @media (prefers-reduced-motion: reduce) {
           .axios-loader { animation-duration: 1ms; }
-          .axios-loader__ribbon { animation: none; stroke-dashoffset: 0; }
         }
       `}</style>
-      {/* width/height attributes hold the size before the stylesheet arrives; without them the first
-          server-rendered paint drew the mark at the full width of the screen. */}
-      <svg
-        viewBox="14.5 18.5 71 63"
-        width="50"
-        height="44"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-6 w-auto text-accent-primary sm:h-11"
-        style={{ color: "var(--txt-accent-primary, #d71920)" }}
-        role="img"
-        aria-label="Loading"
-      >
-        <path
-          className="axios-loader__ribbon"
-          d="M20,24 C44,24 56,76 80,76"
-          stroke="currentColor"
-          strokeWidth="11"
-          strokeLinecap="round"
-        />
-        <path
-          className="axios-loader__ribbon axios-loader__ribbon--second"
-          d="M20,76 C44,76 56,24 80,24"
-          stroke="currentColor"
-          strokeWidth="11"
-          strokeLinecap="round"
-        />
-      </svg>
+      <AxiosLoader width={96} className="h-auto w-20 sm:w-28" />
     </div>
   );
 }
