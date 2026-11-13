@@ -137,7 +137,8 @@ export const InboxSidebar = observer(function InboxSidebar(props: IInboxSidebarP
             <FiltersRoot />
           </div>
         </Header>
-        <InboxIssueAppliedFilters />
+        {/* CCI: an empty tab with only its own status filter has nothing to show in the chip row. */}
+        {(filteredInboxIssueIds.length > 0 || !onlyDefaultFilters) && <InboxIssueAppliedFilters />}
 
         {loader != undefined && loader === "filter-loading" && !inboxIssuePaginationInfo?.next_page_results ? (
           <InboxSidebarLoader />

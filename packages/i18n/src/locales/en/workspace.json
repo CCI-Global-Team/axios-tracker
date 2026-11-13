@@ -153,7 +153,7 @@
   "workspace_projects": {
     "label": "{count, plural, one {Project} other {Projects}}",
     "create": {
-      "label": "Add Project"
+      "label": "New project"
     },
     "network": {
       "label": "Network",
@@ -226,7 +226,7 @@
     }
   },
   "workspace_views": {
-    "add_view": "Add view",
+    "add_view": "New view",
     "empty_state": {
       "all-issues": {
         "title": "No work items in the project",
