@@ -4,7 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import { useState, useMemo, useCallback } from "react";
+/* oxlint-disable no-shadow -- upstream catch blocks reuse the `error` state name */
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { observer } from "mobx-react";
 import { usePathname } from "next/navigation";
 // Plane imports
@@ -225,26 +226,41 @@ export const IssuePeekOverview = observer(function IssuePeekOverview(props: IWor
     }
   );
 
-  if (!peekIssue?.workspaceSlug || !peekIssue?.projectId || !peekIssue?.issueId) return <></>;
+  // CCI: when the peek closes, keep the last work item on screen for the panel's 160 ms exit animation.
+  const [closingPeek, setClosingPeek] = useState<typeof peekIssue>();
+  const [lastPeek, setLastPeek] = useState(peekIssue);
+  if (peekIssue !== lastPeek) {
+    setLastPeek(peekIssue);
+    setClosingPeek(!peekIssue?.issueId && lastPeek?.issueId && !embedIssue ? lastPeek : undefined);
+  }
+  useEffect(() => {
+    if (!closingPeek) return;
+    const timer = setTimeout(() => setClosingPeek(undefined), 160);
+    return () => clearTimeout(timer);
+  }, [closingPeek]);
+  const shownPeek = peekIssue?.issueId ? peekIssue : closingPeek;
+
+  if (!shownPeek?.workspaceSlug || !shownPeek?.projectId || !shownPeek?.issueId) return <></>;
 
   // Check if issue is editable, based on user role
   const isEditable = allowPermissions(
     [EUserPermissions.ADMIN, EUserPermissions.MEMBER],
     EUserPermissionsLevel.PROJECT,
-    peekIssue?.workspaceSlug,
-    peekIssue?.projectId
+    shownPeek.workspaceSlug,
+    shownPeek.projectId
   );
 
   return (
     <IssueView
-      workspaceSlug={peekIssue.workspaceSlug}
-      projectId={peekIssue.projectId}
-      issueId={peekIssue.issueId}
+      workspaceSlug={shownPeek.workspaceSlug}
+      projectId={shownPeek.projectId}
+      issueId={shownPeek.issueId}
       isLoading={isLoading}
       isError={error}
-      is_archived={!!peekIssue.isArchived}
+      is_archived={!!shownPeek.isArchived}
       disabled={!isEditable}
       embedIssue={embedIssue}
+      isClosing={shownPeek !== peekIssue}
       embedRemoveCurrentNotification={embedRemoveCurrentNotification}
       issueOperations={issueOperations}
     />

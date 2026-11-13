@@ -20,7 +20,7 @@ import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 // local imports
 import { IssueLayoutEmptyState } from "./empty-states";
 
-function ActiveLoader(props: { layout: EIssueLayoutTypes }) {
+export function ActiveLoader(props: { layout: EIssueLayoutTypes }) {
   const { layout } = props;
   switch (layout) {
     case EIssueLayoutTypes.LIST:

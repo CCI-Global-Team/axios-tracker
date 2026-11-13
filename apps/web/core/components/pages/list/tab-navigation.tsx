@@ -49,14 +49,14 @@ export function PageTabNavigation(props: TPageTabNavigation) {
           className="flex h-full flex-col"
         >
           <div
-            className={cn(`flex flex-1 items-center justify-center px-4 text-13 font-medium transition-all`, {
+            className={cn(`flex flex-1 items-center justify-center px-4 text-13 font-medium transition-colors`, {
               "text-accent-primary": tab.key === pageType,
             })}
           >
             {tab.label}
           </div>
           <div
-            className={cn(`w-full rounded-t border-t-2 border-transparent transition-all`, {
+            className={cn(`w-full rounded-t border-t-2 border-transparent transition-colors`, {
               "border-accent-strong": tab.key === pageType,
             })}
           />

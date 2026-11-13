@@ -123,10 +123,12 @@ export const SpreadsheetTable = observer(function SpreadsheetTable(props: Props)
         isEpic={isEpic}
       />
       <tbody>
-        {issueIds.map((id) => (
+        {issueIds.map((id, index) => (
           <SpreadsheetIssueRow
             key={id}
             issueId={id}
+            // CCI: a screenful renders straight away, so the skeleton gives way to rows, not blank placeholders.
+            shouldRenderByDefault={index < 24}
             displayProperties={displayProperties}
             quickActions={quickActions}
             canEditProperties={canEditProperties}
@@ -145,6 +147,7 @@ export const SpreadsheetTable = observer(function SpreadsheetTable(props: Props)
       {canLoadMoreIssues && (
         <tfoot ref={setIntersectionElement}>
           {Array.from({ length: 3 }).map((_, index) => (
+            // oxlint-disable-next-line react/no-array-index-key -- static loader rows
             <SpreadsheetIssueRowLoader key={index} columnCount={displayPropertiesCount} />
           ))}
         </tfoot>

@@ -39,13 +39,16 @@ export function AccessField(props: Props) {
               type="button"
               onClick={() => onChange(access.key)}
               className={cn(
-                "relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-xs p-1 transition-all",
+                "relative flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-xs p-1 transition-colors",
                 value === access.key ? "bg-layer-1" : "hover:bg-layer-1"
               )}
               tabIndex={2 + index}
             >
               <access.icon
-                className={cn("h-3.5 w-3.5 transition-all", value === access.key ? "text-primary" : "text-placeholder")}
+                className={cn(
+                  "h-3.5 w-3.5 transition-colors",
+                  value === access.key ? "text-primary" : "text-placeholder"
+                )}
                 strokeWidth={2}
               />
             </button>

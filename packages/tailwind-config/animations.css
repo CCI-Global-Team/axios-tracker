@@ -19,6 +19,25 @@
     }
   }
 
+  /* The app arriving after the loader: a short fade, with no fill, so nothing lingers once it ends. */
+  --animate-enter: fadeIn 0.18s var(--ease-out-strong);
+
+  /* ...and leave faster than they arrive. */
+  --animate-peek-out: peek-out 0.16s var(--ease-exit) both;
+  @keyframes peek-out {
+    to {
+      opacity: 0;
+      translate: 24px 0;
+    }
+  }
+  --animate-pop-out: pop-out 0.14s var(--ease-exit) both;
+  @keyframes pop-out {
+    to {
+      opacity: 0;
+      scale: 0.97;
+    }
+  }
+
   /* A row that was just dropped or added: one accent wash that fades out. */
   --animate-row-flash: row-flash 0.6s var(--ease-out-strong) both;
   @keyframes row-flash {

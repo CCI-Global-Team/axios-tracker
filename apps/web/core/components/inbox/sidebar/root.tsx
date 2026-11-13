@@ -109,7 +109,7 @@ export const InboxSidebar = observer(function InboxSidebar(props: IInboxSidebarP
               key={option?.key}
               aria-pressed={currentTab === option?.key}
               className={cn(
-                `relative flex h-full cursor-pointer items-center gap-1 px-3 text-13 font-medium transition-all`,
+                `relative flex h-full cursor-pointer items-center gap-1 px-3 text-13 font-medium transition-colors`,
                 currentTab === option?.key ? `text-accent-primary` : `hover:text-secondary`
               )}
               onClick={() => {

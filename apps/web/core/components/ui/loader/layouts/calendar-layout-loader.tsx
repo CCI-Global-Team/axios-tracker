@@ -5,10 +5,10 @@
  */
 
 import { range } from "lodash-es";
-import { getRandomInt } from "../utils";
+import { pickBySlot } from "../utils";
 
-function CalendarDay() {
-  const dataCount = getRandomInt(0, 1);
+function CalendarDay({ slot }: { slot: number }) {
+  const dataCount = pickBySlot([0, 1], slot);
   const dataBlocks = range(dataCount).map((index) => (
     <span key={index} className="mb-2 h-8 w-full rounded-sm bg-layer-1" />
   ));
@@ -33,10 +33,10 @@ export function CalendarLayoutLoader() {
       </span>
       <div className="h-full w-full overflow-y-auto">
         <div className="grid h-full w-full grid-cols-1 divide-y-[0.5px] divide-subtle-1 overflow-y-auto">
-          {range(6).map((index) => (
-            <div key={index} className="grid grid-cols-5 divide-x-[0.5px] divide-subtle-1">
-              {range(5).map((index) => (
-                <CalendarDay key={index} />
+          {range(6).map((week) => (
+            <div key={week} className="grid grid-cols-5 divide-x-[0.5px] divide-subtle-1">
+              {range(5).map((day) => (
+                <CalendarDay key={day} slot={week * 5 + day} />
               ))}
             </div>
           ))}

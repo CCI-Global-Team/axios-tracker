@@ -213,7 +213,7 @@ export const CustomizeNavigationDialog = observer(function CustomizeNavigationDi
                 keyExtractor={(item) => item.key}
                 id="personal-enabled-items"
                 render={(item) => (
-                  <div className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-200 hover:bg-surface-2">
+                  <div className="flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors duration-200 hover:bg-surface-2">
                     <GripVertical className="size-4 cursor-grab text-placeholder transition-colors active:cursor-grabbing" />
                     <Checkbox
                       checked={!!personalPreferences.items[item.key]?.enabled}
@@ -244,7 +244,7 @@ export const CustomizeNavigationDialog = observer(function CustomizeNavigationDi
                 render={(item) => {
                   const icon = getSidebarNavigationItemIcon(item.key);
                   return (
-                    <div className="group flex items-center gap-2 rounded-md px-2 py-1.5 transition-all duration-200 hover:bg-surface-2">
+                    <div className="group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors duration-200 hover:bg-surface-2">
                       <GripVertical className="size-4 cursor-grab text-placeholder transition-colors active:cursor-grabbing" />
                       <Checkbox
                         checked={!!workspacePreferences.items[item.key]?.is_pinned}

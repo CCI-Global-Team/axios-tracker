@@ -10,14 +10,15 @@ import { range } from "lodash-es";
 import { Row } from "@plane/ui";
 // plane utils
 import { cn } from "@plane/utils";
-import { getRandomInt, getRandomLength } from "../utils";
+import { pickBySlot } from "../utils";
 
 export const ListLoaderItemRow = forwardRef(function ListLoaderItemRow(
   {
     shouldAnimate = true,
     renderForPlaceHolder = false,
     defaultPropertyCount = 6,
-  }: { shouldAnimate?: boolean; renderForPlaceHolder?: boolean; defaultPropertyCount?: number },
+    slot = 0,
+  }: { shouldAnimate?: boolean; renderForPlaceHolder?: boolean; defaultPropertyCount?: number; slot?: number },
   ref: React.ForwardedRef<HTMLDivElement>
 ) {
   return (
@@ -37,7 +38,7 @@ export const ListLoaderItemRow = forwardRef(function ListLoaderItemRow(
         />
         <span
           className={cn(
-            `h-5 w-${getRandomLength(["32", "52", "72"])} rounded-sm bg-[var(--illustration-fill-tertiary)]`,
+            `h-5 w-${pickBySlot(["32", "52", "72"], slot)} rounded-sm bg-[var(--illustration-fill-tertiary)]`,
             {
               "animate-pulse": shouldAnimate,
               "bg-surface-2": renderForPlaceHolder,
@@ -48,7 +49,7 @@ export const ListLoaderItemRow = forwardRef(function ListLoaderItemRow(
       <div className="flex items-center gap-2">
         {range(defaultPropertyCount).map((index) => (
           <Fragment key={index}>
-            {getRandomInt(1, 2) % 2 === 0 ? (
+            {pickBySlot([true, false, false], slot + index) ? (
               <span
                 key={index}
                 className={cn("h-5 w-5 rounded-sm bg-[var(--illustration-fill-tertiary)]", {
@@ -73,7 +74,7 @@ export const ListLoaderItemRow = forwardRef(function ListLoaderItemRow(
 
 ListLoaderItemRow.displayName = "ListLoaderItemRow";
 
-function ListSection({ itemCount }: { itemCount: number }) {
+function ListSection({ itemCount, section }: { itemCount: number; section: number }) {
   return (
     <div className="flex flex-shrink-0 flex-col">
       <Row className="sticky top-0 z-[2] w-full flex-shrink-0 border-b border-subtle bg-surface-2 py-1">
@@ -84,7 +85,7 @@ function ListSection({ itemCount }: { itemCount: number }) {
       </Row>
       <div className="relative h-full w-full">
         {range(itemCount).map((index) => (
-          <ListLoaderItemRow key={index} />
+          <ListLoaderItemRow key={index} slot={section * 7 + index} />
         ))}
       </div>
     </div>
@@ -94,8 +95,9 @@ function ListSection({ itemCount }: { itemCount: number }) {
 export function ListLayoutLoader() {
   return (
     <div className="flex flex-shrink-0 flex-col">
-      {[6, 5, 2].map((itemCount, index) => (
-        <ListSection key={index} itemCount={itemCount} />
+      {[6, 5, 2].map((itemCount, section) => (
+        // oxlint-disable-next-line no-array-index-key -- fixed skeleton sections
+        <ListSection key={section} itemCount={itemCount} section={section} />
       ))}
     </div>
   );

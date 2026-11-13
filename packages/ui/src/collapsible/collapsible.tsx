@@ -21,7 +21,7 @@ export type TCollapsibleProps = {
 export function Collapsible(props: TCollapsibleProps) {
   const { title, children, buttonRef, className, buttonClassName, isOpen, onToggle, defaultOpen } = props;
   // state
-  const [localIsOpen, setLocalIsOpen] = useState<boolean>(isOpen || defaultOpen ? true : false);
+  const [localIsOpen, setLocalIsOpen] = useState<boolean>(Boolean(isOpen || defaultOpen));
 
   useEffect(() => {
     if (isOpen !== undefined) {
@@ -45,12 +45,13 @@ export function Collapsible(props: TCollapsibleProps) {
       </Disclosure.Button>
       <Transition
         show={localIsOpen}
-        enter="transition-all duration-300 ease-in-out"
-        enterFrom="grid-rows-[0fr] opacity-0"
-        enterTo="grid-rows-[1fr] opacity-100"
-        leave="transition-all duration-300 ease-in-out"
-        leaveFrom="grid-rows-[1fr] opacity-100"
-        leaveTo="grid-rows-[0fr] opacity-0"
+        // CCI: the height snaps and the content fades, so the page below reflows once instead of every frame.
+        enter="transition-opacity duration-120 ease-out-strong"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition-opacity duration-80 ease-exit"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
         className="grid overflow-hidden"
       >
         <Disclosure.Panel static className="min-h-0">

@@ -36,6 +36,8 @@ interface IIssueView {
   is_archived: boolean;
   disabled?: boolean;
   embedIssue?: boolean;
+  /** CCI: the peek has closed and the panel is playing its exit before it unmounts. */
+  isClosing?: boolean;
   embedRemoveCurrentNotification?: () => void;
   issueOperations: TIssueOperations;
 }
@@ -50,6 +52,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
     is_archived,
     disabled = false,
     embedIssue = false,
+    isClosing = false,
     embedRemoveCurrentNotification,
     issueOperations,
   } = props;
@@ -124,10 +127,13 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
         "absolute z-[25] flex flex-col overflow-hidden rounded-sm border border-subtle bg-surface-1"
       : `h-full w-full`,
     !embedIssue && {
-      "top-0 right-0 bottom-0 w-full border-0 border-l motion-safe:animate-peek-in md:w-[50%]":
-        peekMode === "side-peek",
-      "top-[8.33%] left-[8.33%] size-5/6 motion-safe:animate-pop-in": peekMode === "modal",
-      "absolute inset-0 m-4 motion-safe:animate-pop-in": peekMode === "full-screen",
+      "top-0 right-0 bottom-0 w-full border-0 border-l md:w-[50%]": peekMode === "side-peek",
+      "top-[8.33%] left-[8.33%] size-5/6": peekMode === "modal",
+      "absolute inset-0 m-4": peekMode === "full-screen",
+      "motion-safe:animate-peek-in": peekMode === "side-peek" && !isClosing,
+      "motion-safe:animate-pop-in": peekMode !== "side-peek" && !isClosing,
+      "pointer-events-none motion-safe:animate-peek-out": peekMode === "side-peek" && isClosing,
+      "pointer-events-none motion-safe:animate-pop-out": peekMode !== "side-peek" && isClosing,
     }
   );
 

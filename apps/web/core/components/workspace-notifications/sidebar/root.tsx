@@ -76,7 +76,7 @@ export const NotificationsSidebarRoot = observer(function NotificationsSidebarRo
             >
               <div
                 className={cn(
-                  "relative flex h-full items-center justify-center gap-1 text-body-xs-medium transition-all",
+                  "relative flex h-full items-center justify-center gap-1 text-body-xs-medium transition-colors",
                   {
                     "text-accent-primary": currentNotificationTab === tab.value,
                     "text-primary hover:text-secondary": currentNotificationTab !== tab.value,

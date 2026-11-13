@@ -63,7 +63,7 @@ export const InboxIssueListItem = observer(function InboxIssueListItem(props: In
       >
         <Row
           className={cn(
-            `relative flex cursor-pointer flex-col gap-2 border border-t-transparent border-r-transparent border-b-subtle-1 border-l-transparent py-4 transition-all hover:bg-accent-primary/5`,
+            `relative flex cursor-pointer flex-col gap-2 border border-t-transparent border-r-transparent border-b-subtle-1 border-l-transparent py-4 transition-colors hover:bg-accent-primary/5`,
             { "border border-accent-strong": selectedInboxIssueId === issue.id }
           )}
         >

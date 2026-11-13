@@ -25,7 +25,7 @@ export const WorkspaceContentWrapper = observer(function WorkspaceContentWrapper
   return (
     <div
       {...chromeCanvasAttributes}
-      className="relative flex size-full flex-col overflow-hidden bg-canvas transition-all duration-300 ease-in-out"
+      className="relative flex size-full flex-col overflow-hidden bg-canvas motion-safe:animate-enter"
     >
       <TopNavigationRoot />
       <div className="relative flex size-full overflow-hidden">
