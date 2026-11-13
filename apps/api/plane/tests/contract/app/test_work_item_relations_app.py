@@ -279,4 +279,12 @@ def test_single_relation_query(django_assert_num_queries, workspace, create_user
     ends = {str(r.issue_id) for r in relations} | {str(r.related_issue_id) for r in relations}
     assert set(response.data["work_items"]) == ends
     item = next(iter(response.data["work_items"].values()))
-    assert set(item) == {"name", "sequence_id", "project_id", "project_identifier", "state_group", "state_name", "is_archived"}
+    assert set(item) == {
+        "name",
+        "sequence_id",
+        "project_id",
+        "project_identifier",
+        "state_group",
+        "state_name",
+        "is_archived",
+    }

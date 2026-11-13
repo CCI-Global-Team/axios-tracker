@@ -40,7 +40,9 @@ function packRows(items: TPlanNode[], slots: Map<string, TScheduleSlot>) {
     rowEnds[row] = slot.end;
     rowOf.set(n.id, row);
   }
-  return { items: placed, rowOf, rows: Math.max(1, rowEnds.length) };
+  const waiting = items.filter((n) => !slots.has(n.id));
+  waiting.forEach((n, i) => rowOf.set(n.id, rowEnds.length + i));
+  return { items: [...placed, ...waiting], rowOf, rows: Math.max(1, rowEnds.length + waiting.length) };
 }
 
 function usePhone() {
@@ -76,7 +78,13 @@ export function ScheduleView(props: Props) {
           const end = Math.max(0, ...mine.map((n) => plan.slots.get(n.id)?.end ?? 0));
           const hours = mine.reduce((sum, n) => sum + hoursOf(n.id), 0);
           const person = id === NO_OWNER ? undefined : personById.get(id);
-          return Object.assign(packRows(mine.filter(isVisible), plan.slots), { id, person, end, hours });
+          return Object.assign(packRows(mine.filter(isVisible), plan.slots), {
+            id,
+            person,
+            end,
+            hours,
+            waiting: !mine.some((n) => plan.slots.has(n.id)),
+          });
         })
         // whoever finishes last comes first; items with no owner stay at the bottom
         .toSorted((a, b) =>
@@ -111,9 +119,10 @@ export function ScheduleView(props: Props) {
     });
   }, [selectedId]);
 
+  const allWaiting = plan.slots.size === 0 && plan.unscheduled.size > 0;
   const totalHours = open.reduce((sum, n) => sum + hoursOf(n.id), 0);
   const setter =
-    plan.setter === null
+    allWaiting || plan.setter === null
       ? null
       : plan.setter === NO_OWNER
         ? "No owner"
@@ -133,7 +142,8 @@ export function ScheduleView(props: Props) {
     <div className="flex flex-col gap-3 px-page-x pt-4 pb-10">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <p className="text-13 text-secondary tabular-nums">
-          Everything built <span className="text-16 font-semibold text-primary">{formatDay(end, true)}</span>
+          Everything built{" "}
+          <span className="text-16 font-semibold text-primary">{allWaiting ? "Waiting" : formatDay(end, true)}</span>
           <span className="text-tertiary"> · </span>
           {Math.round(totalHours).toLocaleString()} h left
           {setter && (
@@ -151,6 +161,7 @@ export function ScheduleView(props: Props) {
             <button
               key={label}
               type="button"
+              disabled={label === "Finish" && allWaiting}
               onClick={() =>
                 scrollRef.current?.scrollTo({
                   left: Math.max(0, at * PX - 2 * PX),
@@ -220,7 +231,7 @@ export function ScheduleView(props: Props) {
                         lane.id === plan.setter ? "font-medium text-warning-primary" : "text-tertiary"
                       )}
                     >
-                      {Math.round(lane.hours)} h · {formatDay(weeksToDate(origin, lane.end))}
+                      {Math.round(lane.hours)} h · {lane.waiting ? "Waiting" : formatDay(weeksToDate(origin, lane.end))}
                     </span>
                   </span>
                   <label
@@ -236,13 +247,13 @@ export function ScheduleView(props: Props) {
                     <input
                       type="number"
                       inputMode="decimal"
-                      min={1}
+                      min={0}
                       max={80}
                       value={hours}
                       aria-label={`Hours a week for ${lane.person?.name ?? "no owner"}`}
                       onChange={(e) => {
                         const v = parseFloat(e.target.value);
-                        props.setPersonHours(lane.id, v > 0 ? (v === declared ? null : v) : null);
+                        props.setPersonHours(lane.id, v >= 0 ? (v === declared ? null : v) : null);
                       }}
                       className={cn(
                         "h-6 w-10 rounded-sm border bg-surface-1 px-1 text-right text-12 text-primary tabular-nums outline-none focus:border-accent-strong",
@@ -264,11 +275,10 @@ export function ScheduleView(props: Props) {
                   ))}
                   {lane.items.map((n) => {
                     const slot = plan.slots.get(n.id);
-                    if (!slot) return null;
                     const hue = areaById.get(n.areaId ?? "")?.hue ?? NO_AREA_HUE;
                     const isSel = n.id === selectedId;
                     const dim = !!selected && !isSel && !linked.has(n.id);
-                    const width = Math.max(10, (slot.end - slot.start) * PX - 3);
+                    const width = slot ? Math.max(10, (slot.end - slot.start) * PX - 3) : 180;
                     return (
                       <button
                         key={n.id}
@@ -285,14 +295,14 @@ export function ScheduleView(props: Props) {
                         )}
                         style={{
                           top: LANE_PAD + (lane.rowOf.get(n.id) ?? 0) * ROW_H,
-                          left: slot.start * PX + 1,
+                          left: (slot?.start ?? now) * PX + 1,
                           width,
                           borderLeftColor: hue,
                           ...(n.kind === "wip" && { background: `color-mix(in srgb, ${hue} 28%, var(--bg-layer-1))` }),
                         }}
                       >
                         <span className="font-mono text-11 font-semibold text-secondary tabular-nums">
-                          {width < 90 ? n.key.slice(n.key.lastIndexOf("-") + 1) : n.key}
+                          {!slot ? "Waiting" : width < 90 ? n.key.slice(n.key.lastIndexOf("-") + 1) : n.key}
                         </span>
                         <span className="truncate">{n.name}</span>
                       </button>
@@ -309,19 +319,21 @@ export function ScheduleView(props: Props) {
             className="pointer-events-none absolute top-0 bottom-0 z-[2] w-0.5 bg-[var(--border-accent-strong)]"
             style={{ left: NAME_W + now * PX }}
           />
-          <div
-            className="pointer-events-none absolute top-0 bottom-0 z-[2] border-l-2 border-dashed border-success-strong"
-            style={{ left: NAME_W + plan.end * PX }}
-          >
-            <span className="absolute top-1 left-1.5 rounded-sm bg-success-subtle px-1.5 py-0.5 text-11 font-medium whitespace-nowrap text-success-primary">
-              Everything built {formatDay(end)}
-            </span>
-          </div>
+          {!allWaiting && (
+            <div
+              className="pointer-events-none absolute top-0 bottom-0 z-[2] border-l-2 border-dashed border-success-strong"
+              style={{ left: NAME_W + plan.end * PX }}
+            >
+              <span className="absolute top-1 left-1.5 rounded-sm bg-success-subtle px-1.5 py-0.5 text-11 font-medium whitespace-nowrap text-success-primary">
+                Everything built {formatDay(end)}
+              </span>
+            </div>
+          )}
           <PlanLinks
             containerRef={gridRef}
             links={links}
             anchorY="middle"
-            layoutKey={`${weeks}:${PX}:${lanes.length}`}
+            layoutKey={`${weeks}:${PX}:${JSON.stringify(lanes.map((lane) => [lane.id, lane.items.map((n) => [n.id, plan.slots.get(n.id), lane.rowOf.get(n.id)])]))}`}
           />
         </div>
       </div>

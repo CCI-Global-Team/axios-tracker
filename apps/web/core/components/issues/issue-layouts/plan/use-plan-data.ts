@@ -4,10 +4,11 @@
  * See the LICENSE file for details.
  */
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import useSWR from "swr";
 import type { TIssueMap, TMemberAvailability } from "@plane/types";
 // hooks
+import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useMember } from "@/hooks/store/use-member";
 import { useModule } from "@/hooks/store/use-module";
 import { useProject } from "@/hooks/store/use-project";
@@ -53,11 +54,8 @@ export function usePlanData(args: {
   const { getProjectIdentifierById, getProjectById } = useProject();
   const { getUserDetails } = useMember();
 
-  const issues = useMemo(() => issueIds.map((id) => issueMap[id]).filter(Boolean), [issueIds, issueMap]);
-  const projectIds = useMemo(
-    () => [...new Set(issues.map((i) => i.project_id).filter((p): p is string => !!p))].toSorted(),
-    [issues]
-  );
+  const issues = issueIds.map((id) => issueMap[id]).filter(Boolean);
+  const projectIds = [...new Set(issues.map((i) => i.project_id).filter((p): p is string => !!p))].toSorted();
 
   useSWR(workspaceSlug ? `PLAN_STATES_${workspaceSlug}` : null, () => fetchWorkspaceStates(workspaceSlug), {
     revalidateOnFocus: false,
@@ -73,13 +71,23 @@ export function usePlanData(args: {
     () => relationService.listWorkspaceRelations(workspaceSlug, projectIds),
     { revalidateOnFocus: false }
   );
+  const { peekIssue } = useIssueDetail();
+  const peekOpen = !!peekIssue;
+  const wasPeekOpen = useRef(peekOpen);
+  const { mutate: refreshRelations } = relations;
+  useEffect(() => {
+    if (wasPeekOpen.current && !peekOpen) void refreshRelations();
+    wasPeekOpen.current = peekOpen;
+  }, [peekOpen, refreshRelations]);
+
   const availability = useSWR(
     workspaceSlug ? `PLAN_AVAILABILITY_${workspaceSlug}` : null,
     () => workspaceService.fetchMemberAvailability(workspaceSlug),
     { revalidateOnFocus: false, revalidateIfStale: false }
   );
 
-  const { items, areas } = useMemo(() => {
+  // Read observable fields on every observer render, including after unrelated React updates.
+  const { items, areas } = (() => {
     const areaMap = new Map<string, TPlanArea>();
     const areaOf = (id: string | null | undefined, name: () => string | undefined) => {
       if (!id) return null;
@@ -111,22 +119,28 @@ export function usePlanData(args: {
     const sorted = [...areaMap.values()].toSorted((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
     sorted.forEach((a, i) => (a.hue = AREA_HUES[i % AREA_HUES.length]));
     return { items: planItems, areas: sorted };
-  }, [issues, areaBy, getStateById, getModuleById, getProjectById, getProjectIdentifierById]);
+  })();
 
+  const itemsKey = JSON.stringify(items);
   const graph = useMemo(
-    () => buildPlanGraph(items, relations.data?.relations ?? [], relations.data?.work_items ?? {}),
-    [items, relations.data]
+    () =>
+      buildPlanGraph(
+        JSON.parse(itemsKey) as TPlanItem[],
+        relations.data?.relations ?? [],
+        relations.data?.work_items ?? {}
+      ),
+    [itemsKey, relations.data]
   );
 
   const declared = useMemo(() => {
     const map = new Map<string, number>();
     (availability.data ?? []).forEach((row: TMemberAvailability) => {
-      if (row.available_hours > 0) map.set(row.member_id, row.available_hours);
+      if (row.available_hours >= 0) map.set(row.member_id, row.available_hours);
     });
     return map;
   }, [availability.data]);
 
-  const people = useMemo(() => {
+  const people = (() => {
     const ids = new Set<string>();
     graph.nodes.forEach((n) => n.ownerId && ids.add(n.ownerId));
     const list: TPlanPerson[] = [...ids].map((id) => {
@@ -139,7 +153,7 @@ export function usePlanData(args: {
       };
     });
     return list.toSorted((a, b) => a.name.localeCompare(b.name));
-  }, [graph, declared, getUserDetails]);
+  })();
 
   return {
     graph,

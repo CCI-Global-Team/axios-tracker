@@ -52,7 +52,7 @@ export function WorkspaceActiveLayout(props: TWorkspaceLayoutProps) {
         />
       );
     case EIssueLayoutTypes.PLAN:
-      return <WorkspacePlanRoot workspaceSlug={workspaceSlug} fetchNextPages={fetchNextPages} />;
+      return <WorkspacePlanRoot workspaceSlug={workspaceSlug} />;
     default:
       return <></>;
   }

@@ -4,7 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FocusTrap } from "@headlessui/react";
 import { ArrowUpRight, X } from "lucide-react";
 import { cn } from "@plane/utils";
 import type { TPlanShared } from "./board";
@@ -15,6 +16,7 @@ import { AreaDot, ItemKey, KIND_PILL, PersonAvatar, StatusPill } from "./parts";
 
 type Props = {
   node: TPlanNode;
+  trapFocus: boolean;
   graph: TPlanGraph;
   areaById: TPlanShared["areaById"];
   personById: TPlanShared["personById"];
@@ -36,10 +38,14 @@ export function PlanPeek(props: Props) {
   const after = walk(graph.nodes, n.id, "down").size;
   const closeRef = useRef<HTMLButtonElement>(null);
 
-  // On a phone the sheet covers the board, so move focus into it.
+  const [phone, setPhone] = useState(false);
   useEffect(() => {
-    if (window.matchMedia("(max-width: 767px)").matches) closeRef.current?.focus({ preventScroll: true });
-  }, [n.id]);
+    const media = window.matchMedia("(max-width: 767px)");
+    const update = () => setPhone(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   return (
     <>
@@ -50,7 +56,11 @@ export function PlanPeek(props: Props) {
         onClick={props.onClose}
         className="fixed inset-0 z-[14] cursor-default bg-backdrop motion-safe:animate-[plan-link-in_200ms_ease-out] md:hidden"
       />
-      <aside
+      <FocusTrap
+        as="aside"
+        initialFocus={closeRef}
+        features={phone && props.trapFocus ? FocusTrap.features.All : FocusTrap.features.None}
+        aria-modal={(phone && props.trapFocus) || undefined}
         role="dialog"
         aria-label={`${n.key} details`}
         className={cn(
@@ -134,11 +144,13 @@ export function PlanPeek(props: Props) {
                 </button>
               )}
             </dd>
-            {!n.isDone && slot && (
+            {!n.isDone && (
               <>
                 <dt className="text-tertiary">Planned</dt>
                 <dd className="text-primary tabular-nums">
-                  {formatDay(weeksToDate(origin, slot.start))} – {formatDay(weeksToDate(origin, slot.end))}
+                  {slot
+                    ? `${formatDay(weeksToDate(origin, slot.start))} – ${formatDay(weeksToDate(origin, slot.end))}`
+                    : "Waiting"}
                 </dd>
               </>
             )}
@@ -198,7 +210,7 @@ export function PlanPeek(props: Props) {
             <ArrowUpRight className="size-3.5 text-tertiary" />
           </button>
         </div>
-      </aside>
+      </FocusTrap>
     </>
   );
 }

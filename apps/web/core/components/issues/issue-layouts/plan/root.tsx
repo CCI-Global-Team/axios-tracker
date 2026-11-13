@@ -15,6 +15,7 @@ import { useIssueStoreType } from "@/hooks/use-issue-layout-store";
 import { useIssuesActions } from "@/hooks/use-issues-actions";
 import { IssueLayoutHOC } from "../issue-layout-HOC";
 import { PlanBoard } from "./board";
+import { usePlanPagination } from "./use-plan-pagination";
 
 type TPlanStoreType =
   | EIssuesStoreType.PROJECT
@@ -28,22 +29,29 @@ type TPlanStoreType =
  */
 export const BasePlanRoot = observer(function BasePlanRoot(props: { viewId?: string }) {
   const { viewId } = props;
-  const { workspaceSlug } = useParams();
+  const params = useParams();
+  const { workspaceSlug } = params;
   const storeType = useIssueStoreType() as TPlanStoreType;
   const { issues, issueMap } = useIssues(storeType);
   const { fetchIssues, fetchNextIssues } = useIssuesActions(storeType);
 
   useEffect(() => {
-    fetchIssues("init-loader", { canGroup: false, perPageCount: 100 }, viewId);
+    void fetchIssues("init-loader", { canGroup: false, perPageCount: 100 }, viewId).catch(() => {
+      // The initial loader can be retried by reopening the layout.
+    });
   }, [fetchIssues, storeType, viewId]);
 
   const issueIds = (issues.groupedIssueIds?.[ALL_ISSUES] as string[] | undefined) ?? [];
   const hasMore = !!issues.getPaginationData(undefined, undefined)?.nextPageResults;
   const loader = issues.getIssueLoader();
 
-  useEffect(() => {
-    if (hasMore && loader !== "init-loader" && loader !== "pagination") fetchNextIssues();
-  }, [hasMore, loader, issueIds.length, fetchNextIssues]);
+  const pagination = usePlanPagination({
+    scope: JSON.stringify([params, storeType, viewId]),
+    cursor: issues.getPaginationData(undefined, undefined)?.nextCursor,
+    hasMore,
+    loading: !!loader,
+    fetchNext: fetchNextIssues,
+  });
 
   return (
     <IssueLayoutHOC layout={EIssueLayoutTypes.PLAN}>
@@ -53,6 +61,7 @@ export const BasePlanRoot = observer(function BasePlanRoot(props: { viewId?: str
         issueMap={issueMap}
         areaBy="module"
         isLoadingMore={hasMore}
+        {...pagination}
       />
     </IssueLayoutHOC>
   );

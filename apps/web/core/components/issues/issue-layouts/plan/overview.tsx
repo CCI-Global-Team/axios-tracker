@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from "react";
-import { ArrowUpRight, CircleCheck, ChevronRight, TriangleAlert } from "lucide-react";
+import { ArrowUpRight, CircleCheck, ChevronRight, Clock, TriangleAlert } from "lucide-react";
 import { cn } from "@plane/utils";
 import type { TPlanFilter, TPlanShared, TPlanView } from "./board";
 import type { TPlanNode } from "./model";
@@ -86,7 +86,10 @@ export function OverviewView(props: Props) {
 
   const endDate = weeksToDate(origin, plan.end);
   const weeksLeft = Math.max(0, Math.ceil(plan.end - now));
-  const setter = plan.setter === null ? null : plan.setter === NO_OWNER ? undefined : personById.get(plan.setter);
+  // only a forecast when something can be dated; the rest is counted below it
+  const allWaiting = plan.slots.size === 0 && plan.unscheduled.size > 0;
+  const setter =
+    allWaiting || plan.setter === null ? null : plan.setter === NO_OWNER ? undefined : personById.get(plan.setter);
 
   return (
     <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-page-x pt-4 pb-10">
@@ -109,13 +112,21 @@ export function OverviewView(props: Props) {
             <div className="flex min-w-0 flex-col gap-1">
               <span className="text-12 font-medium text-tertiary">Everything built by</span>
               <span className="text-28 leading-9 font-semibold tracking-tight text-primary tabular-nums">
-                {formatDay(endDate, true)}
+                {allWaiting ? "Waiting" : formatDay(endDate, true)}
               </span>
             </div>
             <div className="flex min-w-0 flex-col gap-1.5 text-13 text-secondary">
-              <span className="tabular-nums">
-                In about {weeksLeft} week{weeksLeft === 1 ? "" : "s"}
-              </span>
+              {!allWaiting && (
+                <span className="tabular-nums">
+                  In about {weeksLeft} week{weeksLeft === 1 ? "" : "s"}
+                </span>
+              )}
+              {plan.unscheduled.size > 0 && (
+                <span className="flex items-center gap-1.5 text-warning-primary tabular-nums">
+                  <Clock className="size-3.5 shrink-0" />
+                  {plan.unscheduled.size} can’t be dated yet
+                </span>
+              )}
               {setter !== null && (
                 <span className="flex min-w-0 items-center gap-2">
                   <PersonAvatar person={setter} size={18} />

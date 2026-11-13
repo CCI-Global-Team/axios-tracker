@@ -33,7 +33,8 @@ export function usePlanHours(workspaceSlug: string) {
     (kind: keyof TPlanHours, id: string, value: number | null) => {
       setHours((prev) => {
         const nextKind = { ...prev[kind] };
-        if (value === null || !Number.isFinite(value) || value <= 0) delete nextKind[id];
+        if (value === null || !Number.isFinite(value) || (kind === "people" ? value < 0 : value <= 0))
+          delete nextKind[id];
         else nextKind[id] = Math.round(value * 10) / 10;
         const next = { ...prev, [kind]: nextKind };
         try {

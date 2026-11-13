@@ -4,7 +4,8 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect } from "react";
+import { useCallback } from "react";
+import { useParams } from "next/navigation";
 import { observer } from "mobx-react";
 import { ALL_ISSUES } from "@plane/constants";
 import { EIssueLayoutTypes, EIssuesStoreType } from "@plane/types";
@@ -12,15 +13,14 @@ import { PlanLayoutLoader } from "@/components/ui/loader/layouts/plan-layout-loa
 import { useIssues } from "@/hooks/store/use-issues";
 import { IssueLayoutHOC } from "../issue-layout-HOC";
 import { PlanBoard } from "./board";
+import { usePlanPagination } from "./use-plan-pagination";
 
 /** The Plan layout for a workspace view: work items from many projects, grouped into areas by project. */
-export const WorkspacePlanRoot = observer(function WorkspacePlanRoot(props: {
-  workspaceSlug: string;
-  fetchNextPages: () => void;
-}) {
-  const { workspaceSlug, fetchNextPages } = props;
+export const WorkspacePlanRoot = observer(function WorkspacePlanRoot(props: { workspaceSlug: string }) {
+  const { workspaceSlug } = props;
+  const { globalViewId } = useParams();
   const {
-    issues: { getIssueLoader, getPaginationData, groupedIssueIds },
+    issues: { getIssueLoader, getPaginationData, groupedIssueIds, fetchNextIssues },
     issueMap,
   } = useIssues(EIssuesStoreType.GLOBAL);
 
@@ -28,9 +28,17 @@ export const WorkspacePlanRoot = observer(function WorkspacePlanRoot(props: {
   const hasMore = !!getPaginationData(ALL_ISSUES, undefined)?.nextPageResults;
   const loader = getIssueLoader();
 
-  useEffect(() => {
-    if (hasMore && loader !== "init-loader" && loader !== "pagination") fetchNextPages();
-  }, [hasMore, loader, issueIds.length, fetchNextPages]);
+  // the store action itself, so a failed page can be caught and retried
+  const fetchNext = useCallback(async () => {
+    if (globalViewId) return fetchNextIssues(workspaceSlug, globalViewId.toString());
+  }, [fetchNextIssues, workspaceSlug, globalViewId]);
+  const pagination = usePlanPagination({
+    scope: JSON.stringify([workspaceSlug, globalViewId]),
+    cursor: getPaginationData(ALL_ISSUES, undefined)?.nextCursor,
+    hasMore,
+    loading: !!loader,
+    fetchNext,
+  });
 
   if (!groupedIssueIds) return <PlanLayoutLoader />;
 
@@ -42,6 +50,7 @@ export const WorkspacePlanRoot = observer(function WorkspacePlanRoot(props: {
         issueMap={issueMap}
         areaBy="project"
         isLoadingMore={hasMore}
+        {...pagination}
       />
     </IssueLayoutHOC>
   );

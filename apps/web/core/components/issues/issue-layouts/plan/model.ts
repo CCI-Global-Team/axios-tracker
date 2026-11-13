@@ -28,6 +28,7 @@ export type TPlanKind = "done" | "wip" | "blocked" | "ready";
 
 export type TPlanNode = TPlanItem & {
   isDone: boolean;
+  hasUnresolvedExternalWait: boolean;
   /** everything this item waits on (blocked_by), in or out of the plan */
   waitsOn: string[];
   /** the part of waitsOn that is still open */
@@ -64,6 +65,7 @@ export function buildPlanGraph(
     nodes.set(item.id, {
       ...item,
       isDone: item.isArchived || isDoneGroup(item.stateGroup),
+      hasUnresolvedExternalWait: false,
       waitsOn: [],
       openWaitsOn: [],
       blocks: [],
@@ -81,7 +83,7 @@ export function buildPlanGraph(
     const n = nodes.get(id);
     if (n) return !n.isDone;
     const o = ends[id];
-    return !!o && !o.is_archived && !isDoneGroup(o.state_group);
+    return !o || (!o.is_archived && !isDoneGroup(o.state_group));
   };
 
   let blockedByLinks = 0;
@@ -122,6 +124,12 @@ export function buildPlanGraph(
 
   for (const n of nodes.values()) n.openWaitsOn = n.waitsOn.filter(isOpen);
 
+  const externalWaits = [...nodes.values()].filter((n) => !n.isDone && n.openWaitsOn.some((id) => !nodes.has(id)));
+  for (const n of externalWaits) {
+    n.hasUnresolvedExternalWait = true;
+    for (const id of walk(nodes, n.id, "down")) nodes.get(id)!.hasUnresolvedExternalWait = true;
+  }
+
   // depth over open blockers inside the plan; an open outside blocker still costs one step.
   const memo = new Map<string, number>();
   const visiting = new Set<string>();
@@ -140,7 +148,15 @@ export function buildPlanGraph(
   };
   for (const n of nodes.values()) {
     n.depth = n.isDone ? -1 : depth(n.id);
-    n.kind = n.isDone ? "done" : n.stateGroup === "started" ? "wip" : n.openWaitsOn.length ? "blocked" : "ready";
+    n.kind = n.isDone
+      ? "done"
+      : n.hasUnresolvedExternalWait
+        ? "blocked"
+        : n.stateGroup === "started"
+          ? "wip"
+          : n.openWaitsOn.length
+            ? "blocked"
+            : "ready";
   }
   for (const n of nodes.values()) {
     if (!n.isDone) n.downstreamOpen = walk(nodes, n.id, "down").size;
@@ -183,6 +199,8 @@ export type TScheduleSlot = { start: number; end: number };
 export type TSchedule = {
   /** in weeks from the plan's start (this week's Monday) */
   slots: Map<string, TScheduleSlot>;
+  /** Open items whose finish cannot be forecast, including their downstream dependents. */
+  unscheduled: Set<string>;
   /** when each lane frees up */
   laneEnd: Map<string, number>;
   end: number;
@@ -210,7 +228,14 @@ export function schedule(
   const laneEnd = new Map<string, number>();
   const lane = (n: TPlanNode) => n.ownerId ?? NO_OWNER;
   const inPlanBlockers = new Map(open.map((n) => [n.id, n.openWaitsOn.filter((b) => nodes.has(b))]));
-  let todo = open;
+  const unscheduled = new Set<string>();
+  for (const n of open) {
+    if (n.hasUnresolvedExternalWait || !(weekHoursOf(lane(n)) > 0)) {
+      unscheduled.add(n.id);
+      for (const id of walk(nodes, n.id, "down")) unscheduled.add(id);
+    }
+  }
+  let todo = open.filter((n) => !unscheduled.has(n.id));
   let guard = open.length + 1;
   while (todo.length && guard-- > 0) {
     let best: TPlanNode | null = null;
@@ -233,7 +258,7 @@ export function schedule(
       for (const n of todo) inPlanBlockers.set(n.id, []);
       continue;
     }
-    const weekHours = Math.max(1, weekHoursOf(lane(best)));
+    const weekHours = weekHoursOf(lane(best));
     const slot = { start: bestStart, end: bestStart + hoursOf(best.id) / weekHours };
     slots.set(best.id, slot);
     laneEnd.set(lane(best), Math.max(laneEnd.get(lane(best)) ?? now, slot.end));
@@ -248,7 +273,7 @@ export function schedule(
       setter = l;
     }
   }
-  return { slots, laneEnd, end, setter };
+  return { slots, unscheduled, laneEnd, end, setter };
 }
 
 /** The longest chain of open items, each waiting on the one before it. */
@@ -291,5 +316,5 @@ export function weekStart(d: Date): Date {
   x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
   return x;
 }
-export const weeksToDate = (origin: Date, w: number) => new Date(origin.getTime() + Math.round(w * 7) * DAY);
+export const weeksToDate = (origin: Date, w: number) => new Date(origin.getTime() + w * 7 * DAY);
 export const dateToWeeks = (origin: Date, d: Date) => (d.getTime() - origin.getTime()) / (7 * DAY);

@@ -62,6 +62,8 @@ type Props = {
   areaBy: "module" | "project";
   /** more pages are still loading */
   isLoadingMore: boolean;
+  loadingError?: boolean;
+  onRetryLoading?: () => void;
 };
 
 export const PlanBoard = observer(function PlanBoard(props: Props) {
@@ -69,7 +71,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
   const data = usePlanData({ workspaceSlug, issueIds, issueMap, areaBy });
   const { graph, areas, people } = data;
   const { itemHours, personHours, setItemHours, setPersonHours } = usePlanHours(workspaceSlug);
-  const { setPeekIssue } = useIssueDetail();
+  const { setPeekIssue, peekIssue } = useIssueDetail();
 
   const [view, setView] = useState<TPlanView>("overview");
   const [arrange, setArrange] = useState<TPlanArrange>("step");
@@ -116,7 +118,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
         if (filter.startsWith("area:") && (n.areaId ?? "") !== filter.slice(5)) return false;
       }
       if (query) {
-        const q = query.toLowerCase();
+        const q = query.trim().toLowerCase();
         if (!n.key.toLowerCase().includes(q) && !n.name.toLowerCase().includes(q)) return false;
       }
       return true;
@@ -160,11 +162,11 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && selectedId) setSelectedId(null);
+      if (e.key === "Escape" && selectedId && !peekIssue) setSelectedId(null);
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [selectedId]);
+  }, [selectedId, peekIssue]);
 
   const openWorkItem = useCallback(
     (n: { id: string; projectId: string; isArchived?: boolean }) =>
@@ -253,7 +255,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
           <input
             type="search"
             value={query}
-            onChange={(e) => setQuery(e.target.value.trim())}
+            onChange={(e) => setQuery(e.target.value)}
             placeholder="Find a work item"
             aria-label="Find a work item"
             className="h-7 w-full rounded-md border border-subtle bg-layer-1 pr-2 pl-7 text-13 text-primary outline-none placeholder:text-placeholder focus:border-accent-strong sm:w-48"
@@ -289,11 +291,23 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
             {openCount} open · {graph.blockedByLinks} blocked-by links
           </span>
           {isLoadingMore && (
-            <span className="inline-flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={!props.loadingError}
+              onClick={props.onRetryLoading}
+              aria-label={props.loadingError ? "Retry loading work items" : undefined}
+              title={props.loadingError ? "Retry loading work items" : undefined}
+              className="inline-flex items-center gap-1.5"
+            >
               <span className="max-lg:hidden"> · </span>
-              <span className="size-1.5 rounded-full bg-[var(--border-accent-strong)] motion-safe:animate-pulse" />
+              <span
+                className={cn(
+                  "size-1.5 rounded-full bg-[var(--border-accent-strong)]",
+                  !props.loadingError && "motion-safe:animate-pulse"
+                )}
+              />
               Counting {graph.nodes.size} so far…
-            </span>
+            </button>
           )}
         </span>
       </div>
@@ -319,6 +333,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
         {selected && (
           <PlanPeek
             node={selected}
+            trapFocus={!peekIssue}
             graph={graph}
             areaById={areaById}
             personById={personById}
