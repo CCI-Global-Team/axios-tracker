@@ -6,7 +6,7 @@
 
 import { observer } from "mobx-react";
 // plane imports
-import { IconButton } from "@plane/propel/icon-button";
+import { Button } from "@plane/propel/button";
 import { FilterIcon, FilterAppliedIcon } from "@plane/propel/icons";
 import { cn } from "@plane/utils";
 import type { IFilterInstance } from "@plane/shared-state";
@@ -17,9 +17,6 @@ import { AddFilterButton } from "@/components/rich-filters/add-filters/button";
 type TFiltersToggleProps<P extends TFilterProperty, E extends TExternalFilter> = {
   filter: IFilterInstance<P, E> | undefined;
 };
-
-const COMMON_CLASSNAME =
-  "grid place-items-center h-7 w-full py-0.5 px-2 rounded-md border border-subtle-1 transition-all duration-200 cursor-pointer";
 
 export const FiltersToggle = observer(function FiltersToggle<P extends TFilterProperty, E extends TExternalFilter>(
   props: TFiltersToggleProps<P, E>
@@ -69,23 +66,25 @@ export const FiltersToggle = observer(function FiltersToggle<P extends TFilterPr
         filter={filter}
         buttonConfig={{
           variant: "ghost",
-          className: COMMON_CLASSNAME,
-          label: null,
+          className: "h-7 rounded-md px-2 text-13 font-medium text-secondary",
+          label: "Filter",
         }}
         onFilterSelect={() => filter?.toggleVisibility(true)}
       />
     );
   }
 
+  const ToggleIcon = showFilterRowChangesPill ? FilterAppliedIcon : FilterIcon;
   return (
-    <IconButton
+    <Button
       size="lg"
       variant="ghost"
-      aria-label="Filters"
-      icon={showFilterRowChangesPill ? FilterAppliedIcon : FilterIcon}
       onClick={handleToggleFilter}
-      className={buttonClassName}
-      iconClassName={iconClassName}
-    />
+      aria-expanded={isFilterRowVisible}
+      className={cn("gap-1 px-2 text-13 font-medium text-secondary", buttonClassName)}
+      prependIcon={<ToggleIcon className={cn("size-4", iconClassName)} />}
+    >
+      Filter
+    </Button>
   );
 });

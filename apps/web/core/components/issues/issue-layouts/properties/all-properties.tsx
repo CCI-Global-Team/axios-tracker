@@ -214,6 +214,22 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
         </div>
       </WithDisplayPropertiesHOC>
 
+      {/* label (CCI: first after state, as in Direction A) */}
+      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="labels">
+        <div className="contents" data-empty={!issue?.label_ids?.length || undefined}>
+          <IssuePropertyLabels
+            projectId={issue?.project_id || null}
+            value={issue?.label_ids || []}
+            defaultOptions={defaultLabelOptions}
+            onChange={handleLabel}
+            disabled={isReadOnly}
+            renderByDefault={isMobile}
+            hideDropdownArrow
+            maxRender={3}
+          />
+        </div>
+      </WithDisplayPropertiesHOC>
+
       {/* priority */}
       <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="priority">
         {/* oxlint-disable-next-line jsx_a11y/click-events-have-key-events oxlint-disable-next-line jsx_a11y/no-static-element-interactions */}
@@ -524,22 +540,6 @@ export const IssueProperties = observer(function IssueProperties(props: IIssuePr
             <div className="text-caption-sm-regular">{issue.link_count}</div>
           </div>
         </Tooltip>
-      </WithDisplayPropertiesHOC>
-
-      {/* label */}
-      <WithDisplayPropertiesHOC displayProperties={displayProperties} displayPropertyKey="labels">
-        <div className="contents" data-empty={!issue?.label_ids?.length || undefined}>
-          <IssuePropertyLabels
-            projectId={issue?.project_id || null}
-            value={issue?.label_ids || []}
-            defaultOptions={defaultLabelOptions}
-            onChange={handleLabel}
-            disabled={isReadOnly}
-            renderByDefault={isMobile}
-            hideDropdownArrow
-            maxRender={3}
-          />
-        </div>
       </WithDisplayPropertiesHOC>
     </div>
   );

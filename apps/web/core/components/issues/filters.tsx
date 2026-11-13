@@ -33,6 +33,8 @@ type Props = {
   workspaceSlug: string;
   canUserCreateIssue: boolean | undefined;
   storeType?: EIssuesStoreType.PROJECT | EIssuesStoreType.EPIC;
+  /** CCI: the project work items page shows the layouts as tabs under the header instead. */
+  showLayoutSelection?: boolean;
 };
 const LAYOUTS = [
   EIssueLayoutTypes.LIST,
@@ -49,6 +51,7 @@ export const HeaderFilters = observer(function HeaderFilters(props: Props) {
     workspaceSlug,
     canUserCreateIssue,
     storeType = EIssuesStoreType.PROJECT,
+    showLayoutSelection = true,
   } = props;
   // i18n
   const { t } = useTranslation();
@@ -94,20 +97,24 @@ export const HeaderFilters = observer(function HeaderFilters(props: Props) {
         projectDetails={currentProjectDetails ?? undefined}
         isEpic={storeType === EIssuesStoreType.EPIC}
       />
-      <div className="hidden @4xl:flex">
-        <LayoutSelection
-          layouts={LAYOUTS}
-          onChange={(layout) => handleLayoutChange(layout)}
-          selectedLayout={activeLayout}
-        />
-      </div>
-      <div className="flex @4xl:hidden">
-        <MobileLayoutSelection
-          layouts={LAYOUTS}
-          onChange={(layout) => handleLayoutChange(layout)}
-          activeLayout={activeLayout}
-        />
-      </div>
+      {showLayoutSelection && (
+        <>
+          <div className="hidden @4xl:flex">
+            <LayoutSelection
+              layouts={LAYOUTS}
+              onChange={(layout) => handleLayoutChange(layout)}
+              selectedLayout={activeLayout}
+            />
+          </div>
+          <div className="flex @4xl:hidden">
+            <MobileLayoutSelection
+              layouts={LAYOUTS}
+              onChange={(layout) => handleLayoutChange(layout)}
+              activeLayout={activeLayout}
+            />
+          </div>
+        </>
+      )}
       <WorkItemFiltersToggle entityType={storeType} entityId={projectId} />
       <FiltersDropdown
         miniIcon={<SlidersHorizontal className="size-3.5" />}
@@ -126,11 +133,15 @@ export const HeaderFilters = observer(function HeaderFilters(props: Props) {
         />
       </FiltersDropdown>
       {canUserCreateIssue ? (
-        <Button className="hidden px-2 md:block" onClick={() => setAnalyticsModal(true)} variant="ghost" size="lg">
-          <div className="hidden @4xl:flex">{t("common.analytics")}</div>
-          <div className="flex @4xl:hidden">
-            <ChartNoAxesColumn className="size-3.5" />
-          </div>
+        <Button
+          className="hidden px-2 md:block"
+          onClick={() => setAnalyticsModal(true)}
+          variant="ghost"
+          size="lg"
+          aria-label={t("common.analytics")}
+          title={t("common.analytics")}
+        >
+          <ChartNoAxesColumn className="size-3.5" />
         </Button>
       ) : (
         <></>
