@@ -31,7 +31,7 @@ export const SpreadsheetDueDateColumn = observer(function SpreadsheetDueDateColu
   const stateDetails = getStateById(issue.state_id);
 
   return (
-    <div className="h-11 border-b-[0.5px] border-subtle">
+    <div className="h-11 border-b-[0.5px] border-subtle" data-empty={!issue.target_date || undefined}>
       <DateDropdown
         value={issue.target_date}
         minDate={getDate(issue.start_date)}
