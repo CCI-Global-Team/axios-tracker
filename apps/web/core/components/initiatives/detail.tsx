@@ -4,14 +4,13 @@
  * See the LICENSE file for details.
  */
 
-import { useContext, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { Link, useNavigate } from "react-router";
 import useSWR from "swr";
 import { CalendarDays, MoreHorizontal, Pencil, Plus, Target, Trash2, X } from "lucide-react";
 import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
 import { Button } from "@plane/propel/button";
-import { IconButton } from "@plane/propel/icon-button";
 import { ModuleIcon } from "@plane/propel/icons";
 import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { Tooltip } from "@plane/propel/tooltip";
@@ -21,6 +20,7 @@ import { renderFormattedDate } from "@plane/utils";
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
 import { PlanBoard } from "@/components/issues/issue-layouts/plan/board";
 import { IssuePeekOverview } from "@/components/issues/peek-overview";
+import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useInitiative } from "@/hooks/store/use-initiative";
 import { useMember } from "@/hooks/store/use-member";
 import { useModule } from "@/hooks/store/use-module";
@@ -78,6 +78,13 @@ export const InitiativeDetail = observer(function InitiativeDetail({ workspaceSl
   const refresh = async () => {
     await Promise.all([details.mutate(), items.mutate()]);
   };
+  // an edit made in the peek can change progress or drop a work item from these modules: reload when it closes
+  const { peekIssue } = useIssueDetail();
+  const peekWasOpen = useRef(false);
+  useEffect(() => {
+    if (peekWasOpen.current && !peekIssue) void Promise.all([details.mutate(), items.mutate()]);
+    peekWasOpen.current = !!peekIssue;
+  }, [peekIssue, details, items]);
 
   const remove = async (moduleId: string) => {
     setRemoving(moduleId);
@@ -157,7 +164,12 @@ export const InitiativeDetail = observer(function InitiativeDetail({ workspaceSl
               </span>
               {canEdit && (
                 <CustomMenu
-                  customButton={<IconButton variant="tertiary" size="lg" icon={MoreHorizontal} aria-label="More" />}
+                  ariaLabel="Initiative actions"
+                  customButton={
+                    <span className="grid size-7 place-items-center rounded-md text-secondary hover:bg-layer-transparent-hover">
+                      <MoreHorizontal className="size-4" aria-hidden />
+                    </span>
+                  }
                   placement="bottom-start"
                   closeOnSelect
                 >
@@ -208,13 +220,22 @@ export const InitiativeDetail = observer(function InitiativeDetail({ workspaceSl
                         key={id}
                         className="group inline-flex h-7 items-center rounded-md border border-subtle bg-layer-1 text-12 text-primary max-sm:h-9"
                       >
-                        <Link
-                          to={`/${workspaceSlug}/projects/${g.projectId}/modules/${id}`}
-                          className="inline-flex h-full items-center gap-1.5 rounded-l-md pr-1 pl-2 outline-none hover:text-accent-primary focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
-                        >
-                          <ModuleIcon className="size-3.5 text-tertiary" />
-                          {getModuleById(id)?.name ?? "Module"}
-                        </Link>
+                        {getModuleById(id)?.archived_at ? (
+                          // archived modules have no page of their own to open
+                          <span className="inline-flex h-full items-center gap-1.5 pr-1 pl-2 text-tertiary">
+                            <ModuleIcon className="size-3.5" />
+                            {getModuleById(id)?.name ?? "Module"}
+                            <span className="text-11">(archived)</span>
+                          </span>
+                        ) : (
+                          <Link
+                            to={`/${workspaceSlug}/projects/${g.projectId}/modules/${id}`}
+                            className="inline-flex h-full items-center gap-1.5 rounded-l-md pr-1 pl-2 outline-none hover:text-accent-primary focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
+                          >
+                            <ModuleIcon className="size-3.5 text-tertiary" />
+                            {getModuleById(id)?.name ?? "Module"}
+                          </Link>
+                        )}
                         {canEdit && (
                           <button
                             type="button"

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 import { Controller, useForm } from "react-hook-form";
 import { Button } from "@plane/propel/button";
@@ -42,8 +42,12 @@ export const CreateUpdateInitiativeModal = observer(function CreateUpdateInitiat
     formState: { errors, isSubmitting },
   } = useForm<TForm>();
 
+  // fill the form when the modal opens, not on every refetch of the initiative behind it
+  const wasOpen = useRef(false);
   useEffect(() => {
-    if (!isOpen) return;
+    const opened = isOpen && !wasOpen.current;
+    wasOpen.current = isOpen;
+    if (!opened) return;
     reset({
       name: data?.name ?? "",
       description: data?.description ?? "",
