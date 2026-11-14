@@ -6,6 +6,7 @@
 
 import { useRef, useState } from "react";
 import { observer } from "mobx-react";
+import { PanelRightOpen } from "lucide-react";
 import { createPortal } from "react-dom";
 // plane imports
 import type { EditorRefApi } from "@plane/editor";
@@ -25,7 +26,7 @@ import type { TPeekModes } from "./header";
 import { IssuePeekOverviewHeader } from "./header";
 import { PeekOverviewIssueDetails } from "./issue-detail";
 import { IssuePeekOverviewLoader } from "./loader";
-import { PlanPeekSlot } from "../issue-layouts/plan/peek-slot";
+import { PlanPeekSlot, usePlanPeekActive } from "../issue-layouts/plan/peek-slot";
 import { PeekOverviewProperties } from "./properties";
 
 interface IIssueView {
@@ -59,6 +60,10 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
   } = props;
   // states
   const [peekMode, setPeekMode] = useState<TPeekModes>("side-peek");
+  // CCI: on a Plan board the side peek starts compact (title, properties, Plan) so the board stays in view
+  const planActive = usePlanPeekActive();
+  const [showFullDetails, setShowFullDetails] = useState(false);
+  const compact = planActive && peekMode === "side-peek" && !showFullDetails;
   const [isSubmitting, setIsSubmitting] = useState<TNameDescriptionLoader>("saved");
   const [isDeleteIssueModalOpen, setIsDeleteIssueModalOpen] = useState(false);
   const [isArchiveIssueModalOpen, setIsArchiveIssueModalOpen] = useState(false);
@@ -128,7 +133,8 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
         "absolute z-[25] flex flex-col overflow-hidden rounded-sm border border-subtle bg-surface-1"
       : `h-full w-full`,
     !embedIssue && {
-      "top-0 right-0 bottom-0 w-full border-0 border-l md:w-[50%]": peekMode === "side-peek",
+      "top-0 right-0 bottom-0 w-full border-0 border-l md:w-[50%]": peekMode === "side-peek" && !compact,
+      "top-0 right-0 bottom-0 w-full border-0 border-l md:w-[26rem]": compact,
       "top-[8.33%] left-[8.33%] size-5/6": peekMode === "modal",
       "absolute inset-0 m-4": peekMode === "full-screen",
       "motion-safe:animate-peek-in": peekMode === "side-peek" && !isClosing,
@@ -147,6 +153,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
       {issueId && (
         <div
           ref={issuePeekOverviewRef}
+          data-peek-overview=""
           className={peekOverviewIssueClassName}
           style={{
             boxShadow:
@@ -185,7 +192,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                 {["side-peek", "modal"].includes(peekMode) ? (
                   // CCI: properties sit right under the title when the pane is narrow, and become a
                   // column beside the description once the pane is wide enough for two.
-                  <div className="@container relative px-8 py-5">
+                  <div className={cn("@container relative py-5", compact ? "px-5" : "px-8")}>
                     <div className="grid grid-cols-1 gap-y-6 @3xl:grid-cols-[minmax(0,1fr)_18rem] @3xl:gap-x-10">
                       <div className="@3xl:col-start-1">
                         <PeekOverviewIssueDetails
@@ -198,6 +205,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                           isArchived={is_archived}
                           isSubmitting={isSubmitting}
                           setIsSubmitting={(value) => setIsSubmitting(value)}
+                          compact={compact}
                         />
                       </div>
 
@@ -212,24 +220,37 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                         <PlanPeekSlot issueId={issueId} />
                       </div>
 
-                      <div className="@3xl:col-start-1">
-                        <IssueDetailWidgets
-                          workspaceSlug={workspaceSlug}
-                          projectId={projectId}
-                          issueId={issueId}
-                          disabled={disabled || is_archived}
-                          issueServiceType={EIssueServiceType.ISSUES}
-                        />
-                      </div>
+                      {compact ? (
+                        <button
+                          type="button"
+                          onClick={() => setShowFullDetails(true)}
+                          className="flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-subtle text-13 font-medium text-secondary outline-none hover:bg-layer-transparent-hover hover:text-primary focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
+                        >
+                          <PanelRightOpen className="size-4" />
+                          Show description and activity
+                        </button>
+                      ) : (
+                        <>
+                          <div className="@3xl:col-start-1">
+                            <IssueDetailWidgets
+                              workspaceSlug={workspaceSlug}
+                              projectId={projectId}
+                              issueId={issueId}
+                              disabled={disabled || is_archived}
+                              issueServiceType={EIssueServiceType.ISSUES}
+                            />
+                          </div>
 
-                      <div className="@3xl:col-start-1">
-                        <IssueActivity
-                          workspaceSlug={workspaceSlug}
-                          projectId={projectId}
-                          issueId={issueId}
-                          disabled={is_archived}
-                        />
-                      </div>
+                          <div className="@3xl:col-start-1">
+                            <IssueActivity
+                              workspaceSlug={workspaceSlug}
+                              projectId={projectId}
+                              issueId={issueId}
+                              disabled={is_archived}
+                            />
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 ) : (

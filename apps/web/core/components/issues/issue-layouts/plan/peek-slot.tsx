@@ -27,6 +27,11 @@ const subscribe = (l: () => void) => {
 };
 const read = () => renderer;
 
+/** Whether a Plan board is open, so the sidebar starts compact. */
+export function usePlanPeekActive() {
+  return useSyncExternalStore(subscribe, read, read) !== null;
+}
+
 /** The Plan's section in the work item sidebar; nothing outside a Plan board. */
 export function PlanPeekSlot({ issueId }: { issueId: string }) {
   const render = useSyncExternalStore(subscribe, read, read);

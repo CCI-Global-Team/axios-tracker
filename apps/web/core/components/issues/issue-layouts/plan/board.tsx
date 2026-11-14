@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { CalendarRange, Columns3, LayoutDashboard, Search, X } from "lucide-react";
 import type { TIssueMap } from "@plane/types";
@@ -205,6 +205,25 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
   }, [graph, areaById, plan, origin, hoursOf, itemHours, setItemHours, openWorkItem, reveal]);
   useEffect(() => () => setPlanPeekSection(null), []);
 
+  // keep the picked card in the part of the board the sidebar doesn't cover
+  const viewsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!selectedId) return;
+    let frame = 0;
+    let tries = 0;
+    const settle = () => {
+      const card = viewsRef.current?.querySelector<HTMLElement>(`[data-plan-id="${selectedId}"]`);
+      const peek = document.querySelector<HTMLElement>("[data-peek-overview]");
+      if (!card || !peek) {
+        if (++tries < 30) frame = requestAnimationFrame(settle);
+        return;
+      }
+      revealBeside(card, peek.getBoundingClientRect().left);
+    };
+    frame = requestAnimationFrame(settle);
+    return () => cancelAnimationFrame(frame);
+  }, [selectedId, view]);
+
   const openCount = useMemo(() => [...graph.nodes.values()].filter((n) => !n.isDone).length, [graph]);
   const filterLabel = filter
     ? filter.startsWith("area:")
@@ -342,8 +361,9 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
         </span>
       </div>
 
-      <div className="relative flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1 overflow-auto">
+      <div ref={viewsRef} className="relative flex min-h-0 flex-1">
+        {/* room past the last column, so any card can scroll clear of the compact sidebar */}
+        <div className={cn("min-w-0 flex-1 overflow-auto", selectedId && "md:pr-[26rem]")}>
           {view === "overview" && (
             <OverviewView
               {...shared}
@@ -383,3 +403,36 @@ export type TPlanShared = {
   isVisible: (n: TPlanNode) => boolean;
   selectedId: string | null;
 };
+
+const GAP = 24;
+
+/**
+ * Scroll the card's scroll containers so it sits left of `coveredFrom` (the sidebar's left edge), and in view
+ * vertically. Does nothing when the sidebar covers the whole width (phones) or the card is already clear.
+ */
+function revealBeside(card: HTMLElement, coveredFrom: number) {
+  for (let el = card.parentElement; el; el = el.parentElement) {
+    const style = getComputedStyle(el);
+    const box = el.getBoundingClientRect();
+    const r = card.getBoundingClientRect();
+    if (el.scrollWidth > el.clientWidth && /auto|scroll/.test(style.overflowX)) {
+      const right = Math.min(box.right, coveredFrom) - GAP;
+      const left = box.left + GAP;
+      if (right - left >= r.width) {
+        let dx = 0;
+        if (r.right > right) dx = r.right - right;
+        else if (r.left < left) dx = r.left - left;
+        if (dx) el.scrollBy({ left: dx, behavior: smoothScroll() });
+      }
+    }
+    if (el.scrollHeight > el.clientHeight && /auto|scroll/.test(style.overflowY)) {
+      let dy = 0;
+      if (r.bottom > box.bottom - GAP) dy = r.bottom - box.bottom + GAP;
+      if (r.top - dy < box.top + GAP) dy = r.top - box.top - GAP;
+      if (dy) el.scrollBy({ top: dy, behavior: smoothScroll() });
+    }
+  }
+}
+
+const smoothScroll = (): ScrollBehavior =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";

@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { GitBranch, SearchX } from "lucide-react";
 import { cn } from "@plane/utils";
 import type { TPlanArrange, TPlanShared } from "./board";
@@ -114,16 +114,6 @@ export function BuildOrderView(props: Props) {
     [columns, expanded]
   );
 
-  useEffect(() => {
-    if (!selectedId) return;
-    const el = boardRef.current?.querySelector<HTMLElement>(`[data-plan-id="${selectedId}"]`);
-    el?.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-    });
-  }, [selectedId]);
-
   if (!columns.length) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 py-24 text-center">
@@ -193,6 +183,7 @@ export function BuildOrderView(props: Props) {
                     key={n.id}
                     type="button"
                     data-plan-id={n.id}
+                    data-prevent-outside-click=""
                     aria-pressed={n.id === selectedId}
                     aria-label={`${n.key} ${n.name}`}
                     onClick={() => onSelect(n.id)}

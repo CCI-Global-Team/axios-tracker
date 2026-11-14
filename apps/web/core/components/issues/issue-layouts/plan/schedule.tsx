@@ -110,15 +110,6 @@ export function ScheduleView(props: Props) {
   );
   const linked = useMemo(() => new Set(links.flatMap((l) => [l.from, l.to])), [links]);
 
-  useEffect(() => {
-    if (!selectedId) return;
-    gridRef.current?.querySelector<HTMLElement>(`[data-plan-id="${selectedId}"]`)?.scrollIntoView({
-      block: "nearest",
-      inline: "center",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
-    });
-  }, [selectedId]);
-
   const allWaiting = plan.slots.size === 0 && plan.unscheduled.size > 0;
   const totalHours = open.reduce((sum, n) => sum + hoursOf(n.id), 0);
   const setter =
@@ -284,6 +275,7 @@ export function ScheduleView(props: Props) {
                         key={n.id}
                         type="button"
                         data-plan-id={n.id}
+                        data-prevent-outside-click=""
                         aria-pressed={isSel}
                         aria-label={`${n.key} ${n.name}`}
                         title={`${n.key} ${n.name}`}
