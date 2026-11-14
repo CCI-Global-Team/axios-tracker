@@ -15,7 +15,7 @@ import { WorkspaceMenuRoot } from "@/components/workspace/sidebar/workspace-menu
 import { useAppRailPreferences } from "@/hooks/use-navigation-preferences";
 import { Tooltip } from "@plane/propel/tooltip";
 import { AppSidebarItem } from "@/components/sidebar/sidebar-item";
-import { InboxIcon, PlaneLogo } from "@plane/propel/icons";
+import { InboxIcon, PlaneLockup } from "@plane/propel/icons";
 import Link from "next/link";
 import useSWR from "swr";
 import { useWorkspaceNotifications } from "@/hooks/store/notifications";
@@ -53,14 +53,14 @@ export const TopNavigationRoot = observer(function TopNavigationRoot() {
         "px-2": !showLabel,
       })}
     >
-      {/* CCI: the Axios mark leads the bar and goes home; phones keep the room for search. */}
+      {/* CCI: the Axios lockup leads the bar and goes home; phones keep the room for search. */}
       <div className="flex shrink-0 items-center gap-1 sm:flex-1">
         <Link
           href={`/${workspaceSlug?.toString()}/`}
           aria-label="Axios home"
           className="mr-1 hidden h-8 shrink-0 items-center rounded-md px-1.5 transition-opacity duration-150 ease-out-strong hover:opacity-80 sm:flex"
         >
-          <PlaneLogo width="46" height="14" className="h-3.5 w-auto" />
+          <PlaneLockup chain="currentColor" className="h-[17px] w-auto text-primary" />
         </Link>
         <span aria-hidden className="mr-1 hidden h-4 w-px bg-white/15 sm:block" />
         <WorkspaceMenuRoot variant="top-navigation" />
