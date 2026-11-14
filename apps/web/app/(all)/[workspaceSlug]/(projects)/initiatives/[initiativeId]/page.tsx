@@ -4,15 +4,19 @@
  * See the LICENSE file for details.
  */
 
+import { observer } from "mobx-react";
 import { useParams } from "react-router";
 import { PageHead } from "@/components/core/page-title";
 import { InitiativeDetail } from "@/components/initiatives/detail";
+import { useInitiative } from "@/hooks/store/use-initiative";
 
-export default function WorkspaceInitiativePage() {
+function WorkspaceInitiativePage() {
   const { workspaceSlug, initiativeId } = useParams();
+  const { getInitiativeById } = useInitiative();
+  const name = initiativeId ? getInitiativeById(initiativeId)?.name : undefined;
   return (
     <>
-      <PageHead title="Initiative" />
+      <PageHead title={name ? `${name} - Initiatives` : "Initiatives"} />
       {workspaceSlug && initiativeId && (
         <InitiativeDetail
           key={`${workspaceSlug}/${initiativeId}`}
@@ -23,3 +27,5 @@ export default function WorkspaceInitiativePage() {
     </>
   );
 }
+
+export default observer(WorkspaceInitiativePage);
