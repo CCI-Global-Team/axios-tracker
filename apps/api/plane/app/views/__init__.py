@@ -250,3 +250,5 @@ from .notification.base import MarkAllReadNotificationViewSet
 from .user.base import AccountEndpoint, ProfileEndpoint, UserSessionEndpoint
 
 from .timezone.base import TimezoneEndpoint
+
+from .initiative import InitiativeEndpoint, InitiativeIssueEndpoint, InitiativeModuleEndpoint

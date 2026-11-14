@@ -31,6 +31,7 @@ import { Loader, CustomSelect, TextArea } from "@plane/ui";
 import { getDate, renderFormattedPayloadDate } from "@plane/utils";
 import { DateRangeDropdown } from "@/components/dropdowns/date-range";
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { ModuleInitiatives } from "@/components/initiatives/module-initiatives";
 import { CreateUpdateModuleLinkModal, ModuleAnalyticsProgress, ModuleLinksList } from "@/components/modules";
 // hooks
 import { useProjectEstimates } from "@/hooks/store/estimates";
@@ -71,7 +72,7 @@ export const ModuleAnalyticsSidebar = observer(function ModuleAnalyticsSidebar(p
   const moduleDetails = getModuleById(moduleId);
   const areEstimateEnabled = projectId && areEstimateEnabledByProjectId(projectId.toString());
   const estimateType = areEstimateEnabled && currentActiveEstimateId && estimateById(currentActiveEstimateId);
-  const isEstimatePointValid = estimateType && estimateType?.type == EEstimateSystem.POINTS ? true : false;
+  const isEstimatePointValid = !!estimateType && estimateType.type == EEstimateSystem.POINTS;
 
   const { reset, control } = useForm({
     defaultValues,
@@ -215,8 +216,8 @@ export const ModuleAnalyticsSidebar = observer(function ModuleAnalyticsSidebar(p
                     </span>
                   }
                   value={value}
-                  onChange={(value: any) => {
-                    submitChanges({ status: value });
+                  onChange={(status: IModule["status"]) => {
+                    submitChanges({ status });
                   }}
                   disabled={!isEditingAllowed || isArchived}
                 >
@@ -346,6 +347,13 @@ export const ModuleAnalyticsSidebar = observer(function ModuleAnalyticsSidebar(p
               <span className="px-1.5 text-13 text-tertiary">{issueCount}</span>
             </div>
           </div>
+          {workspaceSlug && moduleDetails?.id && (
+            <ModuleInitiatives
+              workspaceSlug={workspaceSlug.toString()}
+              moduleId={moduleDetails.id}
+              disabled={isArchived}
+            />
+          )}
 
           {/**
            * NOTE: Render this section when estimate points of he projects is enabled and the estimate system is points
