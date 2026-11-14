@@ -58,7 +58,7 @@ export const QuickAddIssueFormRoot = observer(function QuickAddIssueFormRoot(pro
 
   if (!projectDetail) return <></>;
 
-  const QUICK_ADD_ISSUE_FORMS: Record<EIssueLayoutTypes, FC<TQuickAddIssueForm>> = {
+  const QUICK_ADD_ISSUE_FORMS: Partial<Record<EIssueLayoutTypes, FC<TQuickAddIssueForm>>> = {
     [EIssueLayoutTypes.LIST]: ListQuickAddIssueForm,
     [EIssueLayoutTypes.KANBAN]: KanbanQuickAddIssueForm,
     [EIssueLayoutTypes.CALENDAR]: CalendarQuickAddIssueForm,

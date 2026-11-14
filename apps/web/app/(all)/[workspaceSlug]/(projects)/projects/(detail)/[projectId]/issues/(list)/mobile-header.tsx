@@ -70,7 +70,12 @@ export const ProjectIssuesMobileHeader = observer(function ProjectIssuesMobileHe
       />
       <div className="z-[13] flex justify-evenly border-b border-subtle bg-surface-1 py-2 md:hidden">
         <MobileLayoutSelection
-          layouts={[EIssueLayoutTypes.LIST, EIssueLayoutTypes.KANBAN, EIssueLayoutTypes.CALENDAR]}
+          layouts={[
+            EIssueLayoutTypes.LIST,
+            EIssueLayoutTypes.KANBAN,
+            EIssueLayoutTypes.CALENDAR,
+            EIssueLayoutTypes.PLAN,
+          ]}
           onChange={handleLayoutChange}
           activeLayout={activeLayout}
         />

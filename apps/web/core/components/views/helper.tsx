@@ -5,6 +5,7 @@
  */
 
 import { EIssueLayoutTypes } from "@plane/types";
+import { WorkspacePlanRoot } from "@/components/issues/issue-layouts/plan/workspace-root";
 import { WorkspaceSpreadsheetRoot } from "@/components/issues/issue-layouts/spreadsheet/roots/workspace-root";
 
 export type TWorkspaceLayoutProps = {
@@ -50,6 +51,8 @@ export function WorkspaceActiveLayout(props: TWorkspaceLayoutProps) {
           issuesLoading={issuesLoading}
         />
       );
+    case EIssueLayoutTypes.PLAN:
+      return <WorkspacePlanRoot workspaceSlug={workspaceSlug} />;
     default:
       return <></>;
   }

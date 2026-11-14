@@ -16,6 +16,7 @@ const TABS: { key: EIssueLayoutTypes; i18n: string }[] = [
   { key: EIssueLayoutTypes.CALENDAR, i18n: "issue.layouts.calendar" },
   { key: EIssueLayoutTypes.SPREADSHEET, i18n: "issue.layouts.spreadsheet" },
   { key: EIssueLayoutTypes.GANTT, i18n: "issue.layouts.gantt" },
+  { key: EIssueLayoutTypes.PLAN, i18n: "issue.layouts.plan" },
 ];
 
 type Props = {

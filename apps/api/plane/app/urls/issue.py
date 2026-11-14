@@ -32,9 +32,15 @@ from plane.app.views import (
     IssueMetaEndpoint,
     IssueDetailIdentifierEndpoint,
     WorkItemPublicLinkEndpoint,
+    WorkItemRelationsEndpoint,
 )
 
 urlpatterns = [
+    path(
+        "workspaces/<str:slug>/work-item-relations/",
+        WorkItemRelationsEndpoint.as_view(),
+        name="workspace-work-item-relations",
+    ),
     path(
         "workspaces/<str:slug>/projects/<uuid:project_id>/issues/list/",
         IssueListEndpoint.as_view(),

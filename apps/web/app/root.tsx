@@ -70,7 +70,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="theme-color" content="#DF4E4E" />
+        <meta name="theme-color" content="#D2181D" />
         {/* Meta info for PWA */}
         <meta name="application-name" content="Axios" />
         <meta name="apple-mobile-web-app-capable" content="yes" />

@@ -5,13 +5,24 @@
  */
 
 import { API_BASE_URL } from "@plane/constants";
-import type { TIssueRelation, TIssue, TIssueRelationTypes } from "@plane/types";
+import type { TIssueRelation, TIssue, TIssueRelationTypes, TWorkItemRelationsResponse } from "@plane/types";
 // services
 import { APIService } from "@/services/api.service";
 
 export class IssueRelationService extends APIService {
   constructor() {
     super(API_BASE_URL);
+  }
+
+  /** CCI: every relation touching the given projects, in one call (Plan layout). */
+  async listWorkspaceRelations(workspaceSlug: string, projectIds: string[]): Promise<TWorkItemRelationsResponse> {
+    return this.get(`/api/workspaces/${workspaceSlug}/work-item-relations/`, {
+      params: { project_id: projectIds.join(",") },
+    })
+      .then((response) => response?.data)
+      .catch((error) => {
+        throw error?.response?.data;
+      });
   }
 
   async listIssueRelations(workspaceSlug: string, projectId: string, issueId: string): Promise<TIssueRelation> {

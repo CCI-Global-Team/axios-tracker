@@ -13,7 +13,7 @@ import { CustomMenu } from "@plane/ui";
 import { useIsPhoneWidth } from "@/hooks/use-is-phone-width";
 import { IssueLayoutIcon } from "../../layout-icon";
 
-// CCI: Table and Timeline need width; on a phone the menu offers List, Board and Calendar only.
+// CCI: Table and Timeline need width; on a phone the menu offers List, Board, Calendar and Plan.
 const WIDE_ONLY_LAYOUTS = new Set([EIssueLayoutTypes.SPREADSHEET, EIssueLayoutTypes.GANTT]);
 export function MobileLayoutSelection({
   layouts,

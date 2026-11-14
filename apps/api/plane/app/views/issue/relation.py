@@ -4,6 +4,7 @@
 
 # Python imports
 import json
+from uuid import UUID
 
 # Django imports
 from django.utils import timezone
@@ -16,11 +17,12 @@ from django.contrib.postgres.fields import ArrayField
 # Third Party imports
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 
 # Module imports
-from .. import BaseViewSet
+from .. import BaseAPIView, BaseViewSet
 from plane.app.serializers import IssueRelationSerializer, RelatedIssueSerializer
-from plane.app.permissions import ProjectEntityPermission
+from plane.app.permissions import ProjectEntityPermission, WorkspaceMemberPermission
 from plane.db.models import (
     Project,
     IssueRelation,
@@ -31,7 +33,86 @@ from plane.db.models import (
 )
 from plane.bgtasks.issue_activities_task import issue_activity
 from plane.utils.issue_relation_mapper import get_actual_relation
+from plane.utils.issue_visibility import get_issue_project_permission_filters
 from plane.utils.host import base_host
+
+
+class WorkItemRelationsEndpoint(BaseAPIView):
+    permission_classes = [WorkspaceMemberPermission]
+
+    def get(self, request, slug):
+        filters = {}
+        for parameter in ("project_id", "issue_ids"):
+            ids = [value.strip() for value in request.query_params.get(parameter, "").split(",") if value.strip()]
+            if parameter == "issue_ids" and len(ids) > 1000:
+                raise ValidationError({parameter: "At most 1000 issue IDs are allowed."})
+            try:
+                filters[parameter] = [UUID(value) for value in ids]
+            except ValueError:
+                raise ValidationError({parameter: "Provide comma-separated UUIDs."})
+
+        # Use objects rather than issue_objects so archived issues remain visible.
+        # Keep both visibility checks as subqueries within the single relation query.
+        visible_issues = (
+            Issue.objects.filter(
+                get_issue_project_permission_filters(request.user),
+                workspace__slug=slug,
+                project__workspace__slug=slug,
+                project__archived_at__isnull=True,
+                project__deleted_at__isnull=True,
+                project__project_projectmember__deleted_at__isnull=True,
+            )
+            .order_by()
+            .values("id")
+        )
+        relations = IssueRelation.objects.filter(
+            workspace__slug=slug,
+            issue_id__in=visible_issues,
+            related_issue_id__in=visible_issues,
+        )
+        if filters["project_id"]:
+            relations = relations.filter(
+                Q(issue__project_id__in=filters["project_id"]) | Q(related_issue__project_id__in=filters["project_id"])
+            )
+        if filters["issue_ids"]:
+            relations = relations.filter(
+                Q(issue_id__in=filters["issue_ids"]) | Q(related_issue_id__in=filters["issue_ids"])
+            )
+
+        rows = list(
+            relations.order_by("created_at").values(
+                "id",
+                "relation_type",
+                "issue_id",
+                "related_issue_id",
+                "project_id",
+                related_project_id=F("related_issue__project_id"),
+            )
+        )
+        # Both ends' basics, so a client can show a blocker that sits outside the scope it loaded.
+        end_ids = {row["issue_id"] for row in rows} | {row["related_issue_id"] for row in rows}
+        work_items = {
+            str(item["id"]): {
+                "name": item["name"],
+                "sequence_id": item["sequence_id"],
+                "project_id": item["project_id"],
+                "project_identifier": item["project__identifier"],
+                "state_group": item["state__group"],
+                "state_name": item["state__name"],
+                "is_archived": item["archived_at"] is not None,
+            }
+            for item in Issue.objects.filter(id__in=end_ids).values(
+                "id",
+                "name",
+                "sequence_id",
+                "project_id",
+                "project__identifier",
+                "state__group",
+                "state__name",
+                "archived_at",
+            )
+        }
+        return Response({"relations": rows, "work_items": work_items}, status=status.HTTP_200_OK)
 
 
 class IssueRelationViewSet(BaseViewSet):

@@ -5,7 +5,7 @@
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f9fafb",
-  "theme_color": "#DF4E4E",
+  "theme_color": "#D2181D",
   "icons": [
     {
       "src": "/plane-logos/plane-mobile-pwa.png",

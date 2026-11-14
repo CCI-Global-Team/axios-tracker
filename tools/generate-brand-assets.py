@@ -373,6 +373,10 @@ def main():
         shutil.copy(brand / "axios-icon-512x512.png", icons / "icon-512x512.png")
         shutil.copy(brand / "axios-maskable-192.png", icons / "icon-192x192-maskable.png")
         shutil.copy(brand / "axios-maskable-512.png", icons / "icon-512x512-maskable.png")
+        # root.tsx links these as the apple-touch icons
+        touch = root / "apps" / "web" / "app" / "assets" / "icons"
+        shutil.copy(brand / "axios-icon-180x180.png", touch / "icon-180x180.png")
+        shutil.copy(brand / "axios-icon-512x512.png", touch / "icon-512x512.png")
         shutil.copy(brand / "axios-og-1200x630.png", root / "apps" / "web" / "app" / "assets" / "og-image.png")
         # the card for shared work-item links (apps/api points at /og/axios-card.png)
         shutil.copy(brand / "axios-og-1200x630.png", root / "apps" / "web" / "public" / "og" / "axios-card.png")
