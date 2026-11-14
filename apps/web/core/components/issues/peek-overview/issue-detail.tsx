@@ -5,8 +5,9 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
+import { ChevronDown } from "lucide-react";
 // plane imports
 import type { EditorRefApi } from "@plane/editor";
 import { EFileAssetType } from "@plane/types";
@@ -66,6 +67,9 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
   } = useIssueDetail();
 
   const { getUserDetails } = useMember();
+  // CCI: the compact sidebar keeps the description folded under the title until asked for
+  const [descriptionOpen, setDescriptionOpen] = useState(false);
+  const showDescription = !compact || descriptionOpen;
   // reload confirmation
   const { setShowAlert } = useReloadConfirmations(isSubmitting === "submitting");
 
@@ -134,29 +138,46 @@ export const PeekOverviewIssueDetails = observer(function PeekOverviewIssueDetai
         containerClassName="-ml-3"
       />
 
+      {compact && (
+        <button
+          type="button"
+          aria-expanded={descriptionOpen}
+          onClick={() => setDescriptionOpen((v) => !v)}
+          className="-ml-1 inline-flex h-7 items-center gap-1 rounded-sm px-1 text-13 text-secondary outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
+        >
+          <ChevronDown
+            className={`size-4 transition-transform duration-150 ${descriptionOpen ? "" : "-rotate-90"}`}
+            aria-hidden
+          />
+          Description
+        </button>
+      )}
+
+      {showDescription && (
+        <DescriptionInput
+          issueSequenceId={issue.sequence_id}
+          containerClassName="-ml-3 border-none"
+          disabled={disabled || isArchived}
+          editorRef={editorRef}
+          entityId={issue.id}
+          fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
+          initialValue={issueDescription}
+          key={issue.id}
+          onSubmit={async (value, isMigrationUpdate) => {
+            if (!issue.id || !issue.project_id) return;
+            await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
+              description_html: value.description_html,
+              ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
+            });
+          }}
+          setIsSubmitting={(value) => setIsSubmitting(value)}
+          projectId={issue.project_id}
+          workspaceSlug={workspaceSlug}
+        />
+      )}
+
       {!compact && (
         <>
-          <DescriptionInput
-            issueSequenceId={issue.sequence_id}
-            containerClassName="-ml-3 border-none"
-            disabled={disabled || isArchived}
-            editorRef={editorRef}
-            entityId={issue.id}
-            fileAssetType={EFileAssetType.ISSUE_DESCRIPTION}
-            initialValue={issueDescription}
-            key={issue.id}
-            onSubmit={async (value, isMigrationUpdate) => {
-              if (!issue.id || !issue.project_id) return;
-              await issueOperations.update(workspaceSlug, issue.project_id, issue.id, {
-                description_html: value.description_html,
-                ...(isMigrationUpdate ? { skip_activity: "true" } : {}),
-              });
-            }}
-            setIsSubmitting={(value) => setIsSubmitting(value)}
-            projectId={issue.project_id}
-            workspaceSlug={workspaceSlug}
-          />
-
           <div className="flex items-center justify-between gap-2">
             {currentUser && (
               <IssueReaction

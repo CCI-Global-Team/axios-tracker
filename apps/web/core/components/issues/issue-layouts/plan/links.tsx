@@ -8,7 +8,8 @@ import { useLayoutEffect, useState } from "react";
 import type { RefObject } from "react";
 import { DOWN_COLOUR, UP_COLOUR } from "./parts";
 
-export type TLink = { from: string; to: string; dir: "up" | "down" };
+/** up: has to happen first; down: waits on it; rel: related, drawn dashed with no arrow */
+export type TLink = { from: string; to: string; dir: "up" | "down" | "rel" };
 type TDir = TLink["dir"];
 type TPoint = [number, number];
 type TRect = { l: number; r: number; t: number; b: number; y: number };
@@ -167,12 +168,33 @@ function headPath({ x, y, to }: THead): string {
   return `M${x} ${y}L${back} ${y - HALF}L${back} ${y + HALF}z`;
 }
 
-const colour = (dir: TDir) => (dir === "up" ? UP_COLOUR : DOWN_COLOUR);
+const colour = (dir: TDir) => (dir === "up" ? UP_COLOUR : dir === "down" ? DOWN_COLOUR : "var(--txt-placeholder)");
 
 /**
  * Arrows from each item the selection waits on, and to each item waiting on it. Drawn in the container's own
  * coordinates, so they scroll with it; re-measured when the container resizes.
  */
+/**
+ * Every blocked-by link inside the selection's chain (so each highlighted card is joined to the next), plus a
+ * dashed line to each related item. Related lines come first so they draw underneath.
+ */
+export function chainLinks(
+  nodes: Map<string, { waitsOn: string[]; blocks: string[] }>,
+  selectedId: string,
+  related: string[],
+  up: Set<string>,
+  down: Set<string>
+): TLink[] {
+  const links: TLink[] = related.filter((id) => nodes.has(id)).map((id) => ({ from: selectedId, to: id, dir: "rel" }));
+  for (const id of [selectedId, ...up]) {
+    for (const w of nodes.get(id)?.waitsOn ?? []) if (up.has(w)) links.push({ from: w, to: id, dir: "up" });
+  }
+  for (const id of [selectedId, ...down]) {
+    for (const b of nodes.get(id)?.blocks ?? []) if (down.has(b)) links.push({ from: id, to: b, dir: "down" });
+  }
+  return links;
+}
+
 export function PlanLinks(props: {
   containerRef: RefObject<HTMLElement | null>;
   links: TLink[];
@@ -219,6 +241,7 @@ export function PlanLinks(props: {
         if (!routed) continue;
         const { points, head } = routed;
         lines.push({ d: rounded(points), dir: link.dir, key: `${link.from}>${link.to}` });
+        if (link.dir === "rel") continue;
         const key = `${link.to}:${head.to}:${head.x.toFixed(1)}:${head.y.toFixed(1)}`;
         if (!heads.has(key)) heads.set(key, { ...head, key });
       }
@@ -248,6 +271,7 @@ export function PlanLinks(props: {
             stroke={colour(l.dir)}
             strokeWidth={1.5}
             strokeOpacity={0.8}
+            strokeDasharray={l.dir === "rel" ? "4 4" : undefined}
             strokeLinejoin="round"
           />
         ))}

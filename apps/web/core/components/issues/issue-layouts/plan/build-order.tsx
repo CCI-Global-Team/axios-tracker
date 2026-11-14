@@ -9,7 +9,7 @@ import { GitBranch, SearchX } from "lucide-react";
 import { cn } from "@plane/utils";
 import type { TPlanArrange, TPlanShared } from "./board";
 import type { TLink } from "./links";
-import { PlanLinks } from "./links";
+import { PlanLinks, chainLinks } from "./links";
 import type { TPlanNode } from "./model";
 import { walk } from "./model";
 import { ItemKey, PersonAvatar, StatusPill } from "./parts";
@@ -100,14 +100,8 @@ export function BuildOrderView(props: Props) {
   }, [graph, selected]);
 
   const links = useMemo<TLink[]>(
-    () =>
-      selected
-        ? [
-            ...selected.waitsOn.map((id) => ({ from: id, to: selected.id, dir: "up" as const })),
-            ...selected.blocks.map((id) => ({ from: selected.id, to: id, dir: "down" as const })),
-          ]
-        : [],
-    [selected]
+    () => (selected ? chainLinks(graph.nodes, selected.id, selected.related, up, down) : []),
+    [graph, selected, up, down]
   );
   const layoutKey = useMemo(
     () => `${columns.map((c) => `${c.key}:${c.items.length}`).join("|")}#${[...expanded].join(",")}`,

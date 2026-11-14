@@ -227,7 +227,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                           className="flex h-9 w-full items-center justify-center gap-1.5 rounded-md border border-subtle text-13 font-medium text-secondary outline-none hover:bg-layer-transparent-hover hover:text-primary focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]"
                         >
                           <PanelRightOpen className="size-4" />
-                          Show description and activity
+                          Show sub-items and activity
                         </button>
                       ) : (
                         <>
