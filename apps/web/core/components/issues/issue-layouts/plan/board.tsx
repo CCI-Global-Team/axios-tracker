@@ -16,7 +16,8 @@ import { BuildOrderView } from "./build-order";
 import type { TPlanNode } from "./model";
 import { DEFAULT_ITEM_HOURS, DEFAULT_WEEK_HOURS, NO_OWNER, dateToWeeks, schedule, weekStart } from "./model";
 import { OverviewView } from "./overview";
-import { PlanPeek } from "./peek";
+import { PlanPeekSection } from "./peek";
+import { setPlanPeekSection } from "./peek-slot";
 import { ScheduleView } from "./schedule";
 import { AREA_NOUN, usePlanData } from "./use-plan-data";
 import { usePlanHours } from "./use-plan-hours";
@@ -80,12 +81,10 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
   const [query, setQuery] = useState("");
   const [showDone, setShowDone] = useState(false);
   const [filter, setFilter] = useState<TPlanFilter | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => setView(readView()), []);
   const changeView = useCallback((v: TPlanView) => {
     setView(v);
-    if (window.matchMedia("(max-width: 767px)").matches) setSelectedId(null);
     try {
       window.localStorage.setItem(VIEW_KEY, v);
     } catch {
@@ -128,55 +127,84 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
     [showDone, filter, query]
   );
 
-  const select = useCallback(
-    (id: string | null) => {
-      setSelectedId((cur) => (cur === id ? null : id));
-      const n = id ? graph.nodes.get(id) : undefined;
-      if (n && !isVisible(n)) {
-        setFilter(null);
-        setQuery("");
-        if (n.isDone) setShowDone(true);
-      }
-    },
-    [graph, isVisible]
-  );
-  const openFromOverview = useCallback(
-    (id: string) => {
-      changeView("order");
-      setSelectedId(id);
-      const n = graph.nodes.get(id);
-      if (n && !isVisible(n)) {
-        setFilter(null);
-        setQuery("");
-        if (n.isDone) setShowDone(true);
-      }
-    },
-    [changeView, graph, isVisible]
-  );
-  const applyFilter = useCallback(
-    (f: TPlanFilter | null) => {
-      setFilter(f);
-      setSelectedId(null);
-      changeView("order");
-    },
-    [changeView]
-  );
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && selectedId && !peekIssue) setSelectedId(null);
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [selectedId, peekIssue]);
-
   const openWorkItem = useCallback(
     (n: { id: string; projectId: string; isArchived?: boolean }) =>
       setPeekIssue({ workspaceSlug, projectId: n.projectId, issueId: n.id, isArchived: !!n.isArchived }),
     [setPeekIssue, workspaceSlug]
   );
 
-  const selected = selectedId ? graph.nodes.get(selectedId) : undefined;
+  // the open work item sidebar is the selection: its links draw on the board
+  const selectedId = peekIssue?.issueId && graph.nodes.has(peekIssue.issueId) ? peekIssue.issueId : null;
+
+  const reveal = useCallback(
+    (n: TPlanNode) => {
+      if (isVisible(n)) return;
+      setFilter(null);
+      setQuery("");
+      if (n.isDone) setShowDone(true);
+    },
+    [isVisible]
+  );
+  const select = useCallback(
+    (id: string | null) => {
+      const n = id ? graph.nodes.get(id) : undefined;
+      if (!n || id === selectedId) {
+        setPeekIssue(undefined);
+        return;
+      }
+      openWorkItem(n);
+      reveal(n);
+    },
+    [graph, selectedId, openWorkItem, reveal, setPeekIssue]
+  );
+  const openFromOverview = useCallback(
+    (id: string) => {
+      const n = graph.nodes.get(id);
+      if (!n) return;
+      changeView("order");
+      openWorkItem(n);
+      reveal(n);
+    },
+    [changeView, graph, openWorkItem, reveal]
+  );
+  const applyFilter = useCallback(
+    (f: TPlanFilter | null) => {
+      setFilter(f);
+      if (selectedId) setPeekIssue(undefined);
+      changeView("order");
+    },
+    [changeView, selectedId, setPeekIssue]
+  );
+
+  // the work item sidebar draws the Plan's section for items on this board
+  useEffect(() => {
+    setPlanPeekSection((issueId) => {
+      const n = graph.nodes.get(issueId);
+      if (!n) return null;
+      return (
+        <PlanPeekSection
+          node={n}
+          graph={graph}
+          areaById={areaById}
+          slot={plan.slots.get(n.id)}
+          origin={origin}
+          hours={hoursOf(n.id)}
+          isGuess={itemHours[n.id] === undefined}
+          onHours={(h) => setItemHours(n.id, h)}
+          onSelect={(id) => {
+            const next = graph.nodes.get(id);
+            if (next) {
+              openWorkItem(next);
+              reveal(next);
+            }
+          }}
+          onOpen={openWorkItem}
+        />
+      );
+    });
+  }, [graph, areaById, plan, origin, hoursOf, itemHours, setItemHours, openWorkItem, reveal]);
+  useEffect(() => () => setPlanPeekSection(null), []);
+
   const openCount = useMemo(() => [...graph.nodes.values()].filter((n) => !n.isDone).length, [graph]);
   const filterLabel = filter
     ? filter.startsWith("area:")
@@ -335,23 +363,6 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
             <ScheduleView {...shared} onSelect={select} setPersonHours={setPersonHours} personHours={personHours} />
           )}
         </div>
-        {selected && (
-          <PlanPeek
-            node={selected}
-            trapFocus={!peekIssue}
-            graph={graph}
-            areaById={areaById}
-            personById={personById}
-            slot={plan.slots.get(selected.id)}
-            origin={origin}
-            hours={hoursOf(selected.id)}
-            isGuess={itemHours[selected.id] === undefined}
-            onHours={(h) => setItemHours(selected.id, h)}
-            onSelect={(id) => (view === "overview" ? openFromOverview(id) : select(id))}
-            onOpen={openWorkItem}
-            onClose={() => setSelectedId(null)}
-          />
-        )}
       </div>
     </div>
   );

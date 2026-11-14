@@ -25,6 +25,7 @@ import type { TPeekModes } from "./header";
 import { IssuePeekOverviewHeader } from "./header";
 import { PeekOverviewIssueDetails } from "./issue-detail";
 import { IssuePeekOverviewLoader } from "./loader";
+import { PlanPeekSlot } from "../issue-layouts/plan/peek-slot";
 import { PeekOverviewProperties } from "./properties";
 
 interface IIssueView {
@@ -208,6 +209,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                           issueOperations={issueOperations}
                           disabled={disabled || is_archived}
                         />
+                        <PlanPeekSlot issueId={issueId} />
                       </div>
 
                       <div className="@3xl:col-start-1">
@@ -265,7 +267,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                       </div>
                     </div>
                     <div
-                      className={`vertical-scrollbar scrollbar-sm h-full !w-[400px] flex-shrink-0 overflow-hidden border-l border-subtle p-4 py-5 ${
+                      className={`vertical-scrollbar scrollbar-sm h-full !w-[400px] flex-shrink-0 overflow-y-auto border-l border-subtle p-4 py-5 ${
                         is_archived ? "pointer-events-none" : ""
                       }`}
                     >
@@ -276,6 +278,7 @@ export const IssueView = observer(function IssueView(props: IIssueView) {
                         issueOperations={issueOperations}
                         disabled={disabled || is_archived}
                       />
+                      <PlanPeekSlot issueId={issueId} />
                     </div>
                   </div>
                 )}
