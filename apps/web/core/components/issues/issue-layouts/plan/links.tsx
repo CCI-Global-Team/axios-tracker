@@ -64,7 +64,45 @@ function rounded(points: TPoint[]): string {
  * Route one link: out of the source's side, along a lane just in front of the target, and straight into the
  * target's edge. Every link into a card uses the same lane and end, so they join before one shared arrow.
  */
-function route(a: TRect, z: TRect, dir: TDir): { points: TPoint[]; head: THead } | null {
+type TBlock = { l: number; r: number; t: number; b: number };
+
+/** whether a horizontal line at y from x1 to x2 stays clear of every card in its way */
+const clearAt = (y: number, x1: number, x2: number, blocks: TBlock[]) => {
+  const [lo, hi] = x1 < x2 ? [x1, x2] : [x2, x1];
+  return !blocks.some((k) => k.r > lo + 1 && k.l < hi - 1 && y >= k.t - 2 && y <= k.b + 2);
+};
+
+/**
+ * The side-entry path. When the straight run at the source's height would cross other cards (a link that skips a
+ * column), drop into the gap beside the source, cross in the nearest gap between cards, then turn into the lane.
+ */
+function sidePath(a: TRect, z: TRect, from: number, lane: number, end: number, blocks: TBlock[]): TPoint[] {
+  const direct: TPoint[] = [
+    [from, a.y],
+    [lane, a.y],
+    [lane, z.y],
+    [end, z.y],
+  ];
+  if (!blocks.length || clearAt(a.y, from, lane, blocks)) return direct;
+  const out = from + Math.sign(lane - from) * LANE;
+  const [lo, hi] = out < lane ? [out, lane] : [lane, out];
+  const inWay = blocks.filter((k) => k.r > lo + 1 && k.l < hi - 1);
+  const ys = inWay.flatMap((k) => [k.t - 3, k.b + 3]).filter((y) => clearAt(y, out, lane, blocks));
+  if (!ys.length) return direct;
+  const cy = ys.reduce((best, y) =>
+    Math.abs(y - a.y) + Math.abs(y - z.y) < Math.abs(best - a.y) + Math.abs(best - z.y) ? y : best
+  );
+  return [
+    [from, a.y],
+    [out, a.y],
+    [out, cy],
+    [lane, cy],
+    [lane, z.y],
+    [end, z.y],
+  ];
+}
+
+function route(a: TRect, z: TRect, dir: TDir, blocks: TBlock[]): { points: TPoint[]; head: THead } | null {
   const sameRow = Math.abs(z.y - a.y) < 1;
   const below = z.t >= a.b;
   const above = z.b <= a.t;
@@ -74,12 +112,7 @@ function route(a: TRect, z: TRect, dir: TDir): { points: TPoint[]; head: THead }
     if (room >= 2 * RADIUS) {
       const lane = z.l - HEAD - Math.min(LANE, room / 2);
       return {
-        points: [
-          [a.r, a.y],
-          [lane, a.y],
-          [lane, z.y],
-          [z.l - HEAD, z.y],
-        ],
+        points: sidePath(a, z, a.r, lane, z.l - HEAD, blocks),
         head: { x: z.l, y: z.y, to: "right", dir },
       };
     }
@@ -112,12 +145,7 @@ function route(a: TRect, z: TRect, dir: TDir): { points: TPoint[]; head: THead }
   if (a.l - z.r - HEAD >= 2 * RADIUS) {
     const lane = z.r + HEAD + Math.min(LANE, (a.l - z.r - HEAD) / 2);
     return {
-      points: [
-        [a.l, a.y],
-        [lane, a.y],
-        [lane, z.y],
-        [z.r + HEAD, z.y],
-      ],
+      points: sidePath(a, z, a.l, lane, z.r + HEAD, blocks),
       head: { x: z.r, y: z.y, to: "left", dir },
     };
   }
@@ -174,13 +202,20 @@ export function PlanLinks(props: {
         }
         return rects.get(id) ?? null;
       };
+      // cards a link should route around; schedule links run under the bars, so only cards drawn over matter
+      const cards = above
+        ? [...root.querySelectorAll<HTMLElement>("[data-plan-id]")]
+            .map((el) => rectOf(el.dataset.planId ?? ""))
+            .filter((k): k is TRect => !!k)
+        : [];
       const lines: TDrawn["lines"] = [];
       const heads = new Map<string, TDrawn["heads"][number]>();
       for (const link of links) {
         const a = rectOf(link.from);
         const z = rectOf(link.to);
         if (!a || !z) continue;
-        const routed = route(a, z, link.dir);
+        const blocks = cards.filter((k) => k !== a && k !== z);
+        const routed = route(a, z, link.dir, blocks);
         if (!routed) continue;
         const { points, head } = routed;
         lines.push({ d: rounded(points), dir: link.dir, key: `${link.from}>${link.to}` });
@@ -194,7 +229,7 @@ export function PlanLinks(props: {
     const ro = new ResizeObserver(measure);
     ro.observe(root);
     return () => ro.disconnect();
-  }, [containerRef, links, anchorY, layoutKey]);
+  }, [containerRef, links, anchorY, layoutKey, above]);
 
   if (!drawn.lines.length) return null;
   return (
