@@ -217,7 +217,7 @@ export function withSelectedOptions(options: WorkItemFilterOptions, filters: Wor
     const missing = filters[field]
       .filter((value) => !present.has(value))
       .map((value) => {
-        const known =
+        const known: Omit<WorkItemFilterOption, "count"> | undefined =
           seenOptions.get(`${field}:${value}`) ??
           (field === "status" ? STATUS_GROUPS.find((g) => g.id === value) : undefined) ??
           (field === "due" ? DUE_OPTIONS.find((d) => d.id === value) : undefined);
