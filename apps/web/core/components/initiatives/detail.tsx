@@ -18,7 +18,6 @@ import { EIssuesStoreType } from "@plane/types";
 import { AlertModalCore, CustomMenu, Loader } from "@plane/ui";
 import { renderFormattedDate } from "@plane/utils";
 import { ButtonAvatars } from "@/components/dropdowns/member/avatar";
-import { PlanBoard } from "@/components/issues/issue-layouts/plan/board";
 import { IssuePeekOverview } from "@/components/issues/peek-overview";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { useInitiative } from "@/hooks/store/use-initiative";
@@ -34,6 +33,7 @@ import { initiativeErrorMessage } from "./error";
 import { InitiativeExample, InitiativeInfo } from "./explainer";
 import { InitiativeModulePicker } from "./module-picker";
 import { InitiativeProgress } from "./progress";
+import { InitiativeWorkItems } from "./views/root";
 
 const service = new InitiativeService();
 
@@ -153,7 +153,7 @@ export const InitiativeDetail = observer(function InitiativeDetail({ workspaceSl
 
   return (
     <IssuesStoreContext.Provider value={EIssuesStoreType.GLOBAL}>
-      <div className="flex h-full min-h-0 w-full flex-col">
+      <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden">
         <header className="grid shrink-0 grid-cols-1 gap-x-10 gap-y-4 border-b border-subtle px-4 py-4 sm:px-page-x lg:grid-cols-[minmax(0,1fr)_20rem]">
           <div className="flex min-w-0 flex-col gap-2">
             <div className="flex items-center gap-2">
@@ -273,7 +273,7 @@ export const InitiativeDetail = observer(function InitiativeDetail({ workspaceSl
           )}
         </header>
 
-        <section aria-label="Work items" className="relative min-h-0 flex-1">
+        <section aria-label="Work items" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
           {!hasModules ? (
             <div className="mx-auto flex h-full max-w-md flex-col items-center justify-center gap-4 px-4 py-12 text-center">
               <div className="space-y-1">
@@ -307,7 +307,7 @@ export const InitiativeDetail = observer(function InitiativeDetail({ workspaceSl
               <Loader.Item height="320px" />
             </Loader>
           ) : (
-            <PlanBoard
+            <InitiativeWorkItems
               workspaceSlug={workspaceSlug}
               issueIds={items.data}
               issueMap={rootStore.issue.issues.issuesMap}
