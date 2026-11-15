@@ -21,6 +21,7 @@ import {
   groupItems,
   isGroupBy,
   readFilters,
+  withSelectedOptions,
   writeFilters,
 } from "./model";
 import { ITEM_FOCUS } from "./parts";
@@ -37,13 +38,13 @@ const WorkItemsViews = observer(function WorkItemsViews({ view, ...props }: Work
   const { setPeekIssue } = useIssueDetail();
   const [query, setQuery] = useState("");
   const [params, setParams] = useSearchParams();
-  const options = getFilterOptions(allItems);
-  const filters = readFilters(params, options);
+  const filters = readFilters(params);
+  const options = withSelectedOptions(getFilterOptions(allItems), filters);
   const onToggle = (field: FilterField, value: string) =>
     setParams(
       () => {
         const previous = new URLSearchParams(window.location.search);
-        const next = readFilters(previous, options);
+        const next = readFilters(previous);
         next[field] = next[field].includes(value)
           ? next[field].filter((entry) => entry !== value)
           : [...next[field], value];

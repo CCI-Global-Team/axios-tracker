@@ -86,6 +86,7 @@ export type WorkItemFilterOption = {
   color?: string;
 };
 export type WorkItemFilterOptions = Record<FilterField, WorkItemFilterOption[]>;
+const PRIORITIES = ["urgent", "high", "medium", "low", "none"];
 const DUE_OPTIONS = [
   { id: "overdue", name: "Overdue" },
   { id: "week", name: "Due this week" },
@@ -171,7 +172,22 @@ export function getFilterOptions(items: WorkItem[], now = new Date()): WorkItemF
   return options;
 }
 
-export function readFilters(params: URLSearchParams, options: WorkItemFilterOptions): WorkItemFilters {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ENUM_VALUES: Partial<Record<FilterField, readonly string[]>> = {
+  status: STATUS_GROUPS.map(({ id }) => id),
+  priority: PRIORITIES,
+  due: DUE_OPTIONS.map(({ id }) => id),
+};
+
+function isFilterValue(field: FilterField, value: string): boolean {
+  const allowed = ENUM_VALUES[field];
+  if (allowed) return allowed.includes(value);
+  return UUID.test(value) || (field === "assignee" && value === "none");
+}
+
+// Selected values stay selected even when no item currently has them, so a filter
+// never disappears (and shows everything) just because an item was edited.
+export function readFilters(params: URLSearchParams): WorkItemFilters {
   const filters: WorkItemFilters = {
     status: [],
     project: [],
@@ -182,12 +198,50 @@ export function readFilters(params: URLSearchParams, options: WorkItemFilterOpti
     due: [],
   };
   for (const { id } of FILTER_FIELDS) {
-    const known = new Set(options[id].map((option) => option.id));
     filters[id] = [...new Set(params.getAll(id).flatMap((value) => value.split(",")))].filter((value) =>
-      known.has(value)
+      isFilterValue(id, value)
     );
   }
   return filters;
+}
+
+// names of options seen earlier, for selected values that no item has any more
+const seenOptions = new Map<string, Omit<WorkItemFilterOption, "count">>();
+
+/** add a zero-count option for each selected value missing from the options */
+export function withSelectedOptions(options: WorkItemFilterOptions, filters: WorkItemFilters): WorkItemFilterOptions {
+  const result = { ...options };
+  for (const { id: field } of FILTER_FIELDS) {
+    options[field].forEach((option) => seenOptions.set(`${field}:${option.id}`, option));
+    const present = new Set(options[field].map((option) => option.id));
+    const missing = filters[field]
+      .filter((value) => !present.has(value))
+      .map((value) => {
+        const known =
+          seenOptions.get(`${field}:${value}`) ??
+          (field === "status" ? STATUS_GROUPS.find((g) => g.id === value) : undefined) ??
+          (field === "due" ? DUE_OPTIONS.find((d) => d.id === value) : undefined);
+        const name =
+          known?.name ??
+          (field === "priority"
+            ? value.charAt(0).toUpperCase() + value.slice(1)
+            : value === "none"
+              ? "Unassigned"
+              : "Unknown");
+        const option: WorkItemFilterOption = {
+          id: value,
+          name,
+          count: 0,
+          area: known?.area,
+          person: known?.person,
+          identifier: known?.identifier,
+          color: known?.color,
+        };
+        return option;
+      });
+    if (missing.length) result[field] = [...options[field], ...missing];
+  }
+  return result;
 }
 
 export function writeFilters(params: URLSearchParams, filters: WorkItemFilters): URLSearchParams {
@@ -243,7 +297,6 @@ export function groupItems(items: WorkItem[], by: GroupBy, includeTriage = false
   );
 }
 export type SortColumn = "item" | "project" | "module" | "state" | "priority" | "assignees" | "start" | "due";
-const PRIORITIES = ["urgent", "high", "medium", "low", "none"];
 export function compareItems(a: WorkItem, b: WorkItem, column: SortColumn): number {
   if (column === "state") return statusRank(a.stateGroup) - statusRank(b.stateGroup) || compareKeys(a, b);
   if (column === "priority")

@@ -53,7 +53,11 @@ export function CalendarView({ items, onOpen }: ViewProps) {
   const noDue: WorkItem[] = [];
   items.forEach((item) => {
     if (!item.dueDate) noDue.push(item);
-    else byDate.set(item.dueDate, [...(byDate.get(item.dueDate) ?? []), item]);
+    else {
+      const bucket = byDate.get(item.dueDate);
+      if (bucket) bucket.push(item);
+      else byDate.set(item.dueDate, [item]);
+    }
   });
   const populatedDays = days.filter((day) => byDate.has(dateKey(day)));
   const cells = Math.ceil((offset + days.length) / 7) * 7;
