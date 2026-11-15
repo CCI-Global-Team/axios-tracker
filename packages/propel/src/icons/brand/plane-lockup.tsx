@@ -30,6 +30,8 @@ const W = WM_X + 513.2 * SCALE + 1;
 interface PlaneLockupProps extends ISvgIcons {
   /** Colour of the chain and the A's crossbar. Defaults to the brand red; pass "currentColor" on a coloured ground. */
   accent?: string;
+  /** Colour of the chain alone, when it differs from the crossbar (white lockup on the navy top bar). */
+  chain?: string;
 }
 
 // Component name is upstream Plane's; the artwork is CCI's Axios lockup (see docs/brand/README.md).
@@ -41,6 +43,7 @@ export function PlaneLockup({
   className,
   color = "currentColor",
   accent = AXIOS_RED,
+  chain = accent,
 }: PlaneLockupProps) {
   const maskId = useSvgId("axios-lockup");
   const clipId = useSvgId("axios-lockup-x");
@@ -58,7 +61,7 @@ export function PlaneLockup({
       <defs>
         <CrossingMask id={maskId} />
       </defs>
-      <ChainArt color={accent} maskId={maskId} />
+      <ChainArt color={chain} maskId={maskId} />
       <g transform={`translate(${WM_X} ${WM_Y.toFixed(2)}) scale(${SCALE})`}>
         <WordmarkArt color={color} accent={accent} clipId={clipId} />
       </g>
