@@ -4,13 +4,14 @@
  * See the LICENSE file for details.
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { observer } from "mobx-react";
 import { SearchIcon, CloseIcon } from "@plane/propel/icons";
 // hooks
 import { useLabel } from "@/hooks/store/use-label";
 import { useMember } from "@/hooks/store/use-member";
 import { usePlatformOS } from "@/hooks/use-platform-os";
+import { splitCampusLabels } from "@/helpers/intake-campus";
 // local imports
 import { FilterDate } from "./date";
 import { FilterLabels } from "./labels";
@@ -25,6 +26,7 @@ export const InboxIssueFilterSelection = observer(function InboxIssueFilterSelec
     project: { projectMemberIds },
   } = useMember();
   const { projectLabels } = useLabel();
+  const { campusLabels, otherLabels } = useMemo(() => splitCampusLabels(projectLabels), [projectLabels]);
   // states
   const [filtersSearchQuery, setFiltersSearchQuery] = useState("");
 
@@ -39,6 +41,7 @@ export const InboxIssueFilterSelection = observer(function InboxIssueFilterSelec
             placeholder="Search"
             value={filtersSearchQuery}
             onChange={(e) => setFiltersSearchQuery(e.target.value)}
+            // oxlint-disable-next-line jsx-a11y/no-autofocus -- the menu opens to type a search
             autoFocus={!isMobile}
           />
           {filtersSearchQuery !== "" && (
@@ -50,6 +53,12 @@ export const InboxIssueFilterSelection = observer(function InboxIssueFilterSelec
       </div>
 
       <div className="vertical-scrollbar scrollbar-sm h-full w-full divide-y divide-subtle-1 overflow-y-auto px-2.5">
+        {/* CCI: campus, only when the project has a "Campus" label with children */}
+        {campusLabels.length > 0 && (
+          <div className="py-2">
+            <FilterLabels filterKey="campus" title="Campus" searchQuery={filtersSearchQuery} labels={campusLabels} />
+          </div>
+        )}
         {/* status */}
         <div className="py-2">
           <FilterStatus searchQuery={filtersSearchQuery} />
@@ -78,7 +87,7 @@ export const InboxIssueFilterSelection = observer(function InboxIssueFilterSelec
         </div>
         {/* Labels */}
         <div className="py-2">
-          <FilterLabels searchQuery={filtersSearchQuery} labels={projectLabels ?? []} />
+          <FilterLabels searchQuery={filtersSearchQuery} labels={projectLabels ? otherLabels : undefined} />
         </div>
         {/* Created at */}
         <div className="py-2">

@@ -29,7 +29,8 @@ from plane.api.serializers import (
 )
 from plane.app.permissions import ProjectLitePermission
 from plane.bgtasks.issue_activities_task import issue_activity
-from plane.db.models import Intake, IntakeIssue, Issue, Project, ProjectMember, State, StateGroup
+from plane.db.models import Intake, IntakeIssue, Issue, IssueLabel, Project, ProjectMember, State, StateGroup
+from plane.utils.intake_campus import CAMPUS_PARENT_LABEL, campus_label
 from plane.utils.host import base_host
 from plane.utils.content_validator import validate_html_content
 from .base import BaseAPIView
@@ -151,6 +152,17 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
         if not request.data.get("issue", {}).get("name", False):
             return Response({"error": "Name is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # CCI: Support requests can attach a project campus label.
+        campus = request.data.get("issue", {}).get("campus", "")
+        if not isinstance(campus, str):
+            return Response({"error": "campus must be a string"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if campus.strip().casefold() == CAMPUS_PARENT_LABEL.casefold():
+            return Response(
+                {"error": "campus cannot use the reserved parent label name Campus"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         intake = Intake.objects.filter(workspace__slug=slug, project_id=project_id).first()
 
         project = Project.objects.get(workspace__slug=slug, pk=project_id)
@@ -241,6 +253,13 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
             external_source=external_source,  # CCI: GAM-572
             external_id=str(external_id) if external_id else None,  # CCI: GAM-572
         )
+
+        # CCI: Keep the campus in labels as well as the support description.
+        label = campus_label(project_id, project.workspace_id, campus)
+        if label is not None:
+            IssueLabel.objects.get_or_create(
+                issue=issue, label=label, project_id=project_id, workspace_id=project.workspace_id
+            )
 
         # create an intake issue
         intake_issue = IntakeIssue.objects.create(

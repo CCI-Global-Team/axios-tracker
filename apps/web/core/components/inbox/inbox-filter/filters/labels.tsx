@@ -20,17 +20,20 @@ function LabelIcons({ color }: { color: string }) {
 type Props = {
   labels: IIssueLabel[] | undefined;
   searchQuery: string;
+  // CCI: the Campus filter reuses this list over the campus labels
+  filterKey?: "labels" | "campus";
+  title?: string;
 };
 
 export const FilterLabels = observer(function FilterLabels(props: Props) {
-  const { labels, searchQuery } = props;
+  const { labels, searchQuery, filterKey = "labels", title = "Label" } = props;
 
   const [itemsToRender, setItemsToRender] = useState(5);
   const [previewEnabled, setPreviewEnabled] = useState(true);
 
   const { inboxFilters, handleInboxIssueFilters } = useProjectInbox();
 
-  const filterValue = inboxFilters?.labels || [];
+  const filterValue = inboxFilters?.[filterKey] || [];
 
   const appliedFiltersCount = filterValue?.length ?? 0;
 
@@ -49,7 +52,7 @@ export const FilterLabels = observer(function FilterLabels(props: Props) {
   return (
     <>
       <FilterHeader
-        title={`Label${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
+        title={`${title}${appliedFiltersCount > 0 ? ` (${appliedFiltersCount})` : ""}`}
         isPreviewEnabled={previewEnabled}
         handleIsPreviewEnabled={() => setPreviewEnabled(!previewEnabled)}
       />
@@ -61,8 +64,8 @@ export const FilterLabels = observer(function FilterLabels(props: Props) {
                 {filteredOptions.slice(0, itemsToRender).map((label) => (
                   <FilterOption
                     key={label?.id}
-                    isChecked={filterValue?.includes(label?.id) ? true : false}
-                    onClick={() => handleInboxIssueFilters("labels", handleFilterValue(label.id))}
+                    isChecked={filterValue.includes(label.id)}
+                    onClick={() => handleInboxIssueFilters(filterKey, handleFilterValue(label.id))}
                     icon={<LabelIcons color={label.color} />}
                     title={label.name}
                   />
