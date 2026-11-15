@@ -62,6 +62,7 @@ import type { IProjectViewStore } from "./project-view.store";
 // CCI: releases (GAM-400)
 import type { IReleaseStore } from "./release.store";
 import { ReleaseStore } from "./release.store";
+import { InitiativeStore, type IInitiativeStore } from "./initiative.store";
 import { ProjectViewStore } from "./project-view.store";
 import type { IRouterStore } from "./router.store";
 import { RouterStore } from "./router.store";
@@ -85,6 +86,7 @@ export class CoreRootStore {
   moduleFilter: IModuleFilterStore;
   // CCI: releases (GAM-400)
   release: IReleaseStore;
+  initiative: IInitiativeStore;
   projectView: IProjectViewStore;
   globalView: IGlobalViewStore;
   issue: IIssueRootStore;
@@ -123,6 +125,7 @@ export class CoreRootStore {
     this.module = new ModulesStore(this);
     this.moduleFilter = new ModuleFilterStore(this);
     this.release = new ReleaseStore(this);
+    this.initiative = new InitiativeStore(this);
     this.projectView = new ProjectViewStore(this);
     this.globalView = new GlobalViewStore(this);
     this.issue = new IssueRootStore(this);
@@ -159,6 +162,7 @@ export class CoreRootStore {
     this.module = new ModulesStore(this);
     this.moduleFilter = new ModuleFilterStore(this);
     this.release = new ReleaseStore(this);
+    this.initiative = new InitiativeStore(this);
     this.projectView = new ProjectViewStore(this);
     this.globalView = new GlobalViewStore(this);
     this.issue = new IssueRootStore(this);

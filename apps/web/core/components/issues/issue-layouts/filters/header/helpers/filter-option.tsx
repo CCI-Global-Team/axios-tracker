@@ -21,6 +21,7 @@ export function FilterOption(props: Props) {
   return (
     <button
       type="button"
+      aria-pressed={isChecked}
       className="flex w-full items-center gap-2 rounded-sm p-1.5 hover:bg-layer-transparent-hover"
       onClick={onClick}
     >
