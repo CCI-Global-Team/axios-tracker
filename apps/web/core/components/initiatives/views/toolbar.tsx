@@ -5,33 +5,42 @@
  */
 
 import { Search } from "lucide-react";
+import type { ReactNode } from "react";
 import type { GroupBy } from "./model";
 import { GROUP_OPTIONS, isGroupBy } from "./model";
 
 export function WorkItemsToolbar({
   query,
   onQuery,
+  showSearch = true,
   groupBy,
   onGroupBy,
+  filters,
 }: {
   query: string;
   onQuery: (query: string) => void;
+  /** Plan has its own search box */
+  showSearch?: boolean;
   groupBy?: GroupBy;
   onGroupBy: (by: GroupBy) => void;
+  filters: ReactNode;
 }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-subtle px-4 py-2.5 sm:px-page-x">
-      <label className="relative flex h-7 min-w-0 items-center max-sm:h-10 max-sm:w-full">
-        <Search className="pointer-events-none absolute left-2 size-3.5 text-placeholder" aria-hidden />
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => onQuery(event.target.value)}
-          placeholder="Find a work item"
-          aria-label="Find a work item"
-          className="h-7 w-full rounded-md border border-subtle bg-layer-1 pr-2 pl-7 text-13 text-primary outline-none placeholder:text-placeholder focus:border-accent-strong max-sm:h-10 sm:w-48"
-        />
-      </label>
+      {showSearch && (
+        <label className="relative flex h-7 min-w-0 items-center max-sm:h-10 max-sm:w-full">
+          <Search className="pointer-events-none absolute left-2 size-3.5 text-placeholder" aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => onQuery(event.target.value)}
+            placeholder="Find a work item"
+            aria-label="Find a work item"
+            className="h-7 w-full rounded-md border border-subtle bg-layer-1 pr-2 pl-7 text-13 text-primary outline-none placeholder:text-placeholder focus:border-accent-strong max-sm:h-10 sm:w-48"
+          />
+        </label>
+      )}
+      {filters}
       {groupBy && (
         <label className="inline-flex items-center gap-2 text-12 text-tertiary">
           Group by

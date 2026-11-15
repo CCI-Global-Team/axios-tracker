@@ -6,13 +6,24 @@
 
 import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
+import { useSearchParams } from "react-router";
 import { PlanBoard } from "@/components/issues/issue-layouts/plan/board";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { BoardView } from "./board";
 import { CalendarView } from "./calendar";
 import { ListView } from "./list";
-import type { GroupBy, WorkItem } from "./model";
-import { filterItems, groupItems, isGroupBy } from "./model";
+import { AppliedWorkItemFilters, WorkItemFiltersDropdown } from "./filters";
+import type { FilterField, GroupBy, WorkItem } from "./model";
+import {
+  applyFilters,
+  FILTER_FIELDS,
+  getFilterOptions,
+  groupItems,
+  isGroupBy,
+  readFilters,
+  writeFilters,
+} from "./model";
+import { ITEM_FOCUS } from "./parts";
 import { TableView } from "./table";
 import { WorkItemsToolbar } from "./toolbar";
 import type { WorkItemsProps } from "./use-work-items";
@@ -21,13 +32,34 @@ import type { InitiativeView } from "./view-switcher";
 import { useInitiativeView, ViewSwitcher } from "./view-switcher";
 
 const GROUP_KEY = "axios:initiative-group";
-const ReadViews = observer(function ReadViews({
-  view,
-  ...props
-}: WorkItemsProps & { view: Exclude<InitiativeView, "plan"> }) {
+const WorkItemsViews = observer(function WorkItemsViews({ view, ...props }: WorkItemsProps & { view: InitiativeView }) {
   const allItems = useWorkItems(props);
   const { setPeekIssue } = useIssueDetail();
   const [query, setQuery] = useState("");
+  const [params, setParams] = useSearchParams();
+  const options = getFilterOptions(allItems);
+  const filters = readFilters(params, options);
+  const onToggle = (field: FilterField, value: string) =>
+    setParams(
+      () => {
+        const previous = new URLSearchParams(window.location.search);
+        const next = readFilters(previous, options);
+        next[field] = next[field].includes(value)
+          ? next[field].filter((entry) => entry !== value)
+          : [...next[field], value];
+        return writeFilters(previous, next);
+      },
+      { replace: true }
+    );
+  const clearFilters = () =>
+    setParams(
+      () => {
+        const next = new URLSearchParams(window.location.search);
+        FILTER_FIELDS.forEach(({ id }) => next.delete(id));
+        return next;
+      },
+      { replace: true }
+    );
   const [groupBy, setGroupBy] = useState<GroupBy>("status");
   useEffect(() => {
     try {
@@ -45,7 +77,8 @@ const ReadViews = observer(function ReadViews({
       /* Keep the in-memory selection. */
     }
   };
-  const items = filterItems(allItems, query);
+  const items = applyFilters(allItems, filters, view === "plan" ? "" : query);
+  const noMatches = !items.length && (query.trim() !== "" || FILTER_FIELDS.some(({ id }) => filters[id].length));
   const groups = groupItems(
     items,
     groupBy,
@@ -63,13 +96,35 @@ const ReadViews = observer(function ReadViews({
       <WorkItemsToolbar
         query={query}
         onQuery={setQuery}
+        showSearch={view !== "plan"}
         groupBy={view === "board" || view === "list" ? groupBy : undefined}
         onGroupBy={changeGroup}
+        filters={<WorkItemFiltersDropdown filters={filters} options={options} onToggle={onToggle} />}
       />
-      {view === "table" && <TableView items={items} onOpen={onOpen} />}
-      {view === "board" && <BoardView items={items} groups={groups} onOpen={onOpen} />}
-      {view === "list" && <ListView key={groupBy} items={items} groups={groups} onOpen={onOpen} />}
-      {view === "calendar" && <CalendarView items={items} onOpen={onOpen} />}
+      <AppliedWorkItemFilters filters={filters} options={options} onToggle={onToggle} onClear={clearFilters} />
+      {noMatches ? (
+        <div className="p-4 text-13 text-tertiary" role="status">
+          <p>No work items match these filters.</p>
+          <button
+            type="button"
+            onClick={() => {
+              clearFilters();
+              setQuery("");
+            }}
+            className={`mt-2 rounded-md border border-subtle px-3 py-2 text-12 text-secondary max-sm:min-h-11 ${ITEM_FOCUS}`}
+          >
+            Clear filters
+          </button>
+        </div>
+      ) : (
+        <>
+          {view === "plan" && <PlanBoard {...props} issueIds={items.map((item) => item.id)} />}
+          {view === "table" && <TableView items={items} onOpen={onOpen} />}
+          {view === "board" && <BoardView items={items} groups={groups} onOpen={onOpen} />}
+          {view === "list" && <ListView key={groupBy} items={items} groups={groups} onOpen={onOpen} />}
+          {view === "calendar" && <CalendarView items={items} onOpen={onOpen} />}
+        </>
+      )}
     </>
   );
 });
@@ -85,7 +140,7 @@ export function InitiativeWorkItems(props: WorkItemsProps) {
         aria-labelledby={`initiative-tab-${view}`}
         className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
       >
-        {view === "plan" ? <PlanBoard {...props} /> : <ReadViews view={view} {...props} />}
+        <WorkItemsViews view={view} {...props} />
       </div>
     </div>
   );

@@ -23,8 +23,9 @@ export function useInitiativeView() {
   const view = VIEWS.find(({ id }) => id === params.get("view"))?.id ?? "plan";
   const setView = (next: InitiativeView) =>
     setParams(
-      (previous) => {
-        const updated = new URLSearchParams(previous);
+      () => {
+        // read the live URL: another component may have changed it since this one rendered
+        const updated = new URLSearchParams(window.location.search);
         updated.set("view", next);
         return updated;
       },

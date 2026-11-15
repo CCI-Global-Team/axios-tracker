@@ -23,6 +23,7 @@ export type WorkItem = {
   priority: TIssuePriorities;
   people: TPlanPerson[];
   modules: { id: string; name: string }[];
+  labels: { id: string; name: string; color?: string }[];
   startDate: string | null;
   dueDate: string | null;
   isArchived: boolean;
@@ -62,6 +63,149 @@ export function compareKeys(a: WorkItem, b: WorkItem) {
 export function filterItems(items: WorkItem[], query: string) {
   const term = query.trim().toLowerCase();
   return items.filter((item) => `${item.key} ${item.name}`.toLowerCase().includes(term));
+}
+
+export const FILTER_FIELDS = [
+  { id: "status", name: "Status" },
+  { id: "project", name: "Project" },
+  { id: "module", name: "Module" },
+  { id: "assignee", name: "Assignee" },
+  { id: "priority", name: "Priority" },
+  { id: "label", name: "Label" },
+  { id: "due", name: "Due date" },
+] as const;
+export type FilterField = (typeof FILTER_FIELDS)[number]["id"];
+export type WorkItemFilters = Record<FilterField, string[]>;
+export type WorkItemFilterOption = {
+  id: string;
+  name: string;
+  count: number;
+  area?: TPlanArea;
+  person?: TPlanPerson;
+  identifier?: string;
+  color?: string;
+};
+export type WorkItemFilterOptions = Record<FilterField, WorkItemFilterOption[]>;
+const DUE_OPTIONS = [
+  { id: "overdue", name: "Overdue" },
+  { id: "week", name: "Due this week" },
+  { id: "month", name: "Due this month" },
+  { id: "none", name: "No due date" },
+];
+
+// Monday–Sunday and calendar-month ranges use local dates, as the calendar view does.
+function dueValues(item: WorkItem, now: Date): string[] {
+  if (!item.dueDate) return ["none"];
+  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+  const first = new Date(now.getFullYear(), now.getMonth(), 1);
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  return [
+    ...(isOverdue(item, dateKey(now)) ? ["overdue"] : []),
+    ...(item.dueDate >= dateKey(monday) && item.dueDate <= dateKey(sunday) ? ["week"] : []),
+    ...(item.dueDate >= dateKey(first) && item.dueDate <= dateKey(last) ? ["month"] : []),
+  ];
+}
+
+function filterValues(item: WorkItem, now: Date): WorkItemFilters {
+  return {
+    status: [item.stateGroup],
+    project: [item.projectId],
+    module: item.modules.map(({ id }) => id),
+    assignee: item.people.length ? item.people.map(({ id }) => id) : ["none"],
+    priority: [item.priority],
+    label: item.labels.map(({ id }) => id),
+    due: dueValues(item, now),
+  };
+}
+
+// Options and counts always come from the whole initiative, before search or filters.
+export function getFilterOptions(items: WorkItem[], now = new Date()): WorkItemFilterOptions {
+  const options: WorkItemFilterOptions = {
+    status: [],
+    project: [],
+    module: [],
+    assignee: [],
+    priority: [],
+    label: [],
+    due: [],
+  };
+  const maps = Object.fromEntries(
+    FILTER_FIELDS.map(({ id }) => [id, new Map<string, WorkItemFilterOption>()])
+  ) as Record<FilterField, Map<string, WorkItemFilterOption>>;
+  for (const item of items) {
+    const candidates: Record<FilterField, Omit<WorkItemFilterOption, "count">[]> = {
+      status: STATUS_GROUPS.filter(({ id }) => id === item.stateGroup),
+      project: [
+        { id: item.projectId, name: item.projectName, identifier: item.projectIdentifier, area: item.projectArea },
+      ],
+      module: item.modules,
+      assignee: item.people.length
+        ? item.people.map((person) => ({ id: person.id, name: person.name, person }))
+        : [{ id: "none", name: "Unassigned" }],
+      priority: [{ id: item.priority, name: item.priority.charAt(0).toUpperCase() + item.priority.slice(1) }],
+      label: item.labels,
+      due: DUE_OPTIONS.filter(({ id }) => dueValues(item, now).includes(id)),
+    };
+    for (const { id: field } of FILTER_FIELDS) {
+      for (const option of new Map(candidates[field].map((value) => [value.id, value])).values()) {
+        const existing = maps[field].get(option.id);
+        if (existing) existing.count += 1;
+        else maps[field].set(option.id, { ...option, count: 1 });
+      }
+    }
+  }
+  for (const { id } of FILTER_FIELDS) {
+    const order =
+      id === "status"
+        ? STATUS_GROUPS.map((s) => s.id)
+        : id === "priority"
+          ? PRIORITIES
+          : id === "due"
+            ? DUE_OPTIONS.map((d) => d.id)
+            : null;
+    options[id] = [...maps[id].values()].toSorted((a, b) =>
+      order ? order.indexOf(a.id) - order.indexOf(b.id) : a.name.localeCompare(b.name)
+    );
+  }
+  return options;
+}
+
+export function readFilters(params: URLSearchParams, options: WorkItemFilterOptions): WorkItemFilters {
+  const filters: WorkItemFilters = {
+    status: [],
+    project: [],
+    module: [],
+    assignee: [],
+    priority: [],
+    label: [],
+    due: [],
+  };
+  for (const { id } of FILTER_FIELDS) {
+    const known = new Set(options[id].map((option) => option.id));
+    filters[id] = [...new Set(params.getAll(id).flatMap((value) => value.split(",")))].filter((value) =>
+      known.has(value)
+    );
+  }
+  return filters;
+}
+
+export function writeFilters(params: URLSearchParams, filters: WorkItemFilters): URLSearchParams {
+  const updated = new URLSearchParams(params);
+  for (const { id } of FILTER_FIELDS) {
+    if (filters[id].length) updated.set(id, filters[id].join(","));
+    else updated.delete(id);
+  }
+  return updated;
+}
+
+export function applyFilters(items: WorkItem[], filters: WorkItemFilters, query = "", now = new Date()): WorkItem[] {
+  return filterItems(items, query).filter((item) => {
+    const values = filterValues(item, now);
+    return FILTER_FIELDS.every(
+      ({ id }) => !filters[id].length || filters[id].some((value) => values[id].includes(value))
+    );
+  });
 }
 export function groupItems(items: WorkItem[], by: GroupBy, includeTriage = false): WorkItemGroup[] {
   const groups = new Map<string, WorkItemGroup>();
