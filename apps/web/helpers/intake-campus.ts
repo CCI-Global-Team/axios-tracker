@@ -20,7 +20,16 @@ export function splitCampusLabels(labels: IIssueLabel[] | undefined): {
     (label) => !label.parent && label.name.trim().toLowerCase() === CAMPUS_PARENT_LABEL.toLowerCase()
   );
   if (!parent) return { campusLabels: [], otherLabels: all };
-  const campusLabels = all.filter((label) => label.parent === parent.id).toSorted((a, b) => a.name.localeCompare(b.name));
+  const campusLabels = all
+    .filter((label) => label.parent === parent.id)
+    .toSorted((a, b) => a.name.localeCompare(b.name));
   const otherLabels = all.filter((label) => label.id !== parent.id && label.parent !== parent.id);
   return { campusLabels, otherLabels };
+}
+
+/** True when `label` sits directly under the project's top-level "Campus" label. */
+export function isCampusLabel(label: IIssueLabel, labels: IIssueLabel[] | undefined): boolean {
+  if (!label.parent) return false;
+  const parent = labels?.find((candidate) => candidate.id === label.parent);
+  return !!parent && !parent.parent && parent.name.trim().toLowerCase() === CAMPUS_PARENT_LABEL.toLowerCase();
 }

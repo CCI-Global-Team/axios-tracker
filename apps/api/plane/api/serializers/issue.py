@@ -385,6 +385,8 @@ class LabelSerializer(BaseSerializer):
             "created_at",
             "updated_at",
             "deleted_at",
+            # CCI: owners are set in the app, where membership is checked.
+            "default_assignee",
         ]
 
 
