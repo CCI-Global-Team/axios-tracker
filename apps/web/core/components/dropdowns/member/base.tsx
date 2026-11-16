@@ -31,6 +31,10 @@ type TMemberDropdownBaseProps = {
   onDropdownOpen?: () => void;
   optionsClassName?: string;
   renderByDefault?: boolean;
+  /** CCI: single-select only. Adds a "no one" row with this label that chooses null. */
+  clearLabel?: string;
+  /** CCI: lets admins add workspace members who are not in this project yet. */
+  projectId?: string;
 } & MemberDropdownProps;
 
 export const MemberDropdownBase = observer(function MemberDropdownBase(props: TMemberDropdownBaseProps) {
@@ -61,6 +65,8 @@ export const MemberDropdownBase = observer(function MemberDropdownBase(props: TM
     tabIndex,
     tooltipContent,
     value,
+    clearLabel,
+    projectId,
   } = props;
   // refs
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -86,6 +92,16 @@ export const MemberDropdownBase = observer(function MemberDropdownBase(props: TM
   const dropdownOnChange = (val: string & string[]) => {
     onChange(val);
     if (!multiple) handleClose();
+  };
+
+  // Someone added to the project or found by the invite box: pick them as if clicked.
+  const selectMember = (userId: string) => {
+    if (multiple) {
+      if (!value.includes(userId)) onChange([...value, userId]);
+    } else {
+      onChange(userId);
+      handleClose();
+    }
   };
 
   // Params named apart from the props of the same name they are usually called with; reusing the
@@ -190,6 +206,9 @@ export const MemberDropdownBase = observer(function MemberDropdownBase(props: TM
           placement={placement}
           referenceElement={referenceElement}
           value={value}
+          clearLabel={multiple ? undefined : clearLabel}
+          onSelectMember={selectMember}
+          projectId={projectId}
         />
       )}
     </ComboDropDown>
