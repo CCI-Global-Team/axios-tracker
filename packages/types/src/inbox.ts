@@ -56,6 +56,8 @@ export type TInboxIssueFilter = {
   status: TInboxIssueStatus[] | undefined;
   priority: TIssuePriorities[] | undefined;
   labels: string[] | undefined;
+  // CCI: support desk - child labels of the project's "Campus" label, ANDed with `labels`
+  campus: string[] | undefined;
 };
 
 // sorting filters

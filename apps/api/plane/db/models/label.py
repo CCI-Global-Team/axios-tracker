@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
@@ -15,6 +16,14 @@ class Label(WorkspaceBaseModel):
         null=True,
         blank=True,
         related_name="parent_label",
+    )
+    # CCI: optional project label owner for support intake routing.
+    default_assignee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="default_assignee_labels",
     )
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)

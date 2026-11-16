@@ -15,23 +15,30 @@ function LabelIcons({ color }: { color: string }) {
   return <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />;
 }
 
-export const InboxIssueAppliedFiltersLabel = observer(function InboxIssueAppliedFiltersLabel() {
+type Props = {
+  // CCI: the Campus chip reuses this one
+  filterKey?: "labels" | "campus";
+  label?: string;
+};
+
+export const InboxIssueAppliedFiltersLabel = observer(function InboxIssueAppliedFiltersLabel(props: Props) {
+  const { filterKey = "labels", label = "Label" } = props;
   // hooks
   const { inboxFilters, handleInboxIssueFilters } = useProjectInbox();
   const { getLabelById } = useLabel();
   // derived values
-  const filteredValues = inboxFilters?.labels || [];
+  const filteredValues = inboxFilters?.[filterKey] || [];
   const currentOptionDetail = (labelId: string) => getLabelById(labelId) || undefined;
 
   const handleFilterValue = (value: string): string[] =>
     filteredValues?.includes(value) ? filteredValues.filter((v) => v !== value) : [...filteredValues, value];
 
-  const clearFilter = () => handleInboxIssueFilters("labels", undefined);
+  const clearFilter = () => handleInboxIssueFilters(filterKey, undefined);
 
   if (filteredValues.length === 0) return <></>;
   return (
     <Tag>
-      <div className="text-11 text-secondary">Label</div>
+      <div className="text-11 text-secondary">{label}</div>
       {filteredValues.map((value) => {
         const optionDetail = currentOptionDetail(value);
         if (!optionDetail) return <></>;
@@ -41,22 +48,26 @@ export const InboxIssueAppliedFiltersLabel = observer(function InboxIssueApplied
               <LabelIcons color={optionDetail.color} />
             </div>
             <div className="truncate text-11">{optionDetail?.name}</div>
-            <div
+            <button
+              type="button"
+              aria-label={`Remove ${optionDetail.name}`}
               className="relative flex h-3 w-3 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden text-tertiary transition-all hover:text-secondary"
-              onClick={() => handleInboxIssueFilters("labels", handleFilterValue(value))}
+              onClick={() => handleInboxIssueFilters(filterKey, handleFilterValue(value))}
             >
               <CloseIcon className={`h-3 w-3`} />
-            </div>
+            </button>
           </div>
         );
       })}
 
-      <div
+      <button
+        type="button"
+        aria-label={`Clear ${label}`}
         className="relative flex h-3 w-3 flex-shrink-0 cursor-pointer items-center justify-center overflow-hidden text-tertiary transition-all hover:text-secondary"
         onClick={clearFilter}
       >
         <CloseIcon className={`h-3 w-3`} />
-      </div>
+      </button>
     </Tag>
   );
 });

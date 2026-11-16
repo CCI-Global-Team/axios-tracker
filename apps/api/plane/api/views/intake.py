@@ -29,7 +29,18 @@ from plane.api.serializers import (
 )
 from plane.app.permissions import ProjectLitePermission
 from plane.bgtasks.issue_activities_task import issue_activity
-from plane.db.models import Intake, IntakeIssue, Issue, Project, ProjectMember, State, StateGroup
+from plane.db.models import (
+    Intake,
+    IntakeIssue,
+    Issue,
+    IssueAssignee,
+    IssueLabel,
+    Project,
+    ProjectMember,
+    State,
+    StateGroup,
+)
+from plane.utils.intake_campus import CAMPUS_PARENT_LABEL, campus_label, intake_assignee_id
 from plane.utils.host import base_host
 from plane.utils.content_validator import validate_html_content
 from .base import BaseAPIView
@@ -116,9 +127,9 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
         return self.paginate(
             request=request,
             queryset=(issue_queryset),
-            on_results=lambda intake_issues: IntakeIssueSerializer(
-                intake_issues, many=True, fields=self.fields, expand=self.expand
-            ).data,
+            on_results=lambda intake_issues: (
+                IntakeIssueSerializer(intake_issues, many=True, fields=self.fields, expand=self.expand).data
+            ),
         )
 
     @intake_docs(
@@ -150,6 +161,17 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
         """
         if not request.data.get("issue", {}).get("name", False):
             return Response({"error": "Name is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # CCI: Support requests can attach a project campus label.
+        campus = request.data.get("issue", {}).get("campus", "")
+        if not isinstance(campus, str):
+            return Response({"error": "campus must be a string"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if campus.strip().casefold() == CAMPUS_PARENT_LABEL.casefold():
+            return Response(
+                {"error": "campus cannot use the reserved parent label name Campus"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         intake = Intake.objects.filter(workspace__slug=slug, project_id=project_id).first()
 
@@ -242,6 +264,25 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
             external_id=str(external_id) if external_id else None,  # CCI: GAM-572
         )
 
+        # CCI: route to the campus owner, falling back to the project's default assignee.
+        label = campus_label(project_id, project.workspace_id, campus)
+        assignee_id = intake_assignee_id(project, label)
+        assignee_ids = []
+        if assignee_id is not None:
+            IssueAssignee.objects.create(
+                assignee_id=assignee_id,
+                issue=issue,
+                project_id=project_id,
+                workspace_id=project.workspace_id,
+            )
+            assignee_ids = [str(assignee_id)]
+
+        # CCI: Keep the campus in labels as well as the support description.
+        if label is not None:
+            IssueLabel.objects.get_or_create(
+                issue=issue, label=label, project_id=project_id, workspace_id=project.workspace_id
+            )
+
         # create an intake issue
         intake_issue = IntakeIssue.objects.create(
             intake_id=intake.id,
@@ -255,14 +296,18 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
             IntakeIssue.objects.filter(pk=intake_issue.pk).update(created_at=backdated_at)
             intake_issue.refresh_from_db()
         # Create an Issue Activity
+        # CCI: assignee_ids records the assignment and emails and notifies the assignee; the bot
+        # that files the request is not subscribed to it.
         issue_activity.delay(
             type="issue.activity.created",
-            requested_data=json.dumps(request.data, cls=DjangoJSONEncoder),
+            requested_data=json.dumps({**request.data, "assignee_ids": assignee_ids}, cls=DjangoJSONEncoder),
             actor_id=str(request.user.id),
             issue_id=str(issue.id),
             project_id=str(project_id),
             current_instance=None,
             epoch=int(timezone.now().timestamp()),
+            subscriber=False,
+            notification=True,
             intake=str(intake_issue.id),
         )
 

@@ -33,6 +33,8 @@ export const InboxIssueAppliedFilters = observer(function InboxIssueAppliedFilte
       <InboxIssueAppliedFiltersMember filterKey="assignees" label="Assignees" />
       {/* created_by */}
       <InboxIssueAppliedFiltersMember filterKey="created_by" label="Created By" />
+      {/* CCI: campus */}
+      <InboxIssueAppliedFiltersLabel filterKey="campus" label="Campus" />
       {/* label */}
       <InboxIssueAppliedFiltersLabel />
       {/* created_at */}
