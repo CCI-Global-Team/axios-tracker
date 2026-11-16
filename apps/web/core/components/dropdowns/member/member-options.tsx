@@ -275,8 +275,13 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     if (!workspaceSlug || !projectId) return;
     setAddingId(userId);
     try {
+      // A workspace admin can only join a project as an admin; the API rejects a lower role.
+      const role =
+        getWorkspaceMemberDetails(userId)?.role === EUserPermissions.ADMIN
+          ? EUserPermissions.ADMIN
+          : EUserPermissions.MEMBER;
       await bulkAddMembersToProject(workspaceSlug.toString(), projectId, {
-        members: [{ member_id: userId, role: EUserPermissions.MEMBER }],
+        members: [{ member_id: userId, role }],
       });
       setToast({ type: TOAST_TYPE.SUCCESS, title: `${getMemberName(getUserDetails(userId))} added to the project` });
       onSelectMember?.(userId);
