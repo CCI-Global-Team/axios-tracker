@@ -4,19 +4,27 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
+import { useSearchParams } from "react-router";
 import useSWR from "swr";
 // plane constants
 import { EIssueFilterType, ISSUE_DISPLAY_FILTERS_BY_PAGE, PROJECT_VIEW_TRACKER_ELEMENTS } from "@plane/constants";
 import { EIssueLayoutTypes, EIssuesStoreType } from "@plane/types";
+import type { TWorkItemFilterExpression } from "@plane/types";
 import { Spinner } from "@plane/ui";
 // components
 import { ProjectLevelWorkItemFiltersHOC } from "@/components/work-item-filters/filters-hoc/project-level";
 import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
+import {
+  decodeFilterExpression,
+  encodeFilterExpression,
+  writeFiltersToUrl,
+} from "@/components/work-item-filters/url-filters";
 // hooks
 import { useIssues } from "@/hooks/store/use-issues";
+import { useWorkItemFilters } from "@/hooks/store/work-item-filters/use-work-item-filters";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 // local imports
 import { IssuePeekOverview } from "../../peek-overview";
@@ -66,8 +74,29 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
   const { workspaceSlug: routerWorkspaceSlug, projectId: routerProjectId } = useParams();
   const workspaceSlug = routerWorkspaceSlug ? routerWorkspaceSlug.toString() : undefined;
   const projectId = routerProjectId ? routerProjectId.toString() : undefined;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialFilters = useRef<{
+    workspaceSlug: string | undefined;
+    projectId: string | undefined;
+    expression: TWorkItemFilterExpression | undefined;
+  } | null>(null);
+  // CCI: capture the shared filters once per project; later URL writes must not reload them.
+  if (
+    !initialFilters.current ||
+    initialFilters.current.workspaceSlug !== workspaceSlug ||
+    initialFilters.current.projectId !== projectId
+  ) {
+    initialFilters.current = {
+      workspaceSlug,
+      projectId,
+      expression: decodeFilterExpression(searchParams.get("filters")),
+    };
+  }
+  const richFiltersOverride = initialFilters.current.expression;
   // hooks
   const { issues, issuesFilter } = useIssues(EIssuesStoreType.PROJECT);
+  const { getFilter } = useWorkItemFilters();
+  const applyingUrlFilters = useRef(false);
   // derived values
   const workItemFilters = projectId ? issuesFilter?.getIssueFilters(projectId) : undefined;
   const activeLayout = workItemFilters?.displayFilters?.layout;
@@ -76,11 +105,46 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
     workspaceSlug && projectId ? `PROJECT_ISSUES_${workspaceSlug}_${projectId}` : null,
     async () => {
       if (workspaceSlug && projectId) {
-        await issuesFilter?.fetchFilters(workspaceSlug, projectId);
+        await issuesFilter?.fetchFilters(workspaceSlug, projectId, richFiltersOverride);
       }
     },
     { revalidateIfStale: false, revalidateOnFocus: false }
   );
+
+  const updateFilters = useCallback(
+    (filters: TWorkItemFilterExpression) => {
+      if (!workspaceSlug || !projectId || !issuesFilter) return Promise.resolve();
+      writeFiltersToUrl(setSearchParams, filters);
+      return issuesFilter.updateFilterExpression(workspaceSlug, projectId, filters, !applyingUrlFilters.current);
+    },
+    [issuesFilter, workspaceSlug, projectId, setSearchParams]
+  );
+
+  // CCI: keep the URL and the shown filters in step. With no (or an unreadable) ?filters=, the current filters
+  // go into the URL so the address bar is always shareable. When ?filters= changes after load (an in-app link,
+  // back/forward, or a project whose filters SWR already cached), it is applied for this visit without saving.
+  const urlFilters = searchParams.get("filters");
+  const shownFilters = workItemFilters?.richFilters;
+  useEffect(() => {
+    if (!workspaceSlug || !projectId || !issuesFilter || !workItemFilters) return;
+    const liveUrlFilters = new URLSearchParams(window.location.search).get("filters");
+    if (liveUrlFilters === encodeFilterExpression(shownFilters)) return;
+    const expression = decodeFilterExpression(liveUrlFilters);
+    if (!expression) {
+      writeFiltersToUrl(setSearchParams, shownFilters);
+      return;
+    }
+    applyingUrlFilters.current = true;
+    try {
+      const filter = getFilter(EIssuesStoreType.PROJECT, projectId);
+      if (filter) {
+        filter.resetExpression(expression);
+        if (filter.hasActiveFilters) filter.toggleVisibility(true);
+      } else void issuesFilter.updateFilterExpression(workspaceSlug, projectId, expression, false);
+    } finally {
+      applyingUrlFilters.current = false;
+    }
+  }, [urlFilters, shownFilters, workItemFilters, workspaceSlug, projectId, issuesFilter, getFilter, setSearchParams]);
 
   useEffect(() => {
     if (!projectId || !activeLayout) return;
@@ -113,7 +177,7 @@ export const ProjectLayoutRoot = observer(function ProjectLayoutRoot() {
         entityId={projectId}
         filtersToShowByLayout={ISSUE_DISPLAY_FILTERS_BY_PAGE.issues.filters}
         initialWorkItemFilters={workItemFilters}
-        updateFilters={issuesFilter?.updateFilterExpression.bind(issuesFilter, workspaceSlug, projectId)}
+        updateFilters={updateFilters}
         projectId={projectId}
         workspaceSlug={workspaceSlug}
       >
