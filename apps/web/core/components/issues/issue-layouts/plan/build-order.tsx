@@ -12,7 +12,7 @@ import type { TLink } from "./links";
 import { PlanLinks, chainLinks } from "./links";
 import type { TPlanNode } from "./model";
 import { walk } from "./model";
-import { ItemKey, PersonAvatar, StatusPill } from "./parts";
+import { ItemKey, PersonAvatar, PlanPreview, StatusPill } from "./parts";
 import type { TPlanArea } from "./use-plan-data";
 
 type Props = TPlanShared & {
@@ -173,8 +173,10 @@ export function BuildOrderView(props: Props) {
                   return x && !x.isDone;
                 }).length;
                 return (
-                  <button
+                  <PlanPreview
                     key={n.id}
+                    node={n}
+                    data={props}
                     type="button"
                     data-plan-id={n.id}
                     data-prevent-outside-click=""
@@ -221,7 +223,7 @@ export function BuildOrderView(props: Props) {
                       {itemHours[n.id] !== undefined && <span className="tabular-nums">{itemHours[n.id]} h</span>}
                       <PersonAvatar person={n.ownerId ? personById.get(n.ownerId) : undefined} />
                     </span>
-                  </button>
+                  </PlanPreview>
                 );
               })}
               {col.items.length > COLUMN_CAP && !expanded.has(col.key) && (

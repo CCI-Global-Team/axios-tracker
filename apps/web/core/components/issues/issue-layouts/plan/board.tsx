@@ -5,6 +5,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import { observer } from "mobx-react";
 import { CalendarRange, Columns3, LayoutDashboard, Search, X } from "lucide-react";
 import type { TIssueMap } from "@plane/types";
@@ -45,6 +46,9 @@ const ARRANGE: { key: TPlanArrange; label: string }[] = [
   { key: "owner", label: "Owner" },
 ];
 
+const isPlanView = (value: string): value is TPlanView =>
+  value === "overview" || value === "order" || value === "schedule";
+
 const VIEW_KEY = "axios:plan-view";
 function readView(): TPlanView {
   try {
@@ -76,21 +80,69 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
   const { itemHours, personHours, setItemHours, setPersonHours } = usePlanHours(workspaceSlug);
   const { setPeekIssue, peekIssue } = useIssueDetail();
 
-  const [view, setView] = useState<TPlanView>("overview");
-  const [arrange, setArrange] = useState<TPlanArrange>("step");
+  // The URL seeds these so a link opens the same view; after that local state leads and the URL follows.
+  const [params, setParams] = useSearchParams();
+  const [view, setView] = useState<TPlanView>(() => {
+    const v = params.get("plan");
+    return v && isPlanView(v) ? v : "overview";
+  });
+  const [arrange, setArrangeState] = useState<TPlanArrange>(() => {
+    const a = params.get("arrange");
+    return a === "area" || a === "owner" ? a : "step";
+  });
+  const [filter, setFilterState] = useState<TPlanFilter | null>(() => {
+    const f = params.get("pfilter");
+    return f && (Object.hasOwn(FILTER_LABELS, f) || f.startsWith("area:")) ? (f as TPlanFilter) : null;
+  });
   const [query, setQuery] = useState("");
   const [showDone, setShowDone] = useState(false);
-  const [filter, setFilter] = useState<TPlanFilter | null>(null);
 
-  useEffect(() => setView(readView()), []);
-  const changeView = useCallback((v: TPlanView) => {
-    setView(v);
-    try {
-      window.localStorage.setItem(VIEW_KEY, v);
-    } catch {
-      // storage blocked
-    }
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("plan")) setView(readView());
   }, []);
+  const updateParams = useCallback(
+    (values: Record<string, string | null>) => {
+      setParams(
+        () => {
+          const next = new URLSearchParams(window.location.search);
+          for (const [key, value] of Object.entries(values)) {
+            if (value === null) next.delete(key);
+            else next.set(key, value);
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setParams]
+  );
+  const setArrange = useCallback(
+    (value: TPlanArrange) => {
+      setArrangeState(value);
+      updateParams({ arrange: value === "step" ? null : value });
+    },
+    [updateParams]
+  );
+  const setFilter = useCallback(
+    (value: TPlanFilter | null) => {
+      setFilterState(value);
+      updateParams({ pfilter: value });
+    },
+    [updateParams]
+  );
+  const changeView = useCallback(
+    (v: TPlanView, nextFilter?: TPlanFilter | null) => {
+      setView(v);
+      if (nextFilter !== undefined) setFilterState(nextFilter);
+      updateParams({ plan: v, ...(nextFilter !== undefined ? { pfilter: nextFilter } : {}) });
+      try {
+        window.localStorage.setItem(VIEW_KEY, v);
+      } catch {
+        // storage blocked
+      }
+    },
+    [updateParams]
+  );
 
   const areaById = useMemo(() => new Map(areas.map((a) => [a.id, a])), [areas]);
   const personById = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
@@ -143,7 +195,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
       setQuery("");
       if (n.isDone) setShowDone(true);
     },
-    [isVisible]
+    [isVisible, setFilter]
   );
   const select = useCallback(
     (id: string | null) => {
@@ -161,17 +213,19 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
     (id: string) => {
       const n = graph.nodes.get(id);
       if (!n) return;
-      changeView("order");
       openWorkItem(n);
-      reveal(n);
+      if (!isVisible(n)) {
+        setQuery("");
+        if (n.isDone) setShowDone(true);
+      }
+      changeView("order", isVisible(n) ? undefined : null);
     },
-    [changeView, graph, openWorkItem, reveal]
+    [changeView, graph, openWorkItem, isVisible]
   );
   const applyFilter = useCallback(
     (f: TPlanFilter | null) => {
-      setFilter(f);
+      changeView("order", f);
       if (selectedId) setPeekIssue(undefined);
-      changeView("order");
     },
     [changeView, selectedId, setPeekIssue]
   );
@@ -232,6 +286,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
     : null;
 
   const shared = {
+    workspaceSlug,
     graph,
     areaById,
     personById,
@@ -389,6 +444,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
 });
 
 export type TPlanShared = {
+  workspaceSlug: string;
   graph: ReturnType<typeof usePlanData>["graph"];
   areaById: Map<string, ReturnType<typeof usePlanData>["areas"][number]>;
   personById: Map<string, ReturnType<typeof usePlanData>["people"][number]>;
