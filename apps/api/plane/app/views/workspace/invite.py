@@ -31,11 +31,52 @@ from plane.bgtasks.workspace_invitation_task import workspace_invitation
 from plane.app.serializers.discipline import MAX_DISCIPLINES
 from plane.db.models import DISCIPLINE_VALUES
 from plane.utils.invited_disciplines import apply_invited_disciplines
+from plane.utils.pending_invite_grants import apply_pending_grants
 from plane.db.models import User, Workspace, WorkspaceMember, WorkspaceMemberInvite
 from plane.utils.cache import invalidate_cache, invalidate_cache_directly
 from plane.utils.host import base_host
 from plane.utils.analytics_events import USER_JOINED_WORKSPACE, USER_INVITED_TO_WORKSPACE
 from .. import BaseViewSet
+
+
+# CCI: share invite construction and delivery with pending picker grants.
+def build_workspace_invitation(workspace, email, user):
+    return WorkspaceMemberInvite(
+        email=email.get("email").strip().lower(),
+        workspace_id=workspace.id,
+        token=jwt.encode(
+            {"email": email, "timestamp": datetime.now().timestamp()},
+            settings.SECRET_KEY,
+            algorithm="HS256",
+        ),
+        role=email.get("role", 5),
+        disciplines=[d for d in (email.get("disciplines") or []) if d in DISCIPLINE_VALUES][:MAX_DISCIPLINES],
+        created_by=user,
+    )
+
+
+def send_workspace_invitation(request, invitation):
+    workspace = invitation.workspace
+    workspace_invitation.delay(
+        invitation.email,
+        workspace.id,
+        invitation.token,
+        base_host(request=request, is_app=True),
+        request.user.email,
+    )
+    track_event.delay(
+        user_id=request.user.id,
+        event_name=USER_INVITED_TO_WORKSPACE,
+        slug=workspace.slug,
+        event_properties={
+            "user_id": request.user.id,
+            "workspace_id": workspace.id,
+            "workspace_slug": workspace.slug,
+            "invitee_role": invitation.role,
+            "invited_at": str(timezone.now()),
+            "invitee_email": invitation.email,
+        },
+    )
 
 
 class WorkspaceInvitationsViewset(BaseViewSet):
@@ -93,24 +134,7 @@ class WorkspaceInvitationsViewset(BaseViewSet):
         for email in emails:
             try:
                 validate_email(email.get("email"))
-                workspace_invitations.append(
-                    WorkspaceMemberInvite(
-                        email=email.get("email").strip().lower(),
-                        workspace_id=workspace.id,
-                        token=jwt.encode(
-                            {"email": email, "timestamp": datetime.now().timestamp()},
-                            settings.SECRET_KEY,
-                            algorithm="HS256",
-                        ),
-                        role=email.get("role", 5),
-                        # CCI: optional; validated against the known set so a typo cannot put a
-                        # value in that nothing will ever render.
-                        disciplines=[
-                            d for d in (email.get("disciplines") or []) if d in DISCIPLINE_VALUES
-                        ][:MAX_DISCIPLINES],
-                        created_by=request.user,
-                    )
-                )
+                workspace_invitations.append(build_workspace_invitation(workspace, email, request.user))
             except ValidationError:
                 return Response(
                     {
@@ -123,35 +147,16 @@ class WorkspaceInvitationsViewset(BaseViewSet):
             workspace_invitations, batch_size=10, ignore_conflicts=True
         )
 
-        current_site = base_host(request=request, is_app=True)
-
-        # Send invitations
+        # Send invitations through the same path as pending picker grants.
         for invitation in workspace_invitations:
-            workspace_invitation.delay(
-                invitation.email,
-                workspace.id,
-                invitation.token,
-                current_site,
-                request.user.email,
-            )
-            track_event.delay(
-                user_id=request.user.id,
-                event_name=USER_INVITED_TO_WORKSPACE,
-                slug=slug,
-                event_properties={
-                    "user_id": request.user.id,
-                    "workspace_id": workspace.id,
-                    "workspace_slug": workspace.slug,
-                    "invitee_role": invitation.role,
-                    "invited_at": str(timezone.now()),
-                    "invitee_email": invitation.email,
-                },
-            )
+            send_workspace_invitation(request, invitation)
 
         return Response({"message": "Emails sent successfully"}, status=status.HTTP_200_OK)
 
     def destroy(self, request, slug, pk):
         workspace_member_invite = WorkspaceMemberInvite.objects.get(pk=pk, workspace__slug=slug)
+        # CCI: soft deletion does not synchronously cascade to related grants.
+        workspace_member_invite.pending_grants.all().delete()
         workspace_member_invite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -226,6 +231,7 @@ class WorkspaceJoinEndpoint(BaseAPIView):
 
                     # CCI: carry across whatever the admin set on the invite.
                     apply_invited_disciplines(user, [workspace_invite])
+                    apply_pending_grants(user, [workspace_invite])
 
                     # Set the user last_workspace_id to the accepted workspace
                     user.last_workspace_id = workspace_invite.workspace.id
@@ -332,6 +338,7 @@ class UserWorkspaceInvitationsViewSet(BaseViewSet):
         # CCI: carry across whatever the admin set on each invite. Must run BEFORE the delete
         # below - the rows are the only place those disciplines exist.
         apply_invited_disciplines(request.user, list(workspace_invitations))
+        apply_pending_grants(request.user, list(workspace_invitations))
 
         # Delete joined workspace invites
         workspace_invitations.delete()

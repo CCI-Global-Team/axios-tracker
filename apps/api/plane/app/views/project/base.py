@@ -7,6 +7,7 @@ import json
 
 
 # Django imports
+from django.db import transaction
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models import Exists, F, OuterRef, Prefetch, Q, Subquery, Count
 from django.utils import timezone
@@ -40,6 +41,7 @@ from plane.db.models import (
     WorkspaceMember,
 )
 from plane.db.models.intake import IntakeIssueStatus
+from plane.utils.pending_invite_grants import cancel_pending_grants
 from plane.utils.host import base_host
 from plane.utils.order_queryset import PROJECT_ORDER_BY_ALLOWLIST, sanitize_order_by
 
@@ -356,7 +358,17 @@ class ProjectViewSet(BaseViewSet):
         )
 
         if serializer.is_valid():
-            serializer.save()
+            # CCI: choosing someone else for a field cancels whoever it was waiting on. Only a real
+            # change counts: the settings form sends both fields whenever either one is saved.
+            with transaction.atomic():
+                Project.objects.select_for_update().get(pk=pk)
+                serializer.instance.refresh_from_db()
+                fields = (("default_assignee", "project_default_assignee"), ("project_lead", "project_lead"))
+                before = {field: getattr(serializer.instance, f"{field}_id") for field, _ in fields}
+                serializer.save()
+                for field, kind in fields:
+                    if field in request.data and getattr(serializer.instance, f"{field}_id") != before[field]:
+                        cancel_pending_grants(pk, kind)
             if intake_view:
                 intake = Intake.objects.filter(project=project, is_default=True).first()
                 if not intake:

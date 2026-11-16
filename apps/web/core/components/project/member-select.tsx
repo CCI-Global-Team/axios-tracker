@@ -14,15 +14,20 @@ import { Avatar } from "@plane/ui";
 import { cn, getFileURL, getMemberName } from "@plane/utils";
 // components
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { PendingGrants } from "@/components/dropdowns/member/pending-grants";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
+import { revalidatePendingGrants } from "@/hooks/use-pending-grants";
+import type { TPendingGrantTarget } from "@/services/pending-grant.service";
 
 type Props = {
   /** A member id; project fields are typed as either the id or the expanded user. */
   value: string | { id: string } | null | undefined;
-  /** Receives a member id, or "none" when cleared. */
-  onChange: (val: string) => void;
+  /** Receives a member id, or "none" when cleared. Return the save so pending invites refresh after it. */
+  onChange: (val: string) => void | Promise<unknown>;
   isDisabled?: boolean;
+  /** CCI: the field this sets. Someone invited from the picker shows as pending until they accept. */
+  pendingGrant?: TPendingGrantTarget;
 };
 
 /**
@@ -31,8 +36,8 @@ type Props = {
  * or invite someone who is missing, like every other member picker.
  */
 export const MemberSelect = observer(function MemberSelect(props: Props) {
-  const { value, onChange, isDisabled = false } = props;
-  const { projectId } = useParams();
+  const { value, onChange, isDisabled = false, pendingGrant } = props;
+  const { workspaceSlug, projectId } = useParams();
   const {
     getUserDetails,
     project: { getProjectMemberIds },
@@ -43,11 +48,20 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
   const selectedId = valueId && memberIds.includes(valueId) ? valueId : null;
   const selected = selectedId ? getUserDetails(selectedId) : undefined;
 
-  return (
+  // Choosing someone for the field replaces whoever it was waiting on; the server cancels that
+  // pending role, so refetch once the save has landed.
+  const handleChange = async (val: string | null) => {
+    await onChange(val ?? "none");
+    if (pendingGrant && workspaceSlug && projectId)
+      void revalidatePendingGrants(workspaceSlug.toString(), projectId.toString());
+  };
+
+  const dropdown = (
     <MemberDropdown
       multiple={false}
       value={selectedId}
-      onChange={(val) => onChange(val ?? "none")}
+      onChange={(val) => void handleChange(val)}
+      pendingGrant={pendingGrant}
       memberIds={memberIds}
       projectId={projectId?.toString()}
       clearLabel="None"
@@ -75,5 +89,13 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
         </div>
       }
     />
+  );
+
+  if (!pendingGrant) return dropdown;
+  return (
+    <div className="flex flex-col items-end gap-1">
+      {dropdown}
+      <PendingGrants projectId={projectId?.toString()} target={pendingGrant} />
+    </div>
   );
 });

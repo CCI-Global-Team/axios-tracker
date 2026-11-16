@@ -31,6 +31,7 @@ import { formatDeclaredHoursShort, weekStartFor } from "@/lib/availability-week"
 // local imports
 import { MemberInvite } from "./member-invite";
 import { MemberPickerRow } from "./member-picker-row";
+import type { TPendingGrantTarget } from "@/services/pending-grant.service";
 // services
 import { WorkspaceService } from "@/services/workspace.service";
 
@@ -47,6 +48,10 @@ interface Props {
   onSelectMember?: (userId: string) => void;
   /** CCI: when set, workspace members outside this project can be added from the search. */
   projectId?: string;
+  /** CCI: the field this picker sets, held for someone invited from it until they accept. */
+  pendingGrant?: TPendingGrantTarget;
+  /** CCI: called once an invitation with a pending role has been sent. */
+  onInvited?: () => void;
   onDropdownOpen?: () => void;
   optionsClassName?: string;
   placement: Placement | undefined;
@@ -67,6 +72,8 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     clearLabel,
     onSelectMember,
     projectId,
+    pendingGrant,
+    onInvited,
   } = props;
   // router
   const { workspaceSlug } = useParams();
@@ -449,6 +456,8 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
               query={query}
               memberIds={memberIds ?? []}
               projectId={projectId}
+              pendingGrant={pendingGrant}
+              onInvited={onInvited}
               onSelect={(userId) => onSelectMember?.(userId)}
             />
           ) : (

@@ -12,6 +12,7 @@ import type { IIssueLabel } from "@plane/types";
 import { Avatar } from "@plane/ui";
 import { getFileURL, getMemberName } from "@plane/utils";
 // components
+import { PendingGrants } from "@/components/dropdowns/member/pending-grants";
 import { MemberSelect } from "@/components/project/member-select";
 // helpers
 import { isCampusLabel } from "@/helpers/intake-campus";
@@ -64,14 +65,22 @@ export const CampusLabelOwner = observer(function CampusLabelOwner(props: Props)
     <div className="!mt-0 mr-20 flex flex-shrink-0 items-center gap-2">
       <span className="text-13 text-tertiary">Owner</span>
       {isEditable ? (
-        <MemberSelect value={label.default_assignee ?? null} onChange={handleChange} />
+        <MemberSelect
+          value={label.default_assignee ?? null}
+          onChange={handleChange}
+          pendingGrant={{ kind: "label_owner", targetId: label.id }}
+        />
       ) : owner ? (
         <span className="flex items-center gap-2 text-13 text-secondary">
           <Avatar name={owner.display_name} src={getFileURL(owner.avatar_url)} />
           {getMemberName(owner)}
         </span>
       ) : (
-        <span className="text-13 text-placeholder">None</span>
+        <PendingGrants
+          projectId={projectId?.toString()}
+          target={{ kind: "label_owner", targetId: label.id }}
+          fallback={<span className="text-13 text-placeholder">None</span>}
+        />
       )}
     </div>
   );

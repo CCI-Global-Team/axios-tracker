@@ -6,7 +6,7 @@
 import random
 
 # Django imports
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 
 # Third Party imports
 from rest_framework.response import Response
@@ -18,6 +18,7 @@ from plane.app.serializers import LabelSerializer
 from plane.app.permissions import allow_permission, ProjectBasePermission, ROLE
 from plane.db.models import Project, Label
 from plane.utils.cache import invalidate_cache
+from plane.utils.pending_invite_grants import cancel_pending_grants
 
 
 class LabelViewSet(BaseViewSet):
@@ -78,7 +79,14 @@ class LabelViewSet(BaseViewSet):
         )
 
         if serializer.is_valid():
-            serializer.save()
+            # CCI: choosing a different owner cancels whoever the campus was waiting on.
+            with transaction.atomic():
+                Project.objects.select_for_update().get(pk=kwargs["project_id"])
+                serializer.instance.refresh_from_db()
+                before = serializer.instance.default_assignee_id
+                serializer.save()
+                if "default_assignee" in request.data and serializer.instance.default_assignee_id != before:
+                    cancel_pending_grants(kwargs["project_id"], "label_owner", kwargs["pk"])
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
