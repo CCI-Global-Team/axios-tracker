@@ -99,42 +99,40 @@ export const ProjectSettingsMemberDefaults = observer(function ProjectSettingsMe
       ...formData,
     });
 
-    await updateProject(workspaceSlug, projectId, {
-      default_assignee:
-        formData.default_assignee === "none"
-          ? null
-          : (formData.default_assignee ?? currentProjectDetails?.default_assignee),
-      project_lead:
-        formData.project_lead === "none" ? null : (formData.project_lead ?? currentProjectDetails?.project_lead),
-    })
-      .then(() => {
-        setToast({
-          title: `${t("success")}!`,
-          type: TOAST_TYPE.SUCCESS,
-          message: t("project_settings.general.toast.success"),
-        });
-      })
-      .catch((err) => {
-        console.error(err);
+    try {
+      await updateProject(workspaceSlug, projectId, {
+        default_assignee:
+          formData.default_assignee === "none"
+            ? null
+            : (formData.default_assignee ?? currentProjectDetails?.default_assignee),
+        project_lead:
+          formData.project_lead === "none" ? null : (formData.project_lead ?? currentProjectDetails?.project_lead),
       });
+      setToast({
+        title: `${t("success")}!`,
+        type: TOAST_TYPE.SUCCESS,
+        message: t("project_settings.general.toast.success"),
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const toggleGuestViewAllIssues = async (value: boolean) => {
     if (!workspaceSlug || !projectId) return;
 
-    updateProject(workspaceSlug, projectId, {
-      guest_view_all_features: value,
-    })
-      .then(() => {
-        setToast({
-          title: `${t("success")}!`,
-          type: TOAST_TYPE.SUCCESS,
-          message: t("project_settings.general.toast.success"),
-        });
-      })
-      .catch((err) => {
-        console.error(err);
+    try {
+      await updateProject(workspaceSlug, projectId, {
+        guest_view_all_features: value,
       });
+      setToast({
+        title: `${t("success")}!`,
+        type: TOAST_TYPE.SUCCESS,
+        message: t("project_settings.general.toast.success"),
+      });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -147,10 +145,9 @@ export const ProjectSettingsMemberDefaults = observer(function ProjectSettingsMe
             render={({ field: { value } }) => (
               <MemberSelect
                 value={value}
-                onChange={(val: string) => {
-                  submitChanges({ project_lead: val });
-                }}
+                onChange={(val: string) => submitChanges({ project_lead: val })}
                 isDisabled={!isAdmin}
+                pendingGrant={{ kind: "project_lead" }}
               />
             )}
           />
@@ -168,10 +165,9 @@ export const ProjectSettingsMemberDefaults = observer(function ProjectSettingsMe
             render={({ field: { value } }) => (
               <MemberSelect
                 value={value}
-                onChange={(val: string) => {
-                  submitChanges({ default_assignee: val });
-                }}
+                onChange={(val: string) => submitChanges({ default_assignee: val })}
                 isDisabled={!isAdmin}
+                pendingGrant={{ kind: "project_default_assignee" }}
               />
             )}
           />

@@ -67,6 +67,7 @@ export const MemberDropdownBase = observer(function MemberDropdownBase(props: TM
     value,
     clearLabel,
     projectId,
+    pendingGrant,
   } = props;
   // refs
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -209,6 +210,8 @@ export const MemberDropdownBase = observer(function MemberDropdownBase(props: TM
           clearLabel={multiple ? undefined : clearLabel}
           onSelectMember={selectMember}
           projectId={projectId}
+          pendingGrant={pendingGrant}
+          onInvited={handleClose}
         />
       )}
     </ComboDropDown>

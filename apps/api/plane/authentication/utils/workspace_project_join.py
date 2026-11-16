@@ -7,6 +7,7 @@ from django.utils import timezone
 
 # Module imports
 from plane.utils.invited_disciplines import apply_invited_disciplines
+from plane.utils.pending_invite_grants import apply_pending_grants
 from plane.db.models import (
     ProjectMember,
     ProjectMemberInvite,
@@ -38,6 +39,7 @@ def process_workspace_project_invitations(user):
 
     # CCI: carry across whatever the admin set on the invite.
     apply_invited_disciplines(user, workspace_member_invites)
+    apply_pending_grants(user, workspace_member_invites)
 
     for workspace_member_invite in workspace_member_invites:
         invalidate_cache_directly(

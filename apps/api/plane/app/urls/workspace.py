@@ -4,6 +4,8 @@
 
 from django.urls import path
 
+from plane.app.views.workspace.pending_grant import PendingInviteGrantEndpoint
+
 
 from plane.app.views import (
     UserWorkspaceInvitationsViewSet,
@@ -43,6 +45,9 @@ from plane.app.views import (
 
 
 urlpatterns = [
+    # CCI: picker choices saved against workspace invitations.
+    path("workspaces/<str:slug>/pending-grants/", PendingInviteGrantEndpoint.as_view(), name="pending-grants"),
+    path("workspaces/<str:slug>/pending-grants/<uuid:pk>/", PendingInviteGrantEndpoint.as_view(), name="pending-grant"),
     path(
         "workspace-slug-check/",
         WorkSpaceAvailabilityCheckEndpoint.as_view(),

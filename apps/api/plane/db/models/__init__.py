@@ -104,3 +104,6 @@ from .availability import MemberAvailability
 from .discipline import DISCIPLINE_CHOICES, DISCIPLINE_VALUES, MemberDiscipline
 
 from .initiative import Initiative, InitiativeModule
+
+# CCI: roles saved on workspace invitations.
+from .pending_invite_grant import PendingInviteGrant

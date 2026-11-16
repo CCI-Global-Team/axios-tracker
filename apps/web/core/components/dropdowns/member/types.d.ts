@@ -1,3 +1,4 @@
+import type { TPendingGrantTarget } from "@/services/pending-grant.service";
 import type { TDropdownProps } from "../types";
 
 export type MemberDropdownProps = TDropdownProps & {
@@ -8,6 +9,8 @@ export type MemberDropdownProps = TDropdownProps & {
   tooltipContent?: string;
   onClose?: () => void;
   showUserDetails?: boolean;
+  /** CCI: the field this picker sets; someone invited from it is given that role on acceptance. */
+  pendingGrant?: TPendingGrantTarget;
 } & (
     | {
         multiple: false;

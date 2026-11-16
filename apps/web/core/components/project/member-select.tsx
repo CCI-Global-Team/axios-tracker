@@ -14,15 +14,20 @@ import { Avatar } from "@plane/ui";
 import { cn, getFileURL, getMemberName } from "@plane/utils";
 // components
 import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
+import { PendingGrantCancel, PendingGrantLabel } from "@/components/dropdowns/member/pending-grants";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
+import { revalidatePendingGrants, usePendingGrants } from "@/hooks/use-pending-grants";
+import type { TPendingGrantTarget } from "@/services/pending-grant.service";
 
 type Props = {
   /** A member id; project fields are typed as either the id or the expanded user. */
   value: string | { id: string } | null | undefined;
-  /** Receives a member id, or "none" when cleared. */
-  onChange: (val: string) => void;
+  /** Receives a member id, or "none" when cleared. Return the save so pending invites refresh after it. */
+  onChange: (val: string) => void | Promise<unknown>;
   isDisabled?: boolean;
+  /** CCI: the field this sets. Someone invited from the picker shows as pending until they accept. */
+  pendingGrant?: TPendingGrantTarget;
 };
 
 /**
@@ -31,8 +36,8 @@ type Props = {
  * or invite someone who is missing, like every other member picker.
  */
 export const MemberSelect = observer(function MemberSelect(props: Props) {
-  const { value, onChange, isDisabled = false } = props;
-  const { projectId } = useParams();
+  const { value, onChange, isDisabled = false, pendingGrant } = props;
+  const { workspaceSlug, projectId } = useParams();
   const {
     getUserDetails,
     project: { getProjectMemberIds },
@@ -42,12 +47,24 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
   const valueId = typeof value === "string" ? value : value?.id;
   const selectedId = valueId && memberIds.includes(valueId) ? valueId : null;
   const selected = selectedId ? getUserDetails(selectedId) : undefined;
+  // CCI: an empty field can be waiting on someone invited from this picker.
+  const pending = usePendingGrants(workspaceSlug?.toString(), projectId?.toString(), pendingGrant)[0];
+  const shownPending = selected ? undefined : pending;
 
-  return (
+  // Choosing someone for the field replaces whoever it was waiting on; the server cancels that
+  // pending role, so refetch once the save has landed.
+  const handleChange = async (val: string | null) => {
+    await onChange(val ?? "none");
+    if (pendingGrant && workspaceSlug && projectId)
+      void revalidatePendingGrants(workspaceSlug.toString(), projectId.toString());
+  };
+
+  const dropdown = (
     <MemberDropdown
       multiple={false}
       value={selectedId}
-      onChange={(val) => onChange(val ?? "none")}
+      onChange={(val) => void handleChange(val)}
+      pendingGrant={pendingGrant}
       memberIds={memberIds}
       projectId={projectId?.toString()}
       clearLabel="None"
@@ -56,7 +73,7 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
       button={
         <div
           className={cn(
-            "flex items-center gap-2 rounded-sm border border-subtle bg-surface-1 px-3 py-2 text-13",
+            "flex max-w-80 min-w-0 items-center gap-2 rounded-sm border border-subtle bg-surface-1 px-3 py-2 text-13",
             isDisabled ? "cursor-not-allowed" : "hover:bg-layer-transparent-hover"
           )}
         >
@@ -65,6 +82,8 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
               <Avatar name={getMemberName(selected)} src={getFileURL(selected.avatar_url)} />
               <span className="truncate text-primary">{getMemberName(selected)}</span>
             </>
+          ) : shownPending ? (
+            <PendingGrantLabel grant={shownPending} />
           ) : (
             <>
               <Ban className="size-3.5 rotate-90 text-placeholder" />
@@ -75,5 +94,13 @@ export const MemberSelect = observer(function MemberSelect(props: Props) {
         </div>
       }
     />
+  );
+
+  if (!shownPending || isDisabled) return dropdown;
+  return (
+    <div className="flex min-w-0 items-center gap-1">
+      {dropdown}
+      <PendingGrantCancel grant={shownPending} projectId={projectId?.toString()} />
+    </div>
   );
 });

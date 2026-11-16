@@ -13,6 +13,8 @@ import { TOAST_TYPE, setToast } from "@plane/propel/toast";
 import { checkEmailValidity, cn, getMemberName } from "@plane/utils";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
+import { pendingGrantService, revalidatePendingGrants } from "@/hooks/use-pending-grants";
+import type { TPendingGrantKind, TPendingGrantTarget } from "@/services/pending-grant.service";
 
 type Props = {
   /** What the person typed into the search box; prefilled when it is an email. */
@@ -20,7 +22,19 @@ type Props = {
   /** The people the picker already offers. */
   memberIds: string[];
   projectId?: string;
+  /** CCI: the field the picker sets; held as a pending role until the invite is accepted. */
+  pendingGrant?: TPendingGrantTarget;
+  /** Called once an invitation has been sent with a pending role, so the picker can close. */
+  onInvited?: () => void;
   onSelect: (userId: string) => void;
+};
+
+const GRANT_DESCRIPTION: Record<TPendingGrantKind, string> = {
+  project_member: "join this project",
+  label_owner: "own this campus",
+  project_default_assignee: "become the default assignee",
+  project_lead: "become the project lead",
+  issue_assignee: "be assigned to this work item",
 };
 
 const errorMessage = (error: unknown) =>
@@ -30,11 +44,13 @@ const errorMessage = (error: unknown) =>
 
 /**
  * CCI: invite someone who is not in the picker yet. A known workspace member is added to the
- * project and picked at once; anyone else gets a workspace invitation and can be picked after
- * they accept. Only rendered for workspace admins, who are the only ones allowed to invite.
+ * project and picked at once. Anyone else gets a workspace invitation; inside a project the
+ * invitation also carries what the picker was for (at least project membership), which the
+ * server grants when they accept, so nobody has to come back and pick them again. Only rendered
+ * for workspace admins, who are the only ones allowed to invite.
  */
 export const MemberInvite = observer(function MemberInvite(props: Props) {
-  const { query, memberIds, projectId, onSelect } = props;
+  const { query, memberIds, projectId, pendingGrant, onInvited, onSelect } = props;
   const { workspaceSlug } = useParams();
   const {
     getUserDetails,
@@ -76,6 +92,25 @@ export const MemberInvite = observer(function MemberInvite(props: Props) {
       }
       if (existing) {
         onSelect(existing);
+        return;
+      }
+      if (projectId) {
+        const target = pendingGrant ?? { kind: "project_member" as const };
+        await pendingGrantService.create(slug, {
+          email: address,
+          kind: target.kind,
+          project_id: projectId,
+          target_id: target.targetId ?? null,
+        });
+        await revalidatePendingGrants(slug, projectId);
+        setToast({
+          type: TOAST_TYPE.SUCCESS,
+          title: "Invitation sent",
+          message: `${address} will ${GRANT_DESCRIPTION[target.kind]} when they accept.`,
+        });
+        setIsFormOpen(false);
+        setEmail("");
+        onInvited?.();
         return;
       }
       await inviteMembersToWorkspace(slug, { emails: [{ email: address, role: EUserPermissions.MEMBER }] });
