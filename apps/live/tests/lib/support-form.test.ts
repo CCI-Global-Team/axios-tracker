@@ -39,6 +39,7 @@ describe("buildSupportIntake", () => {
     expect(item.name).toBe("Bug/feedback: The app crashes when I open sermons.");
     expect(item.external_source).toBe("gravity-forms");
     expect(item.external_id).toBe("48-95489");
+    expect(item).not.toHaveProperty("campus");
   });
 
   it("cuts a long message to one line with an ellipsis", () => {
@@ -120,6 +121,8 @@ describe("buildSupportIntake", () => {
 
   it("shows the campus label under the From line, escaped, and leaves it out when blank", () => {
     const campusLabels = new Map([["ikeja", "Ikeja, Lagos"]]);
+    expect(buildSupportIntake(entry({ "17": "ikeja" }), { campusLabels }).campus).toBe("Ikeja, Lagos");
+    expect(buildSupportIntake(entry({ "17": " new-campus " })).campus).toBe("new-campus");
     expect(buildSupportIntake(entry({ "17": "ikeja" }), { campusLabels }).description_html).toContain(
       "</a></p><p><strong>Campus</strong> Ikeja, Lagos</p><p><strong>Subject</strong>"
     );
@@ -254,6 +257,7 @@ describe("handleSupportForm", () => {
     expect(res.status).toBe(201);
     const [, init] = fetchImpl.mock.calls[1] as unknown as [string, RequestInit];
     expect(init.body).toContain("<strong>Campus</strong> Ikeja, Lagos");
+    expect(JSON.parse(init.body as string).issue.campus).toBe("Ikeja, Lagos");
   });
 
   it("treats 409 from Axios as already there", async () => {

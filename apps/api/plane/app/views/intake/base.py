@@ -4,6 +4,7 @@
 
 # Python imports
 import json
+from uuid import UUID
 
 # Django import
 from django.utils import timezone
@@ -203,6 +204,20 @@ class IntakeIssueViewSet(BaseViewSet):
                 "-issue__created_at",
             )
         )
+        # CCI: A separate join ANDs campus with the ordinary labels filter.
+        try:
+            campus_ids = [
+                UUID(item.strip())
+                for item in request.GET.get("campus", "").split(",")
+                if item.strip() and item.strip() != "null"
+            ]
+        except ValueError:
+            return Response({"error": "campus must contain UUIDs"}, status=status.HTTP_400_BAD_REQUEST)
+        if campus_ids:
+            intake_issue = intake_issue.filter(
+                issue__label_issue__label_id__in=campus_ids, issue__label_issue__deleted_at__isnull=True
+            ).distinct()
+
         # Intake status filter
         intake_status = [item for item in request.GET.get("status", "-2").split(",") if item != "null"]
         if intake_status:

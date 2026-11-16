@@ -43,6 +43,7 @@ export interface SupportIntake {
   name: string;
   description_html: string;
   created_at?: string;
+  campus?: string;
   external_source: string;
   external_id: string;
 }
@@ -245,6 +246,7 @@ export function buildSupportIntake(
   return {
     name: itemName(subject, message),
     description_html: html.join(""),
+    ...(campus ? { campus } : {}),
     ...(submitted ? { created_at: submitted.toISOString().replace(/\.000Z$/, "Z") } : {}),
     external_source: EXTERNAL_SOURCE,
     external_id: `${SUPPORT_FORM_ID}-${entryId}`,
