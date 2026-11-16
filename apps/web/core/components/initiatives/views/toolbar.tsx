@@ -5,7 +5,8 @@
  */
 
 import { Search } from "lucide-react";
-import type { ReactNode } from "react";
+import type { IWorkItemFilterInstance } from "@plane/shared-state";
+import { FiltersToggle } from "@/components/rich-filters/filters-toggle";
 import type { GroupBy } from "./model";
 import { GROUP_OPTIONS, isGroupBy } from "./model";
 
@@ -15,7 +16,7 @@ export function WorkItemsToolbar({
   showSearch = true,
   groupBy,
   onGroupBy,
-  filters,
+  filter,
 }: {
   query: string;
   onQuery: (query: string) => void;
@@ -23,7 +24,7 @@ export function WorkItemsToolbar({
   showSearch?: boolean;
   groupBy?: GroupBy;
   onGroupBy: (by: GroupBy) => void;
-  filters: ReactNode;
+  filter: IWorkItemFilterInstance | undefined;
 }) {
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-subtle px-4 py-2.5 sm:px-page-x">
@@ -40,7 +41,7 @@ export function WorkItemsToolbar({
           />
         </label>
       )}
-      {filters}
+      <FiltersToggle filter={filter} />
       {groupBy && (
         <label className="inline-flex items-center gap-2 text-12 text-tertiary">
           Group by

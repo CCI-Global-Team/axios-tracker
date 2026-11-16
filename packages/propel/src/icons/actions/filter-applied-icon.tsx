@@ -9,7 +9,7 @@ import * as React from "react";
 import { IconWrapper } from "../icon-wrapper";
 import type { ISvgIcons } from "../type";
 
-export function FilterAppliedIcon({ color = "text-icon-brand", ...rest }: ISvgIcons) {
+export function FilterAppliedIcon({ color = "currentColor", ...rest }: ISvgIcons) {
   const clipPathId = React.useId();
 
   return (
