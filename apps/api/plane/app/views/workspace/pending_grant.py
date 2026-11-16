@@ -102,6 +102,10 @@ class PendingInviteGrantEndpoint(BaseAPIView):
             invite = workspace.workspace_member_invite.filter(
                 email__iexact=data["email"], accepted=False, responded_at__isnull=True
             ).first()
+            if invite is not None and invite.role < 15:
+                # CCI: the grant makes them a project member, which a workspace guest cannot be.
+                invite.role = 15
+                invite.save(update_fields=["role"], disable_auto_set_user=True)
             if invite is None:
                 invite = build_workspace_invitation(workspace, {"email": data["email"], "role": 15}, request.user)
                 invite.save(disable_auto_set_user=True)
@@ -118,7 +122,7 @@ class PendingInviteGrantEndpoint(BaseAPIView):
             else:
                 existing = grants.filter(email=data["email"]).first()
                 if existing:
-                    return Response(PendingGrantSerializer(existing).data, status=status.HTTP_201_CREATED)
+                    return Response(PendingGrantSerializer(existing).data, status=status.HTTP_200_OK)
             grant = PendingInviteGrant(
                 workspace=workspace,
                 invite=invite,

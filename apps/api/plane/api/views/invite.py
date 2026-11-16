@@ -150,5 +150,7 @@ class WorkspaceInvitationsViewset(BaseViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
                 data={"error": "Invite already responded", "code": "INVITE_ALREADY_RESPONDED"},
             )
+        # CCI: pending picker roles go with the invitation they were waiting on.
+        workspace_member_invite.pending_grants.all().delete()
         workspace_member_invite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

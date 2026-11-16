@@ -143,7 +143,7 @@ def test_create_new_invite(session_client, workspace, project, tasks, django_cap
 def test_reuse_invite_and_dedupe(session_client, workspace, project, invite, tasks):
     first = session_client.post(url(workspace), body(project), format="json")
     second = session_client.post(url(workspace), body(project), format="json")
-    assert first.status_code == second.status_code == 201
+    assert (first.status_code, second.status_code) == (201, 200)
     assert first.data["id"] == second.data["id"]
     assert str(first.data["invite_id"]) == str(invite.pk)
     assert WorkspaceMemberInvite.objects.filter(workspace=workspace).count() == 1
@@ -490,3 +490,21 @@ def test_declined_invite_is_replaced_and_resent(
     assert not WorkspaceMemberInvite.objects.filter(pk=invite.pk).exists()
     assert not PendingInviteGrant.objects.filter(pk=old_grant.pk).exists()
     tasks["invitation"].assert_called_once()
+
+
+def test_guest_invite_is_raised_to_member_for_a_grant(session_client, workspace, project, invite, invitee):
+    WorkspaceMemberInvite.objects.filter(pk=invite.pk).update(role=5)
+    response = session_client.post(url(workspace), body(project), format="json")
+    assert response.status_code == 201, response.data
+    assert WorkspaceMemberInvite.objects.get(pk=invite.pk).role == 15
+    invite.refresh_from_db()
+    accept("join", session_client, invitee, workspace, invite)
+    assert WorkspaceMember.objects.get(workspace=workspace, member=invitee).role == 15
+    assert ProjectMember.objects.get(project=project, member=invitee).role == 15
+
+
+def test_public_api_revoke_removes_grants(api_key_client, workspace, project, invite):
+    grant = make_grant(invite, project)
+    response = api_key_client.delete(f"/api/v1/workspaces/{workspace.slug}/invitations/{invite.pk}/")
+    assert response.status_code == 204, response.data
+    assert not PendingInviteGrant.objects.filter(pk=grant.pk).exists()
