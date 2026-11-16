@@ -63,6 +63,14 @@ class PendingInviteGrantEndpoint(BaseAPIView):
         ).exists():
             raise PermissionDenied()
         query = serializers.UUIDField().run_validation(request.query_params.get("project_id"))
+        # CCI: invitee emails are only for people who can see the project.
+        if not (
+            WorkspaceMember.objects.filter(workspace__slug=slug, member=request.user, role=20, is_active=True).exists()
+            or ProjectMember.objects.filter(
+                project_id=query, member=request.user, is_active=True, role__gte=15
+            ).exists()
+        ):
+            raise PermissionDenied()
         grants = PendingInviteGrant.objects.filter(
             workspace__slug=slug,
             project_id=query,
@@ -84,7 +92,16 @@ class PendingInviteGrantEndpoint(BaseAPIView):
             # CCI: serialize invite reuse and replacement, including when no grant exists yet.
             workspace = Workspace.objects.select_for_update().get(slug=slug)
             Project.objects.select_for_update().get(pk=data["project_id"], workspace=workspace)
-            invite = workspace.workspace_member_invite.filter(email__iexact=data["email"], accepted=False).first()
+            # CCI: a declined invitation cannot be answered again; replace it with a fresh one.
+            declined = workspace.workspace_member_invite.filter(
+                email__iexact=data["email"], accepted=False, responded_at__isnull=False
+            )
+            for stale in declined:
+                stale.pending_grants.all().delete()
+                stale.delete()
+            invite = workspace.workspace_member_invite.filter(
+                email__iexact=data["email"], accepted=False, responded_at__isnull=True
+            ).first()
             if invite is None:
                 invite = build_workspace_invitation(workspace, {"email": data["email"], "role": 15}, request.user)
                 invite.save(disable_auto_set_user=True)

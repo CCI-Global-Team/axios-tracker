@@ -27,8 +27,7 @@ export const usePendingGrants = (
 ): TPendingGrant[] => {
   const { data } = useSWR(
     workspaceSlug && projectId && target ? swrKey(workspaceSlug, projectId) : null,
-    workspaceSlug && projectId ? () => pendingGrantService.list(workspaceSlug, projectId) : null,
-    { revalidateOnFocus: false }
+    workspaceSlug && projectId ? () => pendingGrantService.list(workspaceSlug, projectId) : null
   );
   if (!data || !target) return [];
   return data.filter(

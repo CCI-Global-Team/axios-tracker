@@ -467,3 +467,26 @@ def test_invalid_label_patch_keeps_pending_owner(session_client, workspace, proj
     )
     assert response.status_code == 400
     assert PendingInviteGrant.objects.filter(pk=grant.pk).exists()
+
+
+@pytest.mark.parametrize("in_project", [False, True])
+def test_list_needs_project_membership_unless_admin(session_client, workspace, project, create_user, in_project):
+    # CCI: a workspace member outside a project must not see who it is waiting on.
+    WorkspaceMember.objects.filter(workspace=workspace, member=create_user).update(role=15)
+    ProjectMember.objects.filter(project=project, member=create_user).update(is_active=in_project, role=15)
+    response = session_client.get(url(workspace), {"project_id": str(project.pk)})
+    assert response.status_code == (200 if in_project else 403)
+
+
+def test_declined_invite_is_replaced_and_resent(
+    session_client, workspace, project, invite, tasks, django_capture_on_commit_callbacks
+):
+    old_grant = make_grant(invite, project, "project_lead")
+    WorkspaceMemberInvite.objects.filter(pk=invite.pk).update(responded_at=timezone.now())
+    with django_capture_on_commit_callbacks(execute=True):
+        response = session_client.post(url(workspace), body(project), format="json")
+    assert response.status_code == 201, response.data
+    assert str(response.data["invite_id"]) != str(invite.pk)
+    assert not WorkspaceMemberInvite.objects.filter(pk=invite.pk).exists()
+    assert not PendingInviteGrant.objects.filter(pk=old_grant.pk).exists()
+    tasks["invitation"].assert_called_once()
