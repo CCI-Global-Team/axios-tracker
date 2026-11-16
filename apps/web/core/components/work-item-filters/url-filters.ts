@@ -5,12 +5,28 @@
  */
 
 import type { SetURLSearchParams } from "react-router";
+import { LOGICAL_OPERATOR } from "@plane/types";
 import type { TWorkItemFilterExpression } from "@plane/types";
 
-export function encodeFilterExpression(expr?: TWorkItemFilterExpression): string | null {
-  if (!expr || Object.keys(expr).length === 0) return null;
+const CONDITION_KEY = /^[a-z_]+__[a-z_]+$/;
 
-  const bytes = new TextEncoder().encode(JSON.stringify(expr));
+/** CCI: an and/or group of at least one valid child, a not of one, or a condition map of scalar values. */
+function isValidExpressionData(value: unknown): boolean {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const entries = Object.entries(value);
+  if (entries.length === 0) return false;
+  if (entries.length === 1) {
+    const [key, child] = entries[0];
+    if (key === LOGICAL_OPERATOR.AND || key === LOGICAL_OPERATOR.OR)
+      return Array.isArray(child) && child.length > 0 && child.every(isValidExpressionData);
+    if (key === LOGICAL_OPERATOR.NOT) return isValidExpressionData(child);
+  }
+  return entries.every(([key, v]) => CONDITION_KEY.test(key) && ["string", "number", "boolean"].includes(typeof v));
+}
+
+/** CCI: no filters is encoded too (`e30`), so a link to the unfiltered view stays unfiltered for whoever opens it. */
+export function encodeFilterExpression(expr?: TWorkItemFilterExpression): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(expr ?? {}));
   const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -23,6 +39,7 @@ export function decodeFilterExpression(str: string | null): TWorkItemFilterExpre
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
     const expr: unknown = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
     if (!expr || typeof expr !== "object" || Array.isArray(expr)) return undefined;
+    if (Object.keys(expr).length > 0 && !isValidExpressionData(expr)) return undefined;
     return expr as TWorkItemFilterExpression;
   } catch {
     return undefined;
@@ -37,8 +54,7 @@ export function writeFiltersToUrl(setSearchParams: SetURLSearchParams, expr?: TW
     () => {
       // CCI: router search params can be stale here, so preserve the current browser query.
       const next = new URLSearchParams(window.location.search);
-      if (value === null) next.delete("filters");
-      else next.set("filters", value);
+      next.set("filters", value);
       return next;
     },
     { replace: true }
