@@ -21,6 +21,7 @@ import { PlanPeekSection } from "./peek";
 import { setPlanPeekSection } from "./peek-slot";
 import { ScheduleView } from "./schedule";
 import { AREA_NOUN, usePlanData } from "./use-plan-data";
+import { useCanPreview } from "./parts";
 import { usePlanHours } from "./use-plan-hours";
 
 export type TPlanView = "overview" | "order" | "schedule";
@@ -90,7 +91,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
     const a = params.get("arrange");
     return a === "area" || a === "owner" ? a : "step";
   });
-  const [filter, setFilterState] = useState<TPlanFilter | null>(() => {
+  const [pickedFilter, setFilterState] = useState<TPlanFilter | null>(() => {
     const f = params.get("pfilter");
     return f && (Object.hasOwn(FILTER_LABELS, f) || f.startsWith("area:")) ? (f as TPlanFilter) : null;
   });
@@ -146,6 +147,16 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
 
   const areaById = useMemo(() => new Map(areas.map((a) => [a.id, a])), [areas]);
   const personById = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
+
+  // a shared link can name an area that no longer exists; ignore it rather than show an empty board
+  const filter =
+    pickedFilter?.startsWith("area:") &&
+    pickedFilter !== "area:" &&
+    areas.length &&
+    !areaById.has(pickedFilter.slice(5))
+      ? null
+      : pickedFilter;
+  const canPreview = useCanPreview();
 
   const hoursOf = useCallback((id: string) => itemHours[id] ?? DEFAULT_ITEM_HOURS, [itemHours]);
   const weekHoursOf = useCallback(
@@ -286,6 +297,7 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
     : null;
 
   const shared = {
+    canPreview,
     workspaceSlug,
     graph,
     areaById,
@@ -444,6 +456,8 @@ export const PlanBoard = observer(function PlanBoard(props: Props) {
 });
 
 export type TPlanShared = {
+  /** hover previews on cards: off on phones and touch-only pointers */
+  canPreview: boolean;
   workspaceSlug: string;
   graph: ReturnType<typeof usePlanData>["graph"];
   areaById: Map<string, ReturnType<typeof usePlanData>["areas"][number]>;

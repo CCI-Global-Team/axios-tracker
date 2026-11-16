@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { observer } from "mobx-react";
 import { Popover } from "@plane/propel/popover";
 import { Avatar } from "@plane/ui";
@@ -99,19 +99,30 @@ export function LinkButton({ className, ...props }: React.ButtonHTMLAttributes<H
   );
 }
 
-export function usePhone() {
-  const [phone, setPhone] = useState(false);
+function useMedia(query: string, initial: boolean) {
+  const [matches, setMatches] = useState(initial);
   useEffect(() => {
-    const media = window.matchMedia("(max-width: 767px)");
-    const update = () => setPhone(media.matches);
+    const media = window.matchMedia(query);
+    const update = () => setMatches(media.matches);
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
-  }, []);
-  return phone;
+  }, [query]);
+  return matches;
 }
 
-type PreviewData = Pick<TPlanShared, "workspaceSlug" | "areaById" | "personById" | "hoursOf" | "itemHours">;
+export const usePhone = () => useMedia("(max-width: 767px)", false);
+
+export function useCanPreview() {
+  const phone = usePhone();
+  const touchOnly = useMedia("(hover: none)", true);
+  return !phone && !touchOnly;
+}
+
+type PreviewData = Pick<
+  TPlanShared,
+  "canPreview" | "workspaceSlug" | "areaById" | "personById" | "hoursOf" | "itemHours"
+>;
 const descriptions = new Map<string, string>();
 const descriptionRequests = new Map<string, Promise<string>>();
 const issueService = new IssueService();
@@ -129,19 +140,11 @@ export function PlanPreview({
   node: TPlanNode;
   data: PreviewData;
 }) {
-  const phone = usePhone();
-  const [touchOnly, setTouchOnly] = useState(true);
   const [open, setOpen] = useState(false);
+  const previewId = useId();
   const focusTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => {
-    const media = window.matchMedia("(hover: none)");
-    const update = () => setTouchOnly(media.matches);
-    update();
-    media.addEventListener("change", update);
-    return () => media.removeEventListener("change", update);
-  }, []);
   useEffect(() => () => clearTimeout(focusTimer.current), []);
-  if (phone || touchOnly) return <button {...buttonProps} />;
+  if (!data.canPreview) return <button {...buttonProps} />;
   return (
     <Popover
       open={open}
@@ -153,9 +156,11 @@ export function PlanPreview({
       modal={false}
     >
       <Popover.Button
-        render={<button {...buttonProps} />}
-        onFocus={() => {
+        render={<button {...buttonProps} aria-describedby={open ? previewId : undefined} />}
+        onFocus={(e) => {
           clearTimeout(focusTimer.current);
+          // a mouse click focuses the card too; only keyboard focus should open the preview
+          if (!e.currentTarget.matches(":focus-visible")) return;
           focusTimer.current = setTimeout(() => setOpen(true), 300);
         }}
         onBlur={() => {
@@ -172,16 +177,18 @@ export function PlanPreview({
         finalFocus={false}
         data-prevent-outside-click=""
       >
-        {open && <PlanPreviewCard node={node} data={data} />}
+        {open && <PlanPreviewCard id={previewId} node={node} data={data} />}
       </Popover.Panel>
     </Popover>
   );
 }
 
 export const PlanPreviewCard = observer(function PlanPreviewCard({
+  id,
   node,
   data,
 }: {
+  id?: string;
   node: TPlanNode;
   data: PreviewData;
 }) {
@@ -207,13 +214,14 @@ export const PlanPreviewCard = observer(function PlanPreviewCard({
     if (!request) {
       request = issueService
         .retrieve(data.workspaceSlug, node.projectId, node.id)
-        .then((issue) => descriptionText(issue.description_html ?? ""))
-        .catch(() => "")
-        .then((text) => {
+        .then((issue) => {
+          const text = descriptionText(issue.description_html ?? "");
           descriptions.set(node.id, text);
-          descriptionRequests.delete(node.id);
           return text;
-        });
+        })
+        // not cached, so the next open retries
+        .catch(() => "")
+        .finally(() => descriptionRequests.delete(node.id));
       descriptionRequests.set(node.id, request);
     }
     void request.then((text) => {
@@ -226,7 +234,7 @@ export const PlanPreviewCard = observer(function PlanPreviewCard({
   }, [html, node.id, node.projectId, data.workspaceSlug]);
   const person = node.ownerId ? data.personById.get(node.ownerId) : undefined;
   return (
-    <div className="w-72 rounded-lg border-[0.5px] border-strong bg-surface-1 p-3 shadow-raised-200">
+    <div id={id} className="w-72 rounded-lg border-[0.5px] border-strong bg-surface-1 p-3 shadow-raised-200">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <ItemKey node={node} area={data.areaById.get(node.areaId ?? "")} />
         <StatusPill node={node} />
