@@ -20,6 +20,8 @@ type TMemberDropdownProps = {
   optionsClassName?: string;
   projectId?: string;
   renderByDefault?: boolean;
+  /** CCI: single-select only. Adds a "no one" row with this label that chooses null. */
+  clearLabel?: string;
 } & MemberDropdownProps;
 
 export const MemberDropdown = observer(function MemberDropdown(props: TMemberDropdownProps) {

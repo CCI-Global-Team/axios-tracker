@@ -4,98 +4,76 @@
  * See the LICENSE file for details.
  */
 
-import React from "react";
 import { observer } from "mobx-react";
 import { useParams } from "next/navigation";
 import { Ban } from "lucide-react";
-import { EUserProjectRoles } from "@plane/types";
+import { ChevronDownIcon } from "@plane/propel/icons";
 // plane ui
-import { Avatar, CustomSearchSelect } from "@plane/ui";
+import { Avatar } from "@plane/ui";
 // helpers
-import { getFileURL, getMemberName } from "@plane/utils";
+import { cn, getFileURL, getMemberName } from "@plane/utils";
+// components
+import { MemberDropdown } from "@/components/dropdowns/member/dropdown";
 // hooks
 import { useMember } from "@/hooks/store/use-member";
 
 type Props = {
-  value: any;
+  /** A member id; project fields are typed as either the id or the expanded user. */
+  value: string | { id: string } | null | undefined;
+  /** Receives a member id, or "none" when cleared. */
   onChange: (val: string) => void;
   isDisabled?: boolean;
 };
 
+/**
+ * One project member (never a guest) for a project setting such as Lead or Default assignee.
+ * CCI: built on the shared member picker, so it searches name, username and email and can add
+ * or invite someone who is missing, like every other member picker.
+ */
 export const MemberSelect = observer(function MemberSelect(props: Props) {
   const { value, onChange, isDisabled = false } = props;
-  // router
   const { projectId } = useParams();
-  // store hooks
   const {
-    project: { projectMemberIds, getProjectMemberDetails },
+    getUserDetails,
+    project: { getProjectMemberIds },
   } = useMember();
 
-  const options = projectMemberIds
-    ?.map((userId) => {
-      const memberDetails = projectId ? getProjectMemberDetails(userId, projectId.toString()) : null;
-
-      if (!memberDetails?.member) return;
-      const isGuest = memberDetails.role === EUserProjectRoles.GUEST;
-      if (isGuest) return;
-
-      return {
-        value: `${memberDetails?.member.id}`,
-        query: `${getMemberName(memberDetails?.member)} ${memberDetails?.member.display_name} ${memberDetails?.member.email ?? ""}`,
-        content: (
-          <div className="flex items-center gap-2">
-            <Avatar name={memberDetails?.member.display_name} src={getFileURL(memberDetails?.member.avatar_url)} />
-            {getMemberName(memberDetails?.member)}
-          </div>
-        ),
-      };
-    })
-    .filter((option) => !!option) as
-    | {
-        value: string;
-        query: string;
-        content: React.ReactNode;
-      }[]
-    | undefined;
-  const selectedOption = projectId ? getProjectMemberDetails(value, projectId.toString()) : null;
+  const memberIds = projectId ? (getProjectMemberIds(projectId.toString(), false) ?? []) : [];
+  const valueId = typeof value === "string" ? value : value?.id;
+  const selectedId = valueId && memberIds.includes(valueId) ? valueId : null;
+  const selected = selectedId ? getUserDetails(selectedId) : undefined;
 
   return (
-    <CustomSearchSelect
-      value={value}
-      label={
-        <div className="flex h-3.5 items-center gap-2">
-          {selectedOption && (
-            <Avatar name={selectedOption.member?.display_name} src={getFileURL(selectedOption.member?.avatar_url)} />
+    <MemberDropdown
+      multiple={false}
+      value={selectedId}
+      onChange={(val) => onChange(val ?? "none")}
+      memberIds={memberIds}
+      projectId={projectId?.toString()}
+      clearLabel="None"
+      disabled={isDisabled}
+      buttonVariant="border-with-text"
+      button={
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-sm border border-subtle bg-surface-1 px-3 py-2 text-13",
+            isDisabled ? "cursor-not-allowed" : "hover:bg-layer-transparent-hover"
           )}
-          {selectedOption ? (
-            getMemberName(selectedOption.member)
+        >
+          {selected ? (
+            <>
+              <Avatar name={getMemberName(selected)} src={getFileURL(selected.avatar_url)} />
+              <span className="truncate text-primary">{getMemberName(selected)}</span>
+            </>
           ) : (
-            <div className="flex items-center gap-2">
-              <Ban className="h-3.5 w-3.5 rotate-90 text-placeholder" />
-              <span className="text-13 text-placeholder">None</span>
-            </div>
+            <>
+              <Ban className="size-3.5 rotate-90 text-placeholder" />
+              <span className="text-placeholder">None</span>
+            </>
           )}
+          <ChevronDownIcon className="size-3 flex-shrink-0 text-tertiary" />
         </div>
       }
-      buttonClassName="!px-3 !py-2 bg-surface-1"
-      options={
-        options && [
-          ...options,
-          {
-            value: "none",
-            query: "none",
-            content: (
-              <div className="flex items-center gap-2">
-                <Ban className="h-3.5 w-3.5 rotate-90 text-placeholder" />
-                <span className="py-0.5 text-13 text-placeholder">None</span>
-              </div>
-            ),
-          },
-        ]
-      }
-      maxHeight="md"
-      onChange={onChange}
-      disabled={isDisabled}
     />
   );
 });

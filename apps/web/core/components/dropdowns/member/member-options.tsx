@@ -14,18 +14,23 @@ import useSWR from "swr";
 import { Combobox } from "@headlessui/react";
 // plane imports
 import { useTranslation } from "@plane/i18n";
-import { CheckIcon, SearchIcon, SuspendedUserIcon } from "@plane/propel/icons";
+import { Ban } from "lucide-react";
+import { EUserPermissions, EUserPermissionsLevel } from "@plane/constants";
+import { CheckIcon, SearchIcon } from "@plane/propel/icons";
 import { EPillSize, EPillVariant, Pill } from "@plane/propel/pill";
 import type { IUserLite, TMemberAvailability } from "@plane/types";
-import { Avatar } from "@plane/ui";
-import { cn, getFileURL, getMemberHandle, getMemberName, sortByCurrentUserThenSelected } from "@plane/utils";
+import { TOAST_TYPE, setToast } from "@plane/propel/toast";
+import { cn, getMemberName, memberMatchesSearch, sortByCurrentUserThenSelected } from "@plane/utils";
 // hooks
 import { MemberHoverCard } from "@/components/dropdowns/member/member-hover-card";
 import { useMember } from "@/hooks/store/use-member";
-import { useUser } from "@/hooks/store/user";
+import { useUser, useUserPermissions } from "@/hooks/store/user";
 import { usePlatformOS } from "@/hooks/use-platform-os";
 // lib
 import { formatDeclaredHoursShort, weekStartFor } from "@/lib/availability-week";
+// local imports
+import { MemberInvite } from "./member-invite";
+import { MemberPickerRow } from "./member-picker-row";
 // services
 import { WorkspaceService } from "@/services/workspace.service";
 
@@ -36,6 +41,12 @@ interface Props {
   getUserDetails: (userId: string) => IUserLite | undefined;
   isOpen: boolean;
   memberIds?: string[];
+  /** CCI: single-select pickers can offer a "no one" row with this label; it chooses null. */
+  clearLabel?: string;
+  /** CCI: picks a person from outside the Combobox options (added to the project, or invited). */
+  onSelectMember?: (userId: string) => void;
+  /** CCI: when set, workspace members outside this project can be added from the search. */
+  projectId?: string;
   onDropdownOpen?: () => void;
   optionsClassName?: string;
   placement: Placement | undefined;
@@ -53,6 +64,9 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     placement,
     referenceElement,
     value,
+    clearLabel,
+    onSelectMember,
+    projectId,
   } = props;
   // router
   const { workspaceSlug } = useParams();
@@ -124,9 +138,16 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
   const { t } = useTranslation();
   // store hooks
   const { data: currentUser } = useUser();
+  const { allowPermissions } = useUserPermissions();
   const {
-    workspace: { isUserSuspended },
+    project: { bulkAddMembersToProject },
+    workspace: { isUserSuspended, workspaceMemberIds, getWorkspaceMemberDetails },
   } = useMember();
+  const canInvite = allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.WORKSPACE);
+  const canAddToProject =
+    !!projectId &&
+    allowPermissions([EUserPermissions.ADMIN], EUserPermissionsLevel.PROJECT, workspaceSlug?.toString(), projectId);
+  const [addingId, setAddingId] = useState<string | null>(null);
   const { isMobile } = usePlatformOS();
   // popper-js init
   const { styles, attributes } = usePopper(referenceElement, popperElement, {
@@ -175,9 +196,8 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
         value: userId,
         // Discipline labels join the search text, so typing "front" narrows to Frontend people
         // without touching the chips - the two ways of narrowing compose rather than compete.
-        query: `${getMemberName(userDetails)} ${userDetails?.display_name} ${(disciplinesByMemberId.get(userId) || [])
-          .map((d) => disciplineLabel.get(d) ?? d)
-          .join(" ")}`,
+        user: userDetails,
+        disciplineText: (disciplinesByMemberId.get(userId) || []).map((d) => disciplineLabel.get(d) ?? d).join(" "),
         content: (
           <MemberHoverCard
             userId={userId}
@@ -187,52 +207,27 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
             disciplineLabel={(slug) => disciplineLabel.get(slug) ?? slug}
             openIssues={openIssuesByMemberId.get(userId)}
           >
-            <div className="flex items-center gap-2">
-              <div className="w-4">
-                {isUserSuspended(userId, workspaceSlug?.toString()) ? (
-                  <SuspendedUserIcon className="h-3.5 w-3.5 text-placeholder" />
-                ) : (
-                  <Avatar
-                    name={getMemberName(userDetails)}
-                    src={getFileURL(userDetails?.avatar_url ?? "")}
-                    fallbackSeed={userId}
-                  />
-                )}
-              </div>
-              <span
-                className={cn(
-                  "flex-grow truncate",
-                  isUserSuspended(userId, workspaceSlug?.toString()) ? "text-placeholder" : ""
-                )}
-              >
-                {/* The real name, not the handle: display_name is the email local part for almost
-                  everyone here, and nobody recognises `dikedaniel7917` in a list of seventy. The
-                  handle follows in muted text ONLY when it differs, so it disambiguates without
-                  putting a redundant second string under every row. */}
-                {currentUser?.id === userId ? t("you") : getMemberName(userDetails)}
-                {currentUser?.id !== userId && getMemberHandle(userDetails) && (
-                  <span className="ml-1.5 text-tertiary">{getMemberHandle(userDetails)}</span>
-                )}
-              </span>
-              {/* Silence is left blank rather than dashed: this is a picking surface, and a column
-                of dashes would add noise to every row without helping anyone choose. The roster
-                is where "who hasn't told us" gets answered. */}
-              {/* "15h · 4 open" — a declared figure beside a counted one. Separated rather than
-                subtracted because they are different KINDS of number: one is what the person
-                said, the other is what is true. Nothing in this edition denominates load in
-                hours, so an "hours left" would be invented arithmetic. */}
-              {(hoursByMemberId.has(userId) || openIssuesByMemberId.has(userId)) && (
-                <span className="text-xs flex-shrink-0 whitespace-nowrap text-tertiary tabular-nums">
-                  {hoursByMemberId.has(userId) &&
-                    formatDeclaredHoursShort(
-                      hoursByMemberId.get(userId) ?? 0,
-                      availabilityByMemberId.get(userId)?.is_persistent ?? false
-                    )}
-                  {hoursByMemberId.has(userId) && openIssuesByMemberId.has(userId) && " · "}
-                  {openIssuesByMemberId.has(userId) && `${openIssuesByMemberId.get(userId)} open`}
-                </span>
-              )}
-            </div>
+            <MemberPickerRow
+              userId={userId}
+              user={userDetails}
+              isCurrentUser={currentUser?.id === userId}
+              isSuspended={isUserSuspended(userId, workspaceSlug?.toString())}
+              trailing={
+                // "15h · 4 open": a declared figure beside a counted one, kept apart because they
+                // are different kinds of number. Silence stays blank rather than dashed.
+                (hoursByMemberId.has(userId) || openIssuesByMemberId.has(userId)) && (
+                  <span className="flex-shrink-0 text-11 whitespace-nowrap text-tertiary tabular-nums">
+                    {hoursByMemberId.has(userId) &&
+                      formatDeclaredHoursShort(
+                        hoursByMemberId.get(userId) ?? 0,
+                        availabilityByMemberId.get(userId)?.is_persistent ?? false
+                      )}
+                    {hoursByMemberId.has(userId) && openIssuesByMemberId.has(userId) && " · "}
+                    {openIssuesByMemberId.has(userId) && `${openIssuesByMemberId.get(userId)} open`}
+                  </span>
+                )
+              }
+            />
           </MemberHoverCard>
         ),
       };
@@ -240,10 +235,50 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
     .filter((o) => !!o);
 
   const filteredOptions = sortByCurrentUserThenSelected(
-    query === "" ? options : options?.filter((o) => o?.query.toLowerCase().includes(query.toLowerCase())),
+    // Name, username and email all match (see memberMatchesSearch); discipline labels too, so
+    // typing "front" narrows to Frontend people.
+    query.trim() === ""
+      ? options
+      : options?.filter(
+          (o) =>
+            memberMatchesSearch(o.user, query) || o.disciplineText.toLowerCase().includes(query.trim().toLowerCase())
+        ),
     value,
     currentUser?.id
   );
+
+  // CCI: people in the workspace but not in this project, shown under the matches once something
+  // is typed, so "not in the list" is one click from fixed instead of a trip to settings. Guests,
+  // bots and suspended members are left out: none can be made a project member from here.
+  const listedIds = new Set(memberIds ?? []);
+  const outsideIds =
+    canAddToProject && query.trim() !== ""
+      ? (workspaceMemberIds ?? [])
+          .filter((id) => {
+            if (listedIds.has(id)) return false;
+            const details = getWorkspaceMemberDetails(id);
+            if (!details?.member || !details.is_active || details.member.is_bot) return false;
+            if ((details.role ?? 0) < EUserPermissions.MEMBER) return false;
+            return memberMatchesSearch(details.member, query);
+          })
+          .slice(0, 5)
+      : [];
+
+  const addToProjectAndSelect = async (userId: string) => {
+    if (!workspaceSlug || !projectId) return;
+    setAddingId(userId);
+    try {
+      await bulkAddMembersToProject(workspaceSlug.toString(), projectId, {
+        members: [{ member_id: userId, role: EUserPermissions.MEMBER }],
+      });
+      setToast({ type: TOAST_TYPE.SUCCESS, title: `${getMemberName(getUserDetails(userId))} added to the project` });
+      onSelectMember?.(userId);
+    } catch {
+      setToast({ type: TOAST_TYPE.ERROR, title: "Could not add them to the project" });
+    } finally {
+      setAddingId(null);
+    }
+  };
 
   return createPortal(
     <Combobox.Options data-prevent-outside-click static>
@@ -252,7 +287,9 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
           // w-72, not the w-48 this inherited: the row now carries a real name, the handle where it
           // differs, and hours beside an open count. At 192px that truncated people mid-name, which
           // defeats the point of showing names at all.
-          "z-30 my-1 w-72 rounded-sm border-[0.5px] border-strong bg-surface-1 px-2 py-2.5 text-11 shadow-raised-200 focus:outline-none",
+          // CCI: w-80 with two-line rows (name, then username and email). The old one-line, 11px
+          // rows truncated people mid-name and gave no way to tell two Daniels apart.
+          "z-30 my-1 w-80 max-w-[calc(100vw-24px)] rounded-md border-[0.5px] border-strong bg-surface-1 p-1.5 text-13 shadow-raised-200 focus:outline-none",
           optionsClassName
         )}
         ref={setPopperElement}
@@ -261,15 +298,15 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
         }}
         {...attributes.popper}
       >
-        <div className="flex items-center gap-1.5 rounded-sm border border-subtle bg-surface-2 px-2">
-          <SearchIcon className="h-3.5 w-3.5 text-placeholder" strokeWidth={1.5} />
+        <div className="flex h-8 items-center gap-2 rounded-sm border border-subtle bg-surface-2 px-2 focus-within:border-accent-strong">
+          <SearchIcon className="size-4 flex-shrink-0 text-placeholder" strokeWidth={1.5} />
           <Combobox.Input
             as="input"
             ref={inputRef}
-            className="w-full bg-transparent py-1 text-11 text-secondary placeholder:text-placeholder focus:outline-none"
+            className="w-full bg-transparent text-13 text-primary placeholder:text-placeholder focus:outline-none"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t("search")}
+            placeholder="Search name, username or email"
             displayValue={(assigned: any) => assigned?.name}
             onKeyDown={searchInputKeyDown}
           />
@@ -311,7 +348,7 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
             ))}
           </div>
         )}
-        <div className="mt-2 max-h-48 space-y-1 overflow-y-scroll">
+        <div className="mt-1.5 max-h-72 space-y-0.5 overflow-y-auto">
           {filteredOptions ? (
             filteredOptions.length > 0 ? (
               filteredOptions.map(
@@ -322,7 +359,7 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
                       value={option.value}
                       className={({ active, selected }) =>
                         cn(
-                          "flex w-full items-center justify-between gap-2 truncate rounded-sm px-1 py-1.5 select-none",
+                          "flex w-full items-center justify-between gap-2 truncate rounded-sm px-1.5 py-1.5 select-none",
                           active && "bg-layer-transparent-hover",
                           selected ? "text-primary" : "text-secondary",
                           isUserSuspended(option.value, workspaceSlug?.toString())
@@ -347,12 +384,67 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
                   )
               )
             ) : (
-              <p className="px-1.5 py-1 text-placeholder italic">
-                {disciplineFilter || availableOnly ? "No one matches those filters" : t("no_matching_results")}
-              </p>
+              outsideIds.length === 0 && (
+                <p className="px-1.5 py-2 text-13 text-placeholder">
+                  {disciplineFilter || availableOnly
+                    ? "No one matches those filters"
+                    : query.trim()
+                      ? `No one matches “${query.trim()}”`
+                      : t("no_matching_results")}
+                </p>
+              )
             )
           ) : (
-            <p className="px-1.5 py-1 text-placeholder italic">{t("loading")}</p>
+            <p className="px-1.5 py-2 text-13 text-placeholder">{t("loading")}</p>
+          )}
+          {clearLabel && value && !Array.isArray(value) && query.trim() === "" && (
+            <Combobox.Option
+              value={null}
+              className={({ active }) =>
+                cn(
+                  "flex w-full cursor-pointer items-center gap-2.5 rounded-sm px-1.5 py-1.5 text-tertiary select-none",
+                  active && "bg-layer-transparent-hover"
+                )
+              }
+            >
+              <span className="flex size-6 items-center justify-center">
+                <Ban className="size-3.5 rotate-90" />
+              </span>
+              {clearLabel}
+            </Combobox.Option>
+          )}
+          {outsideIds.length > 0 && (
+            <div className="mt-1 border-t border-subtle pt-1">
+              <p className="px-1.5 py-1 text-11 font-medium text-tertiary">In the workspace, not this project</p>
+              {outsideIds.map((userId) => (
+                <button
+                  key={userId}
+                  type="button"
+                  disabled={addingId !== null}
+                  onClick={() => void addToProjectAndSelect(userId)}
+                  className="flex w-full items-center gap-2 rounded-sm px-1.5 py-1.5 text-left hover:bg-layer-transparent-hover disabled:opacity-60"
+                >
+                  <span className="min-w-0 flex-grow">
+                    <MemberPickerRow userId={userId} user={getUserDetails(userId)} />
+                  </span>
+                  <span className="flex-shrink-0 text-11 font-medium text-accent-primary">
+                    {addingId === userId ? "Adding…" : "Add to project"}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mt-1 border-t border-subtle pt-1">
+          {canInvite ? (
+            <MemberInvite
+              query={query}
+              memberIds={memberIds ?? []}
+              projectId={projectId}
+              onSelect={(userId) => onSelectMember?.(userId)}
+            />
+          ) : (
+            <p className="px-1.5 py-1.5 text-11 text-tertiary">Not listed? A workspace admin can invite them.</p>
           )}
         </div>
       </div>
