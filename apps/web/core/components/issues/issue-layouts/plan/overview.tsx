@@ -10,7 +10,7 @@ import { cn } from "@plane/utils";
 import type { TPlanFilter, TPlanShared, TPlanView } from "./board";
 import type { TPlanNode } from "./model";
 import { NO_OWNER, longestChain, statusLabel, weeksToDate } from "./model";
-import { AreaDot, Card, CardTitle, ItemKey, LinkButton, PersonAvatar } from "./parts";
+import { AreaDot, Card, CardTitle, ItemKey, LinkButton, PersonAvatar, PlanPreview } from "./parts";
 import type { TPlanArea, TPlanAreaKind } from "./use-plan-data";
 import { AREA_NOUN } from "./use-plan-data";
 
@@ -240,6 +240,7 @@ export function OverviewView(props: Props) {
             <CardTitle title="Blocking the most" />
             {blockingMost.length ? (
               <ItemList
+                data={props}
                 nodes={blockingMost}
                 areaById={areaById}
                 right={(n, i) =>
@@ -268,7 +269,7 @@ export function OverviewView(props: Props) {
               }
             />
             {unowned.length ? (
-              <ItemList nodes={unowned} areaById={areaById} right={statusLabel} onOpenItem={onOpenItem} />
+              <ItemList data={props} nodes={unowned} areaById={areaById} right={statusLabel} onOpenItem={onOpenItem} />
             ) : (
               <Empty text="Everything open has an owner." done />
             )}
@@ -287,7 +288,9 @@ export function OverviewView(props: Props) {
                   const n = graph.nodes.get(id) as TPlanNode;
                   return (
                     <li key={id}>
-                      <button
+                      <PlanPreview
+                        node={n}
+                        data={props}
                         type="button"
                         onClick={() => onOpenItem(id)}
                         className="grid w-full grid-cols-[1.25rem_auto_minmax(0,1fr)_auto] items-center gap-2.5 rounded-sm px-1 py-1.5 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-md:min-h-11"
@@ -296,7 +299,7 @@ export function OverviewView(props: Props) {
                         <ItemKey node={n} area={areaById.get(n.areaId ?? "")} />
                         <span className="truncate text-primary">{n.name}</span>
                         <PersonAvatar person={n.ownerId ? personById.get(n.ownerId) : undefined} size={18} />
-                      </button>
+                      </PlanPreview>
                     </li>
                   );
                 })}
@@ -312,6 +315,7 @@ export function OverviewView(props: Props) {
 }
 
 function ItemList(props: {
+  data: TPlanShared;
   nodes: TPlanNode[];
   areaById: TPlanShared["areaById"];
   right: (n: TPlanNode, i: number) => React.ReactNode;
@@ -321,7 +325,9 @@ function ItemList(props: {
     <ul className="-mx-1 flex flex-col divide-y divide-subtle">
       {props.nodes.map((n, i) => (
         <li key={n.id}>
-          <button
+          <PlanPreview
+            node={n}
+            data={props.data}
             type="button"
             onClick={() => props.onOpenItem(n.id)}
             className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-sm px-1 py-2 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-md:min-h-11"
@@ -329,7 +335,7 @@ function ItemList(props: {
             <ItemKey node={n} area={props.areaById.get(n.areaId ?? "")} />
             <span className="truncate text-primary">{n.name}</span>
             <span className="text-12 whitespace-nowrap text-tertiary tabular-nums">{props.right(n, i)}</span>
-          </button>
+          </PlanPreview>
         </li>
       ))}
     </ul>

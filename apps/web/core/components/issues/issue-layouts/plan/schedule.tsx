@@ -4,7 +4,7 @@
  * See the LICENSE file for details.
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef } from "react";
 import { CircleCheck, Flag, LocateFixed } from "lucide-react";
 import { cn } from "@plane/utils";
 import type { TPlanShared } from "./board";
@@ -13,7 +13,7 @@ import { PlanLinks } from "./links";
 import type { TPlanNode, TScheduleSlot } from "./model";
 import { NO_OWNER, weeksToDate } from "./model";
 import { formatDay } from "./overview";
-import { PersonAvatar } from "./parts";
+import { PersonAvatar, PlanPreview, usePhone } from "./parts";
 import { NO_AREA_HUE } from "./use-plan-data";
 
 type Props = TPlanShared & {
@@ -43,18 +43,6 @@ function packRows(items: TPlanNode[], slots: Map<string, TScheduleSlot>) {
   const waiting = items.filter((n) => !slots.has(n.id));
   waiting.forEach((n, i) => rowOf.set(n.id, rowEnds.length + i));
   return { items: [...placed, ...waiting], rowOf, rows: Math.max(1, rowEnds.length + waiting.length) };
-}
-
-function usePhone() {
-  const [phone, setPhone] = useState(false);
-  useEffect(() => {
-    const m = window.matchMedia("(max-width: 767px)");
-    const update = () => setPhone(m.matches);
-    update();
-    m.addEventListener("change", update);
-    return () => m.removeEventListener("change", update);
-  }, []);
-  return phone;
 }
 
 export function ScheduleView(props: Props) {
@@ -271,14 +259,15 @@ export function ScheduleView(props: Props) {
                     const dim = !!selected && !isSel && !linked.has(n.id);
                     const width = slot ? Math.max(10, (slot.end - slot.start) * PX - 3) : 180;
                     return (
-                      <button
+                      <PlanPreview
                         key={n.id}
+                        node={n}
+                        data={props}
                         type="button"
                         data-plan-id={n.id}
                         data-prevent-outside-click=""
                         aria-pressed={isSel}
                         aria-label={`${n.key} ${n.name}`}
-                        title={`${n.key} ${n.name}`}
                         onClick={() => onSelect(n.id)}
                         className={cn(
                           "absolute z-[1] flex h-7 items-center gap-1.5 overflow-hidden rounded-md border border-l-[3px] border-subtle bg-layer-2 pr-1.5 pl-1.5 text-left text-12 whitespace-nowrap text-primary transition-[opacity,box-shadow] duration-150 outline-none hover:border-strong focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)]",
@@ -297,7 +286,7 @@ export function ScheduleView(props: Props) {
                           {!slot ? "Waiting" : width < 90 ? n.key.slice(n.key.lastIndexOf("-") + 1) : n.key}
                         </span>
                         <span className="truncate">{n.name}</span>
-                      </button>
+                      </PlanPreview>
                     );
                   })}
                 </div>
