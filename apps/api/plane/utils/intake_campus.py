@@ -4,10 +4,11 @@
 
 import html
 import re
+from uuid import UUID
 
 from django.db import transaction
 
-from plane.db.models import Label, Project
+from plane.db.models import Label, Project, ProjectMember
 
 CAMPUS_PARENT_LABEL = "Campus"
 CAMPUS_LABEL_COLOR = "#6B7280"
@@ -47,3 +48,16 @@ def campus_label(project_id, workspace_id, campus: str) -> Label | None:
 def campus_from_description(description: str) -> str | None:
     match = re.search(r"<strong\b[^>]*>\s*Campus\s*</strong\s*>([^<]*)", description or "", re.IGNORECASE)
     return (html.unescape(match.group(1)).strip() or None) if match else None
+
+
+def intake_assignee_id(project, label) -> UUID | None:
+    """CCI: prefer an eligible campus owner, then the project's eligible default."""
+    for member_id in (getattr(label, "default_assignee_id", None), project.default_assignee_id):
+        if (
+            member_id is not None
+            and ProjectMember.objects.filter(
+                project_id=project.id, member_id=member_id, is_active=True, role__gte=15
+            ).exists()
+        ):
+            return member_id
+    return None

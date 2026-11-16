@@ -17,6 +17,7 @@ import type { TLabelOperationsCallbacks } from "./create-update-label-inline";
 import { CreateUpdateLabelInline } from "./create-update-label-inline";
 import type { ICustomMenuItem } from "./label-block/label-item-block";
 import { LabelItemBlock } from "./label-block/label-item-block";
+import { CampusLabelOwner } from "./campus-label-owner";
 import { LabelDndHOC } from "./label-drag-n-drop-HOC";
 
 type Props = {
@@ -55,10 +56,10 @@ export function ProjectSettingLabelItem(props: Props) {
   // store hooks
   const { updateLabel } = useLabel();
 
-  const removeFromGroup = (label: IIssueLabel) => {
+  const removeFromGroup = (labelToRemove: IIssueLabel) => {
     if (!workspaceSlug || !projectId) return;
 
-    updateLabel(workspaceSlug.toString(), projectId.toString(), label.id, {
+    updateLabel(workspaceSlug.toString(), projectId.toString(), labelToRemove.id, {
       parent: null,
     });
   };
@@ -116,6 +117,7 @@ export function ProjectSettingLabelItem(props: Props) {
                 disabled={!isEditable}
               />
             )}
+            {!isEditLabelForm && <CampusLabelOwner label={label} isEditable={isEditable} />}
           </div>
         </div>
       )}

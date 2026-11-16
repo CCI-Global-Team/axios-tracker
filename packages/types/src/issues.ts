@@ -67,6 +67,8 @@ export interface IIssueLabel {
   workspace_id: string;
   parent: string | null;
   sort_order: number;
+  /** CCI: support requests with this (campus) label are assigned to this project member. */
+  default_assignee?: string | null;
 }
 
 export interface IIssueLabelTree extends IIssueLabel {

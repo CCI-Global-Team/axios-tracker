@@ -363,6 +363,7 @@ class LabelSerializer(BaseSerializer):
         model = Label
         fields = [
             "parent",
+            "default_assignee",
             "name",
             "color",
             "id",
@@ -371,6 +372,15 @@ class LabelSerializer(BaseSerializer):
             "sort_order",
         ]
         read_only_fields = ["workspace", "project"]
+
+    # CCI: label owners must be eligible assignees in this project.
+    def validate_default_assignee(self, value):
+        if value is None:
+            return value
+        project_id = self.context.get("project_id") or getattr(self.instance, "project_id", None)
+        if not ProjectMember.objects.filter(project_id=project_id, member=value, is_active=True, role__gte=15).exists():
+            raise serializers.ValidationError("DEFAULT_ASSIGNEE_NOT_A_PROJECT_MEMBER")
+        return value
 
     def validate_name(self, value):
         project_id = self.context.get("project_id")

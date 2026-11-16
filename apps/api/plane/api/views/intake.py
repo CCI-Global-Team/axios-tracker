@@ -40,7 +40,7 @@ from plane.db.models import (
     State,
     StateGroup,
 )
-from plane.utils.intake_campus import CAMPUS_PARENT_LABEL, campus_label
+from plane.utils.intake_campus import CAMPUS_PARENT_LABEL, campus_label, intake_assignee_id
 from plane.utils.host import base_host
 from plane.utils.content_validator import validate_html_content
 from .base import BaseAPIView
@@ -264,24 +264,20 @@ class IntakeIssueListCreateAPIEndpoint(BaseAPIView):
             external_id=str(external_id) if external_id else None,  # CCI: GAM-572
         )
 
-        # CCI: support requests go to the project's default assignee, as items created in the app do.
+        # CCI: route to the campus owner, falling back to the project's default assignee.
+        label = campus_label(project_id, project.workspace_id, campus)
+        assignee_id = intake_assignee_id(project, label)
         assignee_ids = []
-        if (
-            project.default_assignee_id is not None
-            and ProjectMember.objects.filter(
-                member_id=project.default_assignee_id, project_id=project_id, role__gte=15, is_active=True
-            ).exists()
-        ):
+        if assignee_id is not None:
             IssueAssignee.objects.create(
-                assignee_id=project.default_assignee_id,
+                assignee_id=assignee_id,
                 issue=issue,
                 project_id=project_id,
                 workspace_id=project.workspace_id,
             )
-            assignee_ids = [str(project.default_assignee_id)]
+            assignee_ids = [str(assignee_id)]
 
         # CCI: Keep the campus in labels as well as the support description.
-        label = campus_label(project_id, project.workspace_id, campus)
         if label is not None:
             IssueLabel.objects.get_or_create(
                 issue=issue, label=label, project_id=project_id, workspace_id=project.workspace_id
