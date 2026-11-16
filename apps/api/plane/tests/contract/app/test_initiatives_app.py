@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+import json
 from uuid import uuid4
 
 import pytest
@@ -13,6 +14,7 @@ from plane.db.models import (
     Initiative,
     InitiativeModule,
     Issue,
+    IssueAssignee,
     Module,
     ModuleIssue,
     Project,
@@ -309,3 +311,56 @@ def test_archived_module_remains_linked(session_client, workspace, initiative, m
     data = session_client.get(url(workspace, initiative)).json()
     assert data["module_ids"] == [str(modules[0].id)]
     assert data["total_issues"] == 1
+
+
+@pytest.mark.parametrize("restriction", ["missing", "inactive", "guest"])
+@pytest.mark.parametrize(
+    "expression, expected_indexes",
+    [
+        ({"priority__in": "urgent"}, [0]),
+        ({"not": {"priority__in": "urgent"}}, [1]),
+        ({"assignee_id__isnull": True}, [0]),
+        ({"not": {"assignee_id__isnull": True}}, [1]),
+        ({"and": [{"priority__in": "urgent"}, {"assignee_id__isnull": True}]}, [0]),
+        ({"or": [{"priority__in": "urgent"}, {"not": {"assignee_id__isnull": True}}]}, [0, 1]),
+    ],
+)
+def test_rich_issue_filters_preserve_visibility(
+    session_client, workspace, initiative, modules, create_user, restriction, expression, expected_indexes
+):
+    for module in modules:
+        attach(initiative, module)
+    other = User.objects.create(email="hidden-filter-author@plane.so", username="hidden-filter-author")
+
+    def pair(module, author):
+        urgent = item(module, author)
+        assigned = item(module, author)
+        Issue.objects.filter(pk=urgent.pk).update(priority="urgent")
+        Issue.objects.filter(pk=assigned.pk).update(priority="high")
+        IssueAssignee.objects.create(issue=assigned, assignee=create_user, project=module.project, workspace=workspace)
+        return [urgent, assigned]
+
+    visible = pair(modules[0], create_user)
+    # Both sides of each expression have hidden matches; negation/OR must never broaden access.
+    pair(modules[1], other)
+    membership = ProjectMember.objects.filter(project=modules[1].project, member=create_user)
+    if restriction == "missing":
+        membership.delete(soft=False)
+    elif restriction == "inactive":
+        membership.update(is_active=False)
+    else:
+        membership.update(role=5)
+        Project.objects.filter(pk=modules[1].project_id).update(guest_view_all_features=False)
+
+    outside = Module.objects.create(name="Outside initiative", project=modules[0].project, workspace=workspace)
+    pair(outside, create_user)
+    # A work item in multiple linked modules must still appear exactly once after filtering.
+    extra = Module.objects.create(name="Also linked", project=modules[0].project, workspace=workspace)
+    attach(initiative, extra)
+    ModuleIssue.objects.create(module=extra, issue=visible[0], project=extra.project, workspace=workspace)
+
+    response = session_client.get(url(workspace, initiative, "issues/"), {"filters": json.dumps(expression)})
+    assert response.status_code == 200
+    ids = [row["id"] for row in response.json()]
+    assert set(ids) == {str(visible[index].id) for index in expected_indexes}
+    assert len(ids) == len(expected_indexes)

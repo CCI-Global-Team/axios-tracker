@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from plane.app.permissions import ROLE, allow_permission
 from plane.app.serializers.initiative import InitiativeModulesSerializer, InitiativeSerializer
 from plane.db.models import Initiative, InitiativeModule, Workspace, WorkspaceMember
+from plane.utils.filters import ComplexFilterBackend, IssueFilterSet
 from plane.utils.grouper import issue_queryset_grouper
 from plane.utils.initiatives import initiatives_with_progress, visible_issues, visible_modules
 from plane.utils.issue_list import annotate_issue_list, serialize_issue_list
@@ -105,9 +106,12 @@ class InitiativeModuleEndpoint(BaseAPIView):
 
 
 class InitiativeIssueEndpoint(BaseAPIView):
+    filter_backends = (ComplexFilterBackend,)
+    filterset_class = IssueFilterSet
+
     @allow_permission(ROLES, level="WORKSPACE")
     def get(self, request, slug, pk):
         get_object_or_404(Initiative, workspace__slug=slug, pk=pk)
-        issues = visible_issues(slug, request.user, pk).distinct()
+        issues = self.filter_queryset(visible_issues(slug, request.user, pk)).distinct()
         issues = issue_queryset_grouper(queryset=annotate_issue_list(issues), group_by=False, sub_group_by=False)
         return Response(serialize_issue_list(issues, request.user))

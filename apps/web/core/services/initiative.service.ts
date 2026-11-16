@@ -5,7 +5,13 @@
  */
 
 import { API_BASE_URL } from "@plane/constants";
-import type { TInitiative, TInitiativeCreatePayload, TInitiativeUpdatePayload, TIssue } from "@plane/types";
+import type {
+  TInitiative,
+  TInitiativeCreatePayload,
+  TInitiativeUpdatePayload,
+  TIssue,
+  TWorkItemFilterExpression,
+} from "@plane/types";
 import { APIService } from "@/services/api.service";
 
 export class InitiativeService extends APIService {
@@ -45,7 +51,9 @@ export class InitiativeService extends APIService {
     await this.delete(`${this.base(slug)}${id}/modules/${moduleId}/`);
   }
 
-  async listIssues(slug: string, id: string): Promise<TIssue[]> {
-    return this.get(`${this.base(slug)}${id}/issues/`).then((response) => response.data);
+  async listIssues(slug: string, id: string, filters?: TWorkItemFilterExpression): Promise<TIssue[]> {
+    return this.get(`${this.base(slug)}${id}/issues/`, {
+      params: { filters: JSON.stringify(filters ?? {}) },
+    }).then((response) => response.data);
   }
 }

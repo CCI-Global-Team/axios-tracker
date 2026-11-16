@@ -6,24 +6,19 @@
 
 import { useEffect, useState } from "react";
 import { observer } from "mobx-react";
-import { useSearchParams } from "react-router";
+import type { IWorkItemFilterInstance } from "@plane/shared-state";
+import { Button } from "@plane/propel/button";
+import { Loader } from "@plane/ui";
+import { WorkItemFiltersRow } from "@/components/work-item-filters/filters-row";
 import { PlanBoard } from "@/components/issues/issue-layouts/plan/board";
 import { useIssueDetail } from "@/hooks/store/use-issue-detail";
 import { BoardView } from "./board";
 import { CalendarView } from "./calendar";
 import { ListView } from "./list";
-import { AppliedWorkItemFilters, WorkItemFiltersDropdown } from "./filters";
-import type { FilterField, GroupBy, WorkItem } from "./model";
-import {
-  applyFilters,
-  FILTER_FIELDS,
-  getFilterOptions,
-  groupItems,
-  isGroupBy,
-  readFilters,
-  withSelectedOptions,
-  writeFilters,
-} from "./model";
+import type { InitiativeFiltersProps } from "./filters";
+import { InitiativeWorkItemFilters } from "./filters";
+import type { GroupBy, WorkItem } from "./model";
+import { filterItems, groupItems, isGroupBy } from "./model";
 import { ITEM_FOCUS } from "./parts";
 import { TableView } from "./table";
 import { WorkItemsToolbar } from "./toolbar";
@@ -33,34 +28,23 @@ import type { InitiativeView } from "./view-switcher";
 import { useInitiativeView, ViewSwitcher } from "./view-switcher";
 
 const GROUP_KEY = "axios:initiative-group";
-const WorkItemsViews = observer(function WorkItemsViews({ view, ...props }: WorkItemsProps & { view: InitiativeView }) {
+type Props = WorkItemsProps &
+  InitiativeFiltersProps & {
+    isLoading: boolean;
+    hasError: boolean;
+    onRetry: () => void;
+  };
+const WorkItemsViews = observer(function WorkItemsViews({
+  view,
+  filter,
+  isLoading,
+  hasError,
+  onRetry,
+  ...props
+}: Props & { view: InitiativeView; filter: IWorkItemFilterInstance | undefined }) {
   const allItems = useWorkItems(props);
   const { setPeekIssue } = useIssueDetail();
   const [query, setQuery] = useState("");
-  const [params, setParams] = useSearchParams();
-  const filters = readFilters(params);
-  const options = withSelectedOptions(getFilterOptions(allItems), filters);
-  const onToggle = (field: FilterField, value: string) =>
-    setParams(
-      () => {
-        const previous = new URLSearchParams(window.location.search);
-        const next = readFilters(previous);
-        next[field] = next[field].includes(value)
-          ? next[field].filter((entry) => entry !== value)
-          : [...next[field], value];
-        return writeFilters(previous, next);
-      },
-      { replace: true }
-    );
-  const clearFilters = () =>
-    setParams(
-      () => {
-        const next = new URLSearchParams(window.location.search);
-        FILTER_FIELDS.forEach(({ id }) => next.delete(id));
-        return next;
-      },
-      { replace: true }
-    );
   const [groupBy, setGroupBy] = useState<GroupBy>("status");
   useEffect(() => {
     try {
@@ -78,8 +62,9 @@ const WorkItemsViews = observer(function WorkItemsViews({ view, ...props }: Work
       /* Keep the in-memory selection. */
     }
   };
-  const items = applyFilters(allItems, filters, view === "plan" ? "" : query);
-  const noMatches = !items.length && (query.trim() !== "" || FILTER_FIELDS.some(({ id }) => filters[id].length));
+  const search = view === "plan" ? "" : query;
+  const items = filterItems(allItems, search);
+  const noMatches = !items.length && (search.trim() !== "" || filter?.hasActiveFilters);
   const groups = groupItems(
     items,
     groupBy,
@@ -100,16 +85,28 @@ const WorkItemsViews = observer(function WorkItemsViews({ view, ...props }: Work
         showSearch={view !== "plan"}
         groupBy={view === "board" || view === "list" ? groupBy : undefined}
         onGroupBy={changeGroup}
-        filters={<WorkItemFiltersDropdown filters={filters} options={options} onToggle={onToggle} />}
+        filter={filter}
       />
-      <AppliedWorkItemFilters filters={filters} options={options} onToggle={onToggle} onClear={clearFilters} />
-      {noMatches ? (
+      {filter && <WorkItemFiltersRow filter={filter} />}
+      {hasError ? (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+          <p className="text-13 text-secondary">Work items could not be loaded.</p>
+          <Button variant="secondary" onClick={onRetry}>
+            Try again
+          </Button>
+        </div>
+      ) : isLoading ? (
+        <Loader className="space-y-3 p-4">
+          <Loader.Item height="40px" />
+          <Loader.Item height="320px" />
+        </Loader>
+      ) : noMatches ? (
         <div className="p-4 text-13 text-tertiary" role="status">
           <p>No work items match these filters.</p>
           <button
             type="button"
             onClick={() => {
-              clearFilters();
+              void filter?.clearFilters();
               setQuery("");
             }}
             className={`mt-2 rounded-md border border-subtle px-3 py-2 text-12 text-secondary max-sm:min-h-11 ${ITEM_FOCUS}`}
@@ -130,7 +127,7 @@ const WorkItemsViews = observer(function WorkItemsViews({ view, ...props }: Work
   );
 });
 
-export function InitiativeWorkItems(props: WorkItemsProps) {
+export function InitiativeWorkItems(props: Props) {
   const { view, setView } = useInitiativeView();
   return (
     <div className="flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-surface-1">
@@ -141,7 +138,9 @@ export function InitiativeWorkItems(props: WorkItemsProps) {
         aria-labelledby={`initiative-tab-${view}`}
         className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
       >
-        <WorkItemsViews view={view} {...props} />
+        <InitiativeWorkItemFilters {...props}>
+          {({ filter }) => <WorkItemsViews view={view} filter={filter} {...props} />}
+        </InitiativeWorkItemFilters>
       </div>
     </div>
   );

@@ -27,15 +27,14 @@ import { useProject } from "@/hooks/store/use-project";
 import { useUserPermissions } from "@/hooks/store/user";
 import { IssuesStoreContext } from "@/hooks/use-issue-layout-store";
 import { StoreContext } from "@/lib/store-context";
-import { InitiativeService } from "@/services/initiative.service";
 import { CreateUpdateInitiativeModal } from "./create-modal";
 import { initiativeErrorMessage } from "./error";
 import { InitiativeExample, InitiativeInfo } from "./explainer";
 import { InitiativeModulePicker } from "./module-picker";
 import { InitiativeProgress } from "./progress";
+import { useInitiativeFilters } from "./views/filters";
 import { InitiativeWorkItems } from "./views/root";
-
-const service = new InitiativeService();
+import { useInitiativeIssues } from "./views/use-work-items";
 
 type Props = { workspaceSlug: string; initiativeId: string };
 
@@ -70,11 +69,8 @@ export const InitiativeDetail = observer(function InitiativeDetail({ workspaceSl
       return activeModules;
     }
   );
-  const items = useSWR(["INITIATIVE_ISSUES", workspaceSlug, initiativeId], async () => {
-    const issues = await service.listIssues(workspaceSlug, initiativeId);
-    rootStore.issue.issues.addIssue(issues);
-    return issues.map((issue) => issue.id);
-  });
+  const filters = useInitiativeFilters(workspaceSlug, initiativeId);
+  const items = useInitiativeIssues(workspaceSlug, initiativeId, filters.expression);
   const refresh = async () => {
     await Promise.all([details.mutate(), items.mutate()]);
   };
@@ -294,22 +290,16 @@ export const InitiativeDetail = observer(function InitiativeDetail({ workspaceSl
                 </Button>
               )}
             </div>
-          ) : items.error ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
-              <p className="text-13 text-secondary">Work items could not be loaded.</p>
-              <Button variant="secondary" onClick={() => void items.mutate()}>
-                Try again
-              </Button>
-            </div>
-          ) : !items.data ? (
-            <Loader className="space-y-3 p-4">
-              <Loader.Item height="40px" />
-              <Loader.Item height="320px" />
-            </Loader>
           ) : (
             <InitiativeWorkItems
               workspaceSlug={workspaceSlug}
-              issueIds={items.data}
+              {...filters}
+              projectIds={initiative.project_ids}
+              moduleIds={initiative.module_ids}
+              isLoading={items.isLoading}
+              hasError={!!items.error}
+              onRetry={() => void items.mutate()}
+              issueIds={items.data ?? []}
               issueMap={rootStore.issue.issues.issuesMap}
               areaBy="project"
               isLoadingMore={false}

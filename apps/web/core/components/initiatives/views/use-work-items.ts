@@ -4,7 +4,12 @@
  * See the LICENSE file for details.
  */
 
+import { useContext } from "react";
 import type { ComponentProps } from "react";
+import useSWR from "swr";
+import type { TWorkItemFilterExpression } from "@plane/types";
+import { StoreContext } from "@/lib/store-context";
+import { InitiativeService } from "@/services/initiative.service";
 import type { PlanBoard } from "@/components/issues/issue-layouts/plan/board";
 import { usePlanData } from "@/components/issues/issue-layouts/plan/use-plan-data";
 import { useMember } from "@/hooks/store/use-member";
@@ -16,6 +21,25 @@ import type { WorkItem } from "./model";
 import { compareItems } from "./model";
 
 export type WorkItemsProps = ComponentProps<typeof PlanBoard>;
+
+const service = new InitiativeService();
+
+export function useInitiativeIssues(
+  workspaceSlug: string,
+  initiativeId: string,
+  expression: TWorkItemFilterExpression
+) {
+  const rootStore = useContext(StoreContext);
+  return useSWR(
+    ["INITIATIVE_ISSUES", workspaceSlug, initiativeId, expression],
+    async () => {
+      const issues = await service.listIssues(workspaceSlug, initiativeId, expression);
+      rootStore.issue.issues.addIssue(issues);
+      return issues.map((issue) => issue.id);
+    },
+    { keepPreviousData: true }
+  );
+}
 
 // Called inside an observer: read observable issue fields on each render, including peek edits.
 export function useWorkItems(props: WorkItemsProps): WorkItem[] {
