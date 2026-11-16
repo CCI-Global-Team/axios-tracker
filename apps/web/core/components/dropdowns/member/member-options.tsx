@@ -307,6 +307,14 @@ export const MemberOptions = observer(function MemberOptions(props: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search name, username or email"
+            // A people search, not a form field: without this Chrome reads "email" in the
+            // placeholder and offers saved addresses, anchored where the field was before the
+            // popover was positioned.
+            autoComplete="off"
+            name="member-search"
+            spellCheck={false}
+            data-1p-ignore
+            data-lpignore="true"
             displayValue={(assigned: any) => assigned?.name}
             onKeyDown={searchInputKeyDown}
           />

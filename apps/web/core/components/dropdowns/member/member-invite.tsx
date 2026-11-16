@@ -111,6 +111,11 @@ export const MemberInvite = observer(function MemberInvite(props: Props) {
           // oxlint-disable-next-line jsx-a11y/no-autofocus -- the field is opened on purpose to type into
           autoFocus
           type="email"
+          // The address of someone else, never the viewer's own saved ones.
+          autoComplete="off"
+          name="invite-email"
+          data-1p-ignore
+          data-lpignore="true"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={onKeyDown}
