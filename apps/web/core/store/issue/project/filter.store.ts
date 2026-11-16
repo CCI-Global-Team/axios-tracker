@@ -42,11 +42,16 @@ export interface IProjectIssuesFilter extends IBaseIssueFilterStore {
   ) => Partial<Record<TIssueParams, string | boolean>>;
   getIssueFilters(projectId: string): IIssueFilters | undefined;
   // action
-  fetchFilters: (workspaceSlug: string, projectId: string) => Promise<void>;
+  fetchFilters: (
+    workspaceSlug: string,
+    projectId: string,
+    richFiltersOverride?: TWorkItemFilterExpression
+  ) => Promise<void>;
   updateFilterExpression: (
     workspaceSlug: string,
     projectId: string,
-    filters: TWorkItemFilterExpression
+    filters: TWorkItemFilterExpression,
+    persist?: boolean
   ) => Promise<void>;
   updateFilters: (
     workspaceSlug: string,
@@ -153,7 +158,7 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
     }
   );
 
-  fetchFilters = async (workspaceSlug: string, projectId: string) => {
+  fetchFilters = async (workspaceSlug: string, projectId: string, richFiltersOverride?: TWorkItemFilterExpression) => {
     const _filters = await this.projectService.getProjectUserProperties(workspaceSlug, projectId);
 
     const richFilters = _filters?.rich_filters;
@@ -190,7 +195,7 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
     }
 
     runInAction(() => {
-      set(this.filters, [projectId, "richFilters"], richFilters);
+      set(this.filters, [projectId, "richFilters"], richFiltersOverride ?? richFilters);
       set(this.filters, [projectId, "displayFilters"], displayFilters);
       set(this.filters, [projectId, "displayProperties"], displayProperties);
       set(this.filters, [projectId, "kanbanFilters"], kanbanFilters);
@@ -205,7 +210,8 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
   updateFilterExpression: IProjectIssuesFilter["updateFilterExpression"] = async (
     workspaceSlug,
     projectId,
-    filters
+    filters,
+    persist = true
   ) => {
     try {
       runInAction(() => {
@@ -213,6 +219,8 @@ export class ProjectIssuesFilter extends IssueFilterHelperStore implements IProj
       });
 
       this.rootIssueStore.projectIssues.fetchIssuesWithExistingPagination(workspaceSlug, projectId, "mutation");
+      // CCI: filters opened from a shared link apply to this visit only, so they are not saved.
+      if (!persist) return;
       await this.projectService.updateProjectUserProperties(workspaceSlug, projectId, {
         rich_filters: filters,
       });
