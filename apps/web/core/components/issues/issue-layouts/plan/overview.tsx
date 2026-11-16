@@ -242,7 +242,6 @@ export function OverviewView(props: Props) {
               <ItemList
                 data={props}
                 nodes={blockingMost}
-                areaById={areaById}
                 right={(n, i) =>
                   i === 0 ? (
                     <span className="rounded-full bg-warning-subtle px-2 py-0.5 text-11 font-medium text-warning-primary">
@@ -269,7 +268,7 @@ export function OverviewView(props: Props) {
               }
             />
             {unowned.length ? (
-              <ItemList data={props} nodes={unowned} areaById={areaById} right={statusLabel} onOpenItem={onOpenItem} />
+              <ItemList data={props} nodes={unowned} right={statusLabel} onOpenItem={onOpenItem} />
             ) : (
               <Empty text="Everything open has an owner." done />
             )}
@@ -317,7 +316,6 @@ export function OverviewView(props: Props) {
 function ItemList(props: {
   data: TPlanShared;
   nodes: TPlanNode[];
-  areaById: TPlanShared["areaById"];
   right: (n: TPlanNode, i: number) => React.ReactNode;
   onOpenItem: (id: string) => void;
 }) {
@@ -332,7 +330,7 @@ function ItemList(props: {
             onClick={() => props.onOpenItem(n.id)}
             className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-sm px-1 py-2 text-left text-13 outline-none hover:bg-layer-transparent-hover focus-visible:ring-2 focus-visible:ring-[var(--border-accent-strong)] max-md:min-h-11"
           >
-            <ItemKey node={n} area={props.areaById.get(n.areaId ?? "")} />
+            <ItemKey node={n} area={props.data.areaById.get(n.areaId ?? "")} />
             <span className="truncate text-primary">{n.name}</span>
             <span className="text-12 whitespace-nowrap text-tertiary tabular-nums">{props.right(n, i)}</span>
           </PlanPreview>
