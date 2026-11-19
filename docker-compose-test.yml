@@ -71,31 +71,24 @@ services:
       timeout: 10s
       retries: 10
 
+  # MinIO's own images can no longer be pulled from Docker Hub or quay.io.
+  # Bitnami's frozen legacy build is still published and pinned here; it
+  # creates the bucket at startup from MINIO_DEFAULT_BUCKETS.
   test-minio:
-    image: minio/minio
+    image: bitnamilegacy/minio:2025.7.23
     networks:
       - test_env
-    env_file:
-      - ./apps/api/.env
     environment:
       MINIO_ROOT_USER: ${AWS_ACCESS_KEY_ID:-access-key}
       MINIO_ROOT_PASSWORD: ${AWS_SECRET_ACCESS_KEY:-secret-key}
-    entrypoint: >
-      /bin/sh -c "
-      mkdir -p /export/${AWS_S3_BUCKET_NAME:-uploads} &&
-      minio server /export --console-address ':9090' &
-      sleep 3 &&
-      mc alias set local http://localhost:9000 ${AWS_ACCESS_KEY_ID:-access-key} ${AWS_SECRET_ACCESS_KEY:-secret-key} &&
-      mc mb local/${AWS_S3_BUCKET_NAME:-uploads} -p || true &&
-      tail -f /dev/null
-      "
+      MINIO_DEFAULT_BUCKETS: ${AWS_S3_BUCKET_NAME:-uploads}
     tmpfs:
-      - /export
+      - /bitnami/minio/data:mode=1777
     healthcheck:
-      test: ["CMD", "mc", "ready", "local"]
-      interval: 10s
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 20
 
   api-tests:
     build:
