@@ -452,36 +452,27 @@ def track_estimate_points(
     issue_activities,
     epoch,
 ):
-    if current_instance.get("estimate_point") != requested_data.get("estimate_point"):
-        old_estimate = (
-            EstimatePoint.objects.filter(pk=current_instance.get("estimate_point")).first()
-            if current_instance.get("estimate_point") is not None
-            else None
-        )
-        new_estimate = (
-            EstimatePoint.objects.filter(pk=requested_data.get("estimate_point")).first()
-            if requested_data.get("estimate_point") is not None
-            else None
-        )
+    old_id = current_instance.get("estimate_point")
+    new_id = requested_data.get("estimate_point")
+    if old_id != new_id:
+        # all_objects: a point deleted from the estimate still names the value it had.
+        old_estimate = EstimatePoint.all_objects.filter(pk=old_id).first() if old_id is not None else None
+        new_estimate = EstimatePoint.all_objects.filter(pk=new_id).first() if new_id is not None else None
+        # Clearing an estimate leaves only the old point to name the estimate type.
+        estimate = new_estimate or old_estimate
         issue_activities.append(
             IssueActivity(
                 issue_id=issue_id,
                 actor_id=actor_id,
                 verb="removed" if new_estimate is None else "updated",
-                old_identifier=(
-                    current_instance.get("estimate_point")
-                    if current_instance.get("estimate_point") is not None
-                    else None
-                ),
-                new_identifier=(
-                    requested_data.get("estimate_point") if requested_data.get("estimate_point") is not None else None
-                ),
+                old_identifier=old_id,
+                new_identifier=new_id,
                 old_value=old_estimate.value if old_estimate else None,
                 new_value=new_estimate.value if new_estimate else None,
-                field="estimate_" + new_estimate.estimate.type,
+                field=f"estimate_{estimate.estimate.type}" if estimate else "estimate_point",
                 project_id=project_id,
                 workspace_id=workspace_id,
-                comment="updated the estimate point to ",
+                comment="removed the estimate point" if new_estimate is None else "updated the estimate point to ",
                 epoch=epoch,
             )
         )
