@@ -2,13 +2,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # See the LICENSE file for details.
 
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.core.management import BaseCommand, CommandError
-from django.template.loader import render_to_string
-from django.utils.html import strip_tags
 
 # Module imports
 from plane.license.utils.instance_value import get_email_configuration
+from plane.utils.email_render import render_email
 
 
 class Command(BaseCommand):
@@ -46,8 +46,8 @@ class Command(BaseCommand):
         # Prepare email details
         subject = "Test email from Axios"
 
-        html_content = render_to_string("emails/test_email.html")
-        text_content = strip_tags(html_content)
+        current_site = settings.APP_BASE_URL or settings.WEB_URL or ""
+        html_content, text_content = render_email("emails/test_email", {"current_site": current_site})
 
         self.stdout.write(self.style.SUCCESS("Trying to send test email..."))
 

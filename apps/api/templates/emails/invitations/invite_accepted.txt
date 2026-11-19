@@ -1,0 +1,8 @@
+{% autoescape off %}{{ email }} joined {{ workspace_name }}
+
+They accepted your invitation, and the access you set up for them is now in place:
+{% for grant in grants %}
+- {{ grant }}{% endfor %}
+
+Sent because you invited {{ email }} to {{ workspace_name }}.
+{% include "emails/_footer.txt" %}{% endautoescape %}

@@ -1,0 +1,15 @@
+{% autoescape off %}{{ assigner_name }} assigned you a work item
+
+{{ issue.identifier }}: {{ issue.name }}
+{{ project }} · {{ workspace }}
+{% if issue.state %}
+State:    {{ issue.state }}{% endif %}{% if issue.priority %}
+Priority: {{ issue.priority|title }}{% endif %}{% if issue.target_date %}
+Due:      {{ issue.target_date|date:"j M Y" }}{% endif %}
+
+Open the work item:
+{{ issue_url }}
+
+Sent to {{ receiver.email }} because you were assigned this work item.
+Email preferences: {{ user_preference }}
+{% include "emails/_footer.txt" %}{% endautoescape %}

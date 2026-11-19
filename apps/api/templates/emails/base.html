@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="x-apple-disable-message-reformatting">
+<meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
+<title>{% block title %}Axios{% endblock %}</title>
+<!--[if mso]>
+<noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript>
+<style>td,th,div,p,a,h1,span{font-family:"Segoe UI",Arial,sans-serif !important;}</style>
+<![endif]-->
+<style>
+  /* Tokens from packages/tailwind-config/variables.css (CCI default look):
+     brand #d82121, navy chrome #07152f, canvas #eef1f5, border #e3e7ed,
+     text #151f32 / #495364 / #646d7c. */
+  body { margin: 0; padding: 0; width: 100% !important; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+  table { border-collapse: collapse; mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+  img { border: 0; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
+  a { color: #2158a7; }
+  .ax-comment p { margin: 0 0 8px 0; }
+  @media only screen and (max-width: 620px) {
+    .ax-container { width: 100% !important; }
+    .ax-gutter { padding-left: 12px !important; padding-right: 12px !important; }
+    .ax-pad { padding-left: 24px !important; padding-right: 24px !important; }
+    .ax-h1 { font-size: 21px !important; line-height: 28px !important; }
+    .ax-code { font-size: 30px !important; letter-spacing: 6px !important; }
+    .ax-btn-table { width: 100% !important; }
+    .ax-btn-cell, .ax-btn-link { display: block !important; width: 100% !important; box-sizing: border-box; text-align: center !important; }
+  }
+  @media (prefers-color-scheme: dark) {
+    .ax-canvas { background-color: #0c111b !important; }
+    .ax-card { background-color: #151b27 !important; border-color: #263043 !important; }
+    .ax-panel { background-color: #1c2333 !important; border-color: #2c3649 !important; }
+    .ax-h1, .ax-strong { color: #f1f3f7 !important; }
+    .ax-text { color: #c4cbd7 !important; }
+    .ax-muted { color: #8e96a3 !important; }
+    .ax-rule { border-color: #263043 !important; }
+    .ax-link { color: #8fb4f0 !important; }
+    .ax-id { color: #f2837d !important; }
+  }
+  [data-ogsc] .ax-canvas { background-color: #0c111b !important; }
+  [data-ogsc] .ax-card { background-color: #151b27 !important; }
+  [data-ogsc] .ax-h1, [data-ogsc] .ax-strong { color: #f1f3f7 !important; }
+  [data-ogsc] .ax-text { color: #c4cbd7 !important; }
+</style>
+</head>
+<body class="ax-canvas" style="margin:0;padding:0;background-color:#eef1f5;">
+  <div style="display:none;font-size:1px;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;mso-hide:all;">{% block preheader %}{% endblock %}&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;&#8199;&#65279;&#847;</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="ax-canvas" style="background-color:#eef1f5;">
+    <tr>
+      <td align="center" class="ax-gutter" style="padding:32px 16px;">
+        <!--[if mso]><table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="ax-container" style="width:100%;max-width:560px;">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#07152f;border-radius:12px 12px 0 0;padding:16px 32px;" class="ax-pad">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  {% if current_site %}<td style="vertical-align:middle;padding-right:10px;">
+                    <a href="{{ current_site }}" style="text-decoration:none;"><img src="{{ current_site }}/icons/icon-192x192.png" width="28" height="28" alt="" style="display:block;width:28px;height:28px;border-radius:7px;"></a>
+                  </td>{% endif %}
+                  <td style="vertical-align:middle;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:17px;line-height:24px;font-weight:600;color:#ffffff;letter-spacing:-0.2px;">Axios</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <!-- Card -->
+          <tr>
+            <td class="ax-card ax-pad" style="background-color:#ffffff;border:1px solid #e3e7ed;border-top:0;border-radius:0 0 12px 12px;padding:32px 32px 28px 32px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+              {% block eyebrow %}{% endblock %}
+              <h1 class="ax-h1" style="margin:0 0 16px 0;font-size:22px;line-height:30px;font-weight:600;color:#151f32;letter-spacing:-0.3px;">{% block heading %}{% endblock %}</h1>
+              {% block content %}{% endblock %}
+              {% block action %}{% endblock %}
+              {% block after_action %}{% endblock %}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td class="ax-pad" style="padding:20px 32px 0 32px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:12px;line-height:18px;color:#646d7c;">
+              <p class="ax-muted" style="margin:0 0 6px 0;">{% block footer %}{% endblock %}</p>
+              <p class="ax-muted" style="margin:0;">Axios &middot; Celebration Church International</p>
+            </td>
+          </tr>
+        </table>
+        <!--[if mso]></td></tr></table><![endif]-->
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

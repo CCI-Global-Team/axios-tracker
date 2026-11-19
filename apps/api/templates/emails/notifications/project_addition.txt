@@ -1,0 +1,9 @@
+{% autoescape off %}You've been added to {{ project_name }}
+
+{{ inviter_first_name }} added you to the {{ project_name }} project in the {{ workspace_name }} workspace. Its work items are waiting for you.
+
+Open the project:
+{{ project_url }}
+
+Sent to {{ email }} because {{ inviter_first_name }} added you to {{ project_name }}.
+{% include "emails/_footer.txt" %}{% endautoescape %}

@@ -1,0 +1,6 @@
+{% autoescape off %}Email delivery is working
+
+This test confirms that this Axios instance can send email with its current settings.
+
+Sent by an Axios admin to test the email settings.
+{% include "emails/_footer.txt" %}{% endautoescape %}

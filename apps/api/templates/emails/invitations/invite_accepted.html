@@ -1,0 +1,15 @@
+{% extends "emails/base.html" %}
+{% block title %}Invitation accepted{% endblock %}
+{% block preheader %}{{ email }} joined {{ workspace_name }}.{% endblock %}
+{% block heading %}{{ email }} joined {{ workspace_name }}{% endblock %}
+{% block content %}
+<p class="ax-text" style="margin:0 0 16px 0;font-size:15px;line-height:24px;color:#495364;">They accepted your invitation, and the access you set up for them is now in place:</p>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 4px 0;">
+  <tr><td class="ax-panel" style="background-color:#f4f6f9;border:1px solid #e3e7ed;border-radius:10px;padding:10px 16px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      {% for grant in grants %}<tr><td class="ax-strong ax-rule" style="padding:6px 0;font-size:14px;line-height:22px;color:#151f32;{% if not forloop.first %}border-top:1px solid #e3e7ed;{% endif %}">{{ grant }}</td></tr>{% endfor %}
+    </table>
+  </td></tr>
+</table>
+{% endblock %}
+{% block footer %}Sent because you invited {{ email }} to {{ workspace_name }}.{% endblock %}

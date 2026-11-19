@@ -1,0 +1,11 @@
+{% autoescape off %}Your Axios email address changed
+
+Your Axios account now uses {{ email }}. Use it the next time you sign in.
+
+Open Axios:
+{{ current_site }}
+
+Didn't make this change? Tell your workspace admin straight away.
+
+Sent to {{ email }} because the email address on an Axios account changed.
+{% include "emails/_footer.txt" %}{% endautoescape %}
