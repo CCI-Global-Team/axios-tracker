@@ -1,0 +1,8 @@
+{% autoescape off %}Your Axios sign-in code: {{ code }}
+
+Enter this code on the Axios sign-in page. It expires in 10 minutes.
+
+Didn't try to sign in? You can ignore this email. Nobody can get in without the code.
+
+Sent to {{ email }} because someone asked to sign in to Axios with it.
+{% include "emails/_footer.txt" %}{% endautoescape %}

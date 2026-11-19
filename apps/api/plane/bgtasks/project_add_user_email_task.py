@@ -10,15 +10,14 @@ from celery import shared_task
 
 # Third party imports
 from django.core.mail import EmailMultiAlternatives, get_connection
-from django.template.loader import render_to_string
 
 
 # Module imports
 from plane.license.utils.instance_value import get_email_configuration
-from plane.utils.email import generate_plain_text_from_html
 from plane.utils.exception_logger import log_exception
 from plane.db.models import ProjectMember
 from plane.db.models import User
+from plane.utils.email_render import render_email
 
 
 @shared_task
@@ -56,11 +55,10 @@ def project_add_user_email(current_site, project_member_id, invitor_id):
         ) = get_email_configuration()
 
         # Set the subject
-        subject = "You have been invited to an Axios project"
+        subject = f"You've been added to {project_name} on Axios"
 
         # Render the email template
-        html_content = render_to_string("emails/notifications/project_addition.html", context)
-        text_content = generate_plain_text_from_html(html_content)
+        html_content, text_content = render_email("emails/notifications/project_addition", context)
         # Initialize the connection
         connection = get_connection(
             host=EMAIL_HOST,

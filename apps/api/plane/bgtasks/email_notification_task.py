@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 # Third party imports
 from celery import shared_task
 from django.core.mail import EmailMultiAlternatives, get_connection
-from django.template.loader import render_to_string
 
 # Django imports
 from django.utils import timezone
@@ -20,8 +19,8 @@ from django.utils import timezone
 from plane.db.models import EmailNotificationLog, Issue, User
 from plane.license.utils.instance_value import get_email_configuration
 from plane.settings.redis import redis_instance
-from plane.utils.email import generate_plain_text_from_html
 from plane.utils.exception_logger import log_exception
+from plane.utils.email_render import describe_changes, render_email
 
 
 def remove_unwanted_characters(input_text):
@@ -222,9 +221,12 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                     )
                 activity_time = changes.pop("activity_time")
                 # Parse the input string into a datetime object
-                formatted_time = datetime.strptime(activity_time, "%Y-%m-%d %H:%M:%S").strftime("%H:%M %p")
+                formatted_time = datetime.strptime(activity_time, "%Y-%m-%d %H:%M:%S").strftime("%H:%M UTC")
 
-                if changes:
+                # CCI: a person whose changes have nothing to show (a reaction, an estimate that went
+                # from nothing to nothing) gets no box, and is not the name the intro leads with.
+                rows = describe_changes(changes)
+                if rows:
                     template_data.append(
                         {
                             "actor_detail": {
@@ -233,6 +235,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                                 "last_name": actor.last_name,
                             },
                             "changes": changes,
+                            "rows": rows,
                             "issue_details": {
                                 "name": issue.name,
                                 "identifier": f"{issue.project.identifier}-{issue.sequence_id}",
@@ -240,6 +243,10 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                             "activity_time": str(formatted_time),
                         }
                     )
+
+            if not template_data and not comments:
+                release_lock(lock_id=lock_id)
+                return
 
             summary = "Updates were made to the issue by"
 
@@ -264,8 +271,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                 "entity_type": "issue",
                 "current_site": base_api,
             }
-            html_content = render_to_string("emails/notifications/issue-updates.html", context)
-            text_content = generate_plain_text_from_html(html_content)
+            html_content, text_content = render_email("emails/notifications/issue-updates", context)
 
             try:
                 connection = get_connection(

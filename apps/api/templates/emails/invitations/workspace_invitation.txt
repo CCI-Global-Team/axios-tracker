@@ -1,0 +1,11 @@
+{% autoescape off %}Join {{ workspace_name }} on Axios
+
+{{ first_name }} invited you to the {{ workspace_name }} workspace on Axios, where CCI teams plan and track their work.
+
+Accept the invitation:
+{{ abs_url }}
+
+Not expecting this? You can ignore it and nothing will change.
+
+Sent to {{ email }} because {{ first_name }} invited this address to {{ workspace_name }}.
+{% include "emails/_footer.txt" %}{% endautoescape %}

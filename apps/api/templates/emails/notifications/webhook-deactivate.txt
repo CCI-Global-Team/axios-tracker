@@ -1,0 +1,11 @@
+{% autoescape off %}A webhook was turned off
+
+Axios stopped sending events to one of your webhooks because its endpoint kept failing.
+
+{{ message }}
+
+Fix the endpoint, then turn the webhook back on in its settings:
+{{ webhook_url }}
+
+Sent to {{ email }} because you manage this workspace's webhooks.
+{% include "emails/_footer.txt" %}{% endautoescape %}

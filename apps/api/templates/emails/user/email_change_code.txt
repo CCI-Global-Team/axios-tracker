@@ -1,0 +1,8 @@
+{% autoescape off %}Confirm your new Axios email address
+
+Your confirmation code: {{ code }}
+
+You asked to change your Axios email address to {{ email }}. Enter this code in Axios to confirm it. It expires in 10 minutes.
+
+Didn't ask for this? Ignore this email and your address stays as it is.
+{% include "emails/_footer.txt" %}{% endautoescape %}

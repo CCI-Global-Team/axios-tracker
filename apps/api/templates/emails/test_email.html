@@ -1,6 +1,8 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"> 
-<html>
-    <p>This is a test email sent to verify if email configuration is working as expected in your Axios instance.</p>
-
-<p>Regards,</br> Team Axios </p>
-</html>
+{% extends "emails/base.html" %}
+{% block title %}Test email from Axios{% endblock %}
+{% block preheader %}Email delivery is working.{% endblock %}
+{% block heading %}Email delivery is working{% endblock %}
+{% block content %}
+<p class="ax-text" style="margin:0;font-size:15px;line-height:24px;color:#495364;">This test confirms that this Axios instance can send email with its current settings.</p>
+{% endblock %}
+{% block footer %}Sent by an Axios admin to test the email settings.{% endblock %}

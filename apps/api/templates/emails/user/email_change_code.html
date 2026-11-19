@@ -1,0 +1,10 @@
+{% extends "emails/base.html" %}
+{% block title %}Confirm your new email address{% endblock %}
+{% block preheader %}Your confirmation code is {{ code }}. It expires in 10 minutes.{% endblock %}
+{% block heading %}Confirm your new email address{% endblock %}
+{% block content %}
+<p class="ax-text" style="margin:0 0 16px 0;font-size:15px;line-height:24px;color:#495364;">You asked to change your Axios email address to <strong class="ax-strong" style="color:#151f32;font-weight:600;">{{ email }}</strong>. Enter this code in Axios to confirm it. It expires in 10 minutes.</p>
+{% include "emails/_code.html" %}
+<p class="ax-muted" style="margin:0;font-size:13px;line-height:20px;color:#646d7c;">Didn't ask for this? Ignore this email and your address stays as it is.</p>
+{% endblock %}
+{% block footer %}Sent to {{ email }} to confirm it as a new Axios sign-in address.{% endblock %}

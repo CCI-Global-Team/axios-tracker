@@ -1,0 +1,6 @@
+{% autoescape off %}Your Axios analytics export is ready
+
+The data you exported from Axios Analytics is attached to this email as a CSV file. Open it in Excel, Google Sheets or any BI tool.
+
+Sent because you requested an analytics export.
+{% include "emails/_footer.txt" %}{% endautoescape %}

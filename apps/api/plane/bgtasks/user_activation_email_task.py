@@ -7,7 +7,6 @@ import logging
 
 # Django imports
 from django.core.mail import EmailMultiAlternatives, get_connection
-from django.template.loader import render_to_string
 
 # Third party imports
 from celery import shared_task
@@ -15,8 +14,8 @@ from celery import shared_task
 # Module imports
 from plane.db.models import User
 from plane.license.utils.instance_value import get_email_configuration
-from plane.utils.email import generate_plain_text_from_html
 from plane.utils.exception_logger import log_exception
+from plane.utils.email_render import render_email
 
 
 @shared_task
@@ -33,9 +32,7 @@ def user_activation_email(current_site, user_id):
         }
 
         # Send email to user
-        html_content = render_to_string("emails/user/user_activation.html", context)
-
-        text_content = generate_plain_text_from_html(html_content)
+        html_content, text_content = render_email("emails/user/user_activation", context)
         # Configure email connection from the database
         (
             EMAIL_HOST,

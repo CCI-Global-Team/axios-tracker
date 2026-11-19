@@ -1,0 +1,11 @@
+{% autoescape off %}Your Axios account is active again
+
+Welcome back. Your Axios account has been reactivated, and your work items and projects are where you left them.
+
+Open Axios:
+{{ profile_url }}
+
+Didn't expect this? Tell your workspace admin.
+
+Sent to {{ email }} because this Axios account was reactivated.
+{% include "emails/_footer.txt" %}{% endautoescape %}

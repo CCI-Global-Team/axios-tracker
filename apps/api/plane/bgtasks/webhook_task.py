@@ -19,7 +19,6 @@ from django.conf import settings
 from django.db.models import Prefetch
 from django.core.mail import EmailMultiAlternatives, get_connection
 from django.core.serializers.json import DjangoJSONEncoder
-from django.template.loader import render_to_string
 from django.core.exceptions import ObjectDoesNotExist
 
 # Module imports
@@ -50,9 +49,9 @@ from plane.db.models import (
     IssueAssignee,
 )
 from plane.license.utils.instance_value import get_email_configuration
-from plane.utils.email import generate_plain_text_from_html
 from plane.utils.exception_logger import log_exception
 from plane.utils.url_security import pinned_fetch
+from plane.utils.email_render import render_email
 
 
 SERIALIZER_MAPPER = {
@@ -194,7 +193,7 @@ def send_webhook_deactivation_email(webhook_id: str, receiver_id: str, current_s
         webhook = Webhook.objects.get(pk=webhook_id)
 
         # Get the webhook payload
-        subject = "Webhook Deactivated"
+        subject = "A webhook was turned off in Axios"
         message = f"Webhook {webhook.url} has been deactivated due to failed requests."
 
         # Send the mail
@@ -204,8 +203,7 @@ def send_webhook_deactivation_email(webhook_id: str, receiver_id: str, current_s
             "webhook_url": f"{current_site}/{str(webhook.workspace.slug)}/settings/webhooks/{str(webhook.id)}",
             "current_site": current_site,
         }
-        html_content = render_to_string("emails/notifications/webhook-deactivate.html", context)
-        text_content = generate_plain_text_from_html(html_content)
+        html_content, text_content = render_email("emails/notifications/webhook-deactivate", context)
 
         # Set the email connection
         connection = get_connection(

@@ -1,0 +1,17 @@
+{% autoescape off %}{{ issue.issue_identifier }}: {{ issue.name }}
+{{ project }} · {{ workspace }}
+
+{% if data|length > 0 %}{{ data.0.actor_detail.first_name }} {{ data.0.actor_detail.last_name }}{% else %}{{ comments.0.actor_detail.first_name }} {{ comments.0.actor_detail.last_name }}{% endif %}{% if actors_involved > 1 %} and others{% endif %} updated this work item.
+{% for update in data %}{% if update.rows %}
+{{ update.actor_detail.first_name }} {{ update.actor_detail.last_name }}, {{ update.activity_time }}{% for row in update.rows %}
+- {{ row.label }}: {% if row.kind == "change" %}{% if row.old and row.new %}{{ row.old }} -> {{ row.new }}{% elif row.new %}{{ row.new }}{% else %}{{ row.old }} removed{% endif %}{% else %}{% if row.added %}added {{ row.added|join:", " }}{% if row.more_added %} and {{ row.more_added }} more{% endif %}{% endif %}{% if row.added and row.removed %}; {% endif %}{% if row.removed %}{% if row.link %}{{ row.removed|length|add:row.more_removed }} removed{% else %}removed {{ row.removed|join:", " }}{% if row.more_removed %} and {{ row.more_removed }} more{% endif %}{% endif %}{% endif %}{% endif %}{% endfor %}
+{% endif %}{% endfor %}{% for comment in comments %}
+{{ comment.actor_detail.first_name }} {{ comment.actor_detail.last_name }} commented:{% for actor_comment in comment.actor_comments.new_value %}
+> {{ actor_comment|striptags }}{% endfor %}
+{% endfor %}
+Open the work item:
+{{ issue_url }}
+
+Sent to {{ receiver.email }} because you follow {{ issue.issue_identifier }}.
+Email preferences: {{ user_preference }}
+{% include "emails/_footer.txt" %}{% endautoescape %}

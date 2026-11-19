@@ -1,0 +1,11 @@
+{% autoescape off %}Your Axios account is deactivated
+
+You deactivated your Axios account. Your work items, cycles and other data stay in their projects for your teammates.
+
+Changed your mind? Sign in again to reactivate it:
+{{ login_url }}
+
+Didn't do this? Tell your workspace admin.
+
+Sent to {{ email }} because this Axios account was deactivated.
+{% include "emails/_footer.txt" %}{% endautoescape %}
