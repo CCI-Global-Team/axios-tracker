@@ -52,6 +52,14 @@ class TestTrackEstimatePoints:
         assert activity.new_value is None
         assert activity.old_identifier == str(points[0].id)
         assert activity.new_identifier is None
+        assert activity.comment == "removed the estimate point"
+
+    def test_clearing_a_deleted_point_keeps_its_value(self, project, create_user, points):
+        points[0].delete()
+        [activity] = _track(project, create_user, str(points[0].id), None)
+
+        assert activity.field == "estimate_points"
+        assert activity.old_value == "3"
 
     def test_changing_an_estimate_records_an_update(self, project, create_user, points):
         [activity] = _track(project, create_user, str(points[0].id), str(points[1].id))
