@@ -253,3 +253,16 @@ def test_an_update_with_nothing_to_show_draws_no_empty_box():
     update = {**CASES[7][1]["data"][0], "changes": changes, "rows": describe_changes(changes)}
     html, _ = render_email("emails/notifications/issue-updates", {**CASES[7][1], "data": [update]})
     assert html.count('class="ax-panel"') == 1  # the comment only
+
+
+@pytest.mark.unit
+def test_noise_fields_get_no_row_and_archive_reads_as_words():
+    rows = describe_changes(
+        {
+            "reaction": {"old_value": [], "new_value": ["128077"]},
+            "vote": {"old_value": [], "new_value": ["1"]},
+            "archived_at": {"old_value": ["archive"], "new_value": ["restore"]},
+            "release": {"old_value": [""], "new_value": ["v2.3"]},
+        }
+    )
+    assert [(r["label"], r["new"]) for r in rows] == [("Release", "v2.3"), ("Archive", "Restored")]

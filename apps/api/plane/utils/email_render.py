@@ -39,6 +39,8 @@ _SCALAR_FIELDS = {
     "estimate_time": "Estimate",
     "parent": "Parent",
     "cycles": "Cycle",
+    "release": "Release",
+    "archived_at": "Archive",
 }
 _SET_FIELDS = {
     "assignees": "Assignees",
@@ -56,7 +58,20 @@ _SET_FIELDS = {
     "implemented_by": "Implemented by",
     "link": "Links",
 }
-_SKIPPED_FIELDS = {"description", "comment", "mention", "activity_time"}
+# Reactions, votes and the rest say nothing a follower needs from an email, and their raw values
+# ("128077", "archive") would read as noise.
+_SKIPPED_FIELDS = {
+    "description",
+    "comment",
+    "mention",
+    "activity_time",
+    "reaction",
+    "vote",
+    "draft",
+    "intake",
+    "public_link",
+    "issue",
+}
 _MAX_LISTED = 3
 
 
@@ -68,9 +83,12 @@ def _values(change, key):
 def _display(field, value):
     if field in ("start_date", "target_date"):
         try:
-            return datetime.date.fromisoformat(value[:10]).strftime("%-d %b %Y")
+            day = datetime.date.fromisoformat(value[:10])
+            return f"{day.day} {day:%b %Y}"
         except ValueError:
             return value
+    if field == "archived_at":
+        return "Restored" if value == "restore" else "Archived"
     if field == "priority":
         return value.title()
     return value
@@ -95,16 +113,17 @@ def describe_changes(changes):
             counts = [f"{len(new)} added"] if new else []
             counts += [f"{len(old)} removed"] if old else []
             rows.append({"label": "Attachments", "kind": "change", "old": "", "new": ", ".join(counts)})
+        elif field == "archived_at":
+            rows.append({"label": "Archive", "kind": "change", "old": "", "new": _display(field, (new or old)[-1])})
         elif field in _SET_FIELDS:
-            added, removed = new, old
             rows.append(
                 {
                     "label": _SET_FIELDS[field],
                     "kind": "set",
-                    "added": added[:_MAX_LISTED],
-                    "removed": removed[:_MAX_LISTED],
-                    "more_added": max(len(added) - _MAX_LISTED, 0),
-                    "more_removed": max(len(removed) - _MAX_LISTED, 0),
+                    "added": new[:_MAX_LISTED],
+                    "removed": old[:_MAX_LISTED],
+                    "more_added": max(len(new) - _MAX_LISTED, 0),
+                    "more_removed": max(len(old) - _MAX_LISTED, 0),
                     "link": field == "link",
                 }
             )
@@ -116,6 +135,7 @@ def describe_changes(changes):
                     "kind": "change",
                     "old": _display(field, old[0]) if old else "",
                     "new": _display(field, new[-1]) if new else "",
+                    "nowrap": field in ("start_date", "target_date"),
                 }
             )
     return rows

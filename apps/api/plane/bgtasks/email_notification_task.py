@@ -223,7 +223,10 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                 # Parse the input string into a datetime object
                 formatted_time = datetime.strptime(activity_time, "%Y-%m-%d %H:%M:%S").strftime("%H:%M UTC")
 
-                if changes:
+                # CCI: a person whose changes have nothing to show (a reaction, an estimate that went
+                # from nothing to nothing) gets no box, and is not the name the intro leads with.
+                rows = describe_changes(changes)
+                if rows:
                     template_data.append(
                         {
                             "actor_detail": {
@@ -232,7 +235,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                                 "last_name": actor.last_name,
                             },
                             "changes": changes,
-                            "rows": describe_changes(changes),
+                            "rows": rows,
                             "issue_details": {
                                 "name": issue.name,
                                 "identifier": f"{issue.project.identifier}-{issue.sequence_id}",
@@ -240,6 +243,10 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                             "activity_time": str(formatted_time),
                         }
                     )
+
+            if not template_data and not comments:
+                release_lock(lock_id=lock_id)
+                return
 
             summary = "Updates were made to the issue by"
 
