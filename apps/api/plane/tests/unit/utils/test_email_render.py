@@ -6,11 +6,19 @@ import datetime
 
 import pytest
 
-from plane.utils.email_render import render_email
+from plane.utils.email_render import describe_changes, render_email
 
 SITE = "https://axios.example.test"
 ISSUE_URL = f"{SITE}/cci/projects/p1/issues/i1"
 PREFS = f"{SITE}/cci/settings/account/notifications/"
+
+# Shaped like email_notification_task.create_payload: every value str()'d, so "None" means empty.
+UPDATE_CHANGES = {
+    "state": {"old_value": ["Triage"], "new_value": ["In Progress"]},
+    "labels": {"old_value": [], "new_value": ["mobile", "Ikeja"]},
+    "target_date": {"old_value": ["2026-11-20"], "new_value": ["2026-11-24"]},
+    "estimate_points": {"old_value": ["None"], "new_value": ["3"]},
+}
 
 # (template, context, the action link the reader needs, a phrase the text part must carry)
 CASES = [
@@ -96,10 +104,8 @@ CASES = [
             "data": [
                 {
                     "actor_detail": {"avatar_url": "", "first_name": "Tolu", "last_name": "Bakare"},
-                    "changes": {
-                        "state": {"old_value": ["Triage"], "new_value": ["In Progress"]},
-                        "labels": {"old_value": [], "new_value": ["mobile", "Ikeja"]},
-                    },
+                    "changes": UPDATE_CHANGES,
+                    "rows": describe_changes(UPDATE_CHANGES),
                     "activity_time": "14:05 UTC",
                 }
             ],
@@ -122,7 +128,7 @@ CASES = [
             "current_site": SITE,
         },
         ISSUE_URL,
-        "It's failing on Ikeja & Yaba",
+        "Due date: 20 Nov 2026 -> 24 Nov 2026",
     ),
     (
         "emails/user/user_activation",
@@ -193,3 +199,57 @@ def test_html_part_escapes_values_the_text_part_keeps_verbatim():
     )
     assert "&lt;Ikeja&gt;" in html and "<Ikeja>" not in html
     assert "Campus label owner: <Ikeja>" in text
+
+
+@pytest.mark.unit
+def test_every_field_that_triggers_an_update_email_gets_a_row():
+    changes = {
+        "description": {"old_value": ["a"], "new_value": ["b"]},
+        "start_date": {"old_value": [""], "new_value": ["2026-11-20"]},
+        "target_date": {"old_value": ["2026-11-24"], "new_value": [""]},
+        "estimate_points": {"old_value": ["2"], "new_value": ["5"]},
+        "parent": {"old_value": ["MOB-12"], "new_value": ["MOB-40"]},
+        "cycles": {"old_value": [""], "new_value": ["Sprint 9"]},
+        "modules": {"old_value": ["Giving"], "new_value": []},
+        "blocked_by": {"old_value": [], "new_value": ["MOB-7"]},
+        "relates_to": {"old_value": [], "new_value": ["MOB-1", "MOB-2", "MOB-3", "MOB-4"]},
+        "attachment": {"old_value": ["None"], "new_value": ["a.png", "b.pdf"]},
+        "priority": {"old_value": ["None"], "new_value": ["None"]},
+    }
+    rows = {r["label"]: r for r in describe_changes(changes)}
+
+    assert list(rows) == [
+        "Start date",
+        "Due date",
+        "Estimate",
+        "Parent",
+        "Cycle",
+        "Modules",
+        "Blocked by",
+        "Related to",
+        "Attachments",
+    ]
+    assert rows["Start date"]["new"] == "20 Nov 2026" and rows["Start date"]["old"] == ""
+    assert rows["Due date"]["old"] == "24 Nov 2026" and rows["Due date"]["new"] == ""
+    assert (rows["Estimate"]["old"], rows["Estimate"]["new"]) == ("2", "5")
+    assert rows["Modules"]["removed"] == ["Giving"]
+    assert rows["Related to"]["added"] == ["MOB-1", "MOB-2", "MOB-3"] and rows["Related to"]["more_added"] == 1
+    assert rows["Attachments"]["new"] == "2 added"
+
+    _, text = render_email(
+        "emails/notifications/issue-updates",
+        {**CASES[7][1], "data": [{**CASES[7][1]["data"][0], "changes": changes, "rows": describe_changes(changes)}]},
+    )
+    assert "- Due date: 24 Nov 2026 removed" in text
+    assert "- Related to: added MOB-1, MOB-2, MOB-3 and 1 more" in text
+    assert "- Modules: removed Giving" in text
+    assert "- Cycle: Sprint 9" in text
+    assert "- Attachments: 2 added" in text
+
+
+@pytest.mark.unit
+def test_an_update_with_nothing_to_show_draws_no_empty_box():
+    changes = {"priority": {"old_value": ["None"], "new_value": ["None"]}}
+    update = {**CASES[7][1]["data"][0], "changes": changes, "rows": describe_changes(changes)}
+    html, _ = render_email("emails/notifications/issue-updates", {**CASES[7][1], "data": [update]})
+    assert html.count('class="ax-panel"') == 1  # the comment only

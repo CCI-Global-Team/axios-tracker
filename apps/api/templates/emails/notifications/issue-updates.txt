@@ -2,18 +2,10 @@
 {{ project }} · {{ workspace }}
 
 {% if data|length > 0 %}{{ data.0.actor_detail.first_name }} {{ data.0.actor_detail.last_name }}{% else %}{{ comments.0.actor_detail.first_name }} {{ comments.0.actor_detail.last_name }}{% endif %}{% if actors_involved > 1 %} and others{% endif %} updated this work item.
-{% for update in data %}
-{{ update.actor_detail.first_name }} {{ update.actor_detail.last_name }}, {{ update.activity_time }}{% if update.changes.name %}
-- Title: renamed to {{ issue.name }}{% endif %}{% if update.changes.state %}
-- State: {% if update.changes.state.old_value.0 %}{{ update.changes.state.old_value.0 }} -> {% endif %}{{ update.changes.state.new_value|last }}{% endif %}{% if update.changes.priority %}
-- Priority: {% if update.changes.priority.old_value.0 %}{{ update.changes.priority.old_value.0|title }} -> {% endif %}{{ update.changes.priority.new_value|last|title }}{% endif %}{% if update.changes.assignees %}
-- Assignees:{% if update.changes.assignees.new_value.0 %} added {{ update.changes.assignees.new_value|join:", " }}{% endif %}{% if update.changes.assignees.old_value.0 %} removed {{ update.changes.assignees.old_value|join:", " }}{% endif %}{% endif %}{% if update.changes.labels %}
-- Labels:{% if update.changes.labels.new_value.0 %} added {{ update.changes.labels.new_value|join:", " }}{% endif %}{% if update.changes.labels.old_value.0 %} removed {{ update.changes.labels.old_value|join:", " }}{% endif %}{% endif %}{% if update.changes.target_date %}
-- Due: {% if update.changes.target_date.new_value.0 %}{{ update.changes.target_date.new_value.0 }}{% else %}removed{% endif %}{% endif %}{% if update.changes.link %}
-- Links:{% for link in update.changes.link.new_value %} {{ link }}{% endfor %}{% if update.changes.link.old_value|length > 0 and update.changes.link.old_value.0 != "None" %} ({{ update.changes.link.old_value|length }} removed){% endif %}{% endif %}{% if update.changes.duplicate %}
-- Duplicate of:{% if update.changes.duplicate.new_value.0 %} added {{ update.changes.duplicate.new_value|join:", " }}{% endif %}{% if update.changes.duplicate.old_value.0 %} removed {{ update.changes.duplicate.old_value|join:", " }}{% endif %}{% endif %}{% if update.changes.blocking.new_value %}
-- Blocking: {{ update.changes.blocking.new_value|join:", " }}{% endif %}
-{% endfor %}{% for comment in comments %}
+{% for update in data %}{% if update.rows %}
+{{ update.actor_detail.first_name }} {{ update.actor_detail.last_name }}, {{ update.activity_time }}{% for row in update.rows %}
+- {{ row.label }}: {% if row.kind == "change" %}{% if row.old and row.new %}{{ row.old }} -> {{ row.new }}{% elif row.new %}{{ row.new }}{% else %}{{ row.old }} removed{% endif %}{% else %}{% if row.added %}added {{ row.added|join:", " }}{% if row.more_added %} and {{ row.more_added }} more{% endif %}{% endif %}{% if row.added and row.removed %}; {% endif %}{% if row.removed %}{% if row.link %}{{ row.removed|length|add:row.more_removed }} removed{% else %}removed {{ row.removed|join:", " }}{% if row.more_removed %} and {{ row.more_removed }} more{% endif %}{% endif %}{% endif %}{% endif %}{% endfor %}
+{% endif %}{% endfor %}{% for comment in comments %}
 {{ comment.actor_detail.first_name }} {{ comment.actor_detail.last_name }} commented:{% for actor_comment in comment.actor_comments.new_value %}
 > {{ actor_comment|striptags }}{% endfor %}
 {% endfor %}

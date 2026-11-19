@@ -3,6 +3,7 @@
 # See the LICENSE file for details.
 
 # Python imports
+import datetime
 import html
 import re
 
@@ -22,3 +23,99 @@ def render_email(template_name, context):
     text_content = re.sub(r"[ \t]+\n", "\n", text_content)
     text_content = re.sub(r"\n{3,}", "\n\n", text_content).strip() + "\n"
     return html_content, text_content
+
+
+# Fields the updates email describes, in reading order, with the label a person sees. Scalar fields
+# read "old -> new"; the rest are sets of things added and removed. Description changes never reach
+# the email (notification_task skips them) and comments/mentions are rendered on their own.
+_SCALAR_FIELDS = {
+    "name": "Title",
+    "state": "State",
+    "priority": "Priority",
+    "start_date": "Start date",
+    "target_date": "Due date",
+    "estimate_points": "Estimate",
+    "estimate_categories": "Estimate",
+    "estimate_time": "Estimate",
+    "parent": "Parent",
+    "cycles": "Cycle",
+}
+_SET_FIELDS = {
+    "assignees": "Assignees",
+    "labels": "Labels",
+    "modules": "Modules",
+    "blocked_by": "Blocked by",
+    "blocking": "Blocking",
+    "relates_to": "Related to",
+    "duplicate": "Duplicate of",
+    "start_before": "Starts before",
+    "start_after": "Starts after",
+    "finish_before": "Finishes before",
+    "finish_after": "Finishes after",
+    "implements": "Implements",
+    "implemented_by": "Implemented by",
+    "link": "Links",
+}
+_SKIPPED_FIELDS = {"description", "comment", "mention", "activity_time"}
+_MAX_LISTED = 3
+
+
+def _values(change, key):
+    # create_payload str()s every value, so a missing one arrives as "" or "None".
+    return [v for v in (change or {}).get(key, []) if v not in ("", "None")]
+
+
+def _display(field, value):
+    if field in ("start_date", "target_date"):
+        try:
+            return datetime.date.fromisoformat(value[:10]).strftime("%-d %b %Y")
+        except ValueError:
+            return value
+    if field == "priority":
+        return value.title()
+    return value
+
+
+def describe_changes(changes):
+    """CCI: turn one actor's grouped activity into rows the updates email can show.
+
+    Returns [{"label", "kind": "change"|"set", "old", "new", "added", "removed", "more_added",
+    "more_removed"}]. Every field that can trigger the email gets a row, so the email never
+    shows a name and a time over an empty box.
+    """
+    order = list(_SCALAR_FIELDS) + list(_SET_FIELDS)
+    fields = [f for f in changes if f not in _SKIPPED_FIELDS]
+    fields.sort(key=lambda f: order.index(f) if f in order else len(order))
+    rows = []
+    for field in fields:
+        old, new = _values(changes[field], "old_value"), _values(changes[field], "new_value")
+        if not old and not new:
+            continue
+        if field == "attachment":
+            counts = [f"{len(new)} added"] if new else []
+            counts += [f"{len(old)} removed"] if old else []
+            rows.append({"label": "Attachments", "kind": "change", "old": "", "new": ", ".join(counts)})
+        elif field in _SET_FIELDS:
+            added, removed = new, old
+            rows.append(
+                {
+                    "label": _SET_FIELDS[field],
+                    "kind": "set",
+                    "added": added[:_MAX_LISTED],
+                    "removed": removed[:_MAX_LISTED],
+                    "more_added": max(len(added) - _MAX_LISTED, 0),
+                    "more_removed": max(len(removed) - _MAX_LISTED, 0),
+                    "link": field == "link",
+                }
+            )
+        else:
+            label = _SCALAR_FIELDS.get(field) or field.replace("_", " ").capitalize()
+            rows.append(
+                {
+                    "label": label,
+                    "kind": "change",
+                    "old": _display(field, old[0]) if old else "",
+                    "new": _display(field, new[-1]) if new else "",
+                }
+            )
+    return rows

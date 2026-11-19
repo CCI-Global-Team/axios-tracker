@@ -20,7 +20,7 @@ from plane.db.models import EmailNotificationLog, Issue, User
 from plane.license.utils.instance_value import get_email_configuration
 from plane.settings.redis import redis_instance
 from plane.utils.exception_logger import log_exception
-from plane.utils.email_render import render_email
+from plane.utils.email_render import describe_changes, render_email
 
 
 def remove_unwanted_characters(input_text):
@@ -232,6 +232,7 @@ def send_email_notification(issue_id, notification_data, receiver_id, email_noti
                                 "last_name": actor.last_name,
                             },
                             "changes": changes,
+                            "rows": describe_changes(changes),
                             "issue_details": {
                                 "name": issue.name,
                                 "identifier": f"{issue.project.identifier}-{issue.sequence_id}",
